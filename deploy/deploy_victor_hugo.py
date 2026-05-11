@@ -350,14 +350,40 @@ def find_existing_instance(compute, compartment_id, ad, name):
     return None
 
 
-def launch_instance(compute, vnet, compartment_id, ad, shape, image_id, subnet_id, ssh_pub_key, instance_name, domain):
+def _is_capacity_error(e: "oci.exceptions.ServiceError") -> bool:
+    """Oracle reports out-of-capacity in two ways depending on which limit:
+       - 500 InternalError "Out of host capacity" (Always-Free A1 is famous for this)
+       - 400 LimitExceeded (tenancy quota exhausted; different error, see _is_quota_error)"""
+    msg = (e.message or "").lower()
+    return e.status == 500 and ("out of host capacity" in msg or "out of capacity" in msg)
+
+
+def _is_quota_error(e: "oci.exceptions.ServiceError") -> bool:
+    return e.status == 400 and e.code == "LimitExceeded"
+
+
+def _list_fault_domains(identity, compartment_id, ad):
+    resp = identity.list_fault_domains(compartment_id=compartment_id, availability_domain=ad)
+    return [fd.name for fd in resp.data] or [None]
+
+
+def launch_instance(identity, compute, vnet, compartment_id, ad, shape, image_id, subnet_id,
+                    ssh_pub_key, instance_name, domain,
+                    capacity_wait_minutes: int = 60):
     existing = find_existing_instance(compute, compartment_id, ad, instance_name)
     if existing:
         detail(f"Reusing existing instance {existing.id} ({existing.lifecycle_state})")
         instance = existing
     else:
-        detail("Launching instance (~2 minutes)")
-        details = LaunchInstanceDetails(
+        # Each AD has up to 3 fault domains, each with a separate capacity pool.
+        # Cycling through them on "Out of host capacity" gets us a slot way more
+        # reliably than retrying the API-default. We then wait + retry the loop
+        # for up to capacity_wait_minutes for Always-Free A1, which is famously
+        # capacity-starved in some regions.
+        fault_domains = _list_fault_domains(identity, compartment_id, ad)
+        detail(f"Fault domains in {ad}: {', '.join(str(fd) for fd in fault_domains)}")
+
+        base_details = LaunchInstanceDetails(
             compartment_id=compartment_id,
             availability_domain=ad,
             shape=shape["name"],
@@ -376,22 +402,73 @@ def launch_instance(compute, vnet, compartment_id, ad, shape, image_id, subnet_i
             ),
         )
         if shape["name"] == "VM.Standard.A1.Flex":
-            details.shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
+            base_details.shape_config = oci.core.models.LaunchInstanceShapeConfigDetails(
                 ocpus=shape["ocpus"],
                 memory_in_gbs=shape["mem_gb"],
             )
-        resp = compute.launch_instance(details)
-        instance = resp.data
+
+        instance = None
+        deadline = time.time() + capacity_wait_minutes * 60
+        attempt = 0
+        while instance is None and time.time() < deadline:
+            attempt += 1
+            for fd in fault_domains:
+                if fd:
+                    base_details.fault_domain = fd
+                fd_label = fd if fd else "(api default)"
+                try:
+                    detail(f"Attempt {attempt}: launching in fault domain {fd_label}")
+                    resp = compute.launch_instance(base_details)
+                    instance = resp.data
+                    ok(f"Launched in {fd_label} — instance id {instance.id}")
+                    break
+                except oci.exceptions.ServiceError as e:
+                    if _is_capacity_error(e):
+                        warn(f"{fd_label}: out of host capacity, trying next FD")
+                        continue
+                    if _is_quota_error(e):
+                        die(
+                            "Tenancy quota exhausted (LimitExceeded). Either "
+                            "terminate an existing instance of this shape, or "
+                            "request a quota increase in the Oracle Console "
+                            "(Governance > Limits, Quotas and Usage)."
+                        )
+                    raise
+            else:
+                # All FDs were exhausted on this attempt → wait and retry.
+                remaining = int(deadline - time.time())
+                if remaining <= 0:
+                    break
+                wait_s = min(60, remaining)
+                warn(
+                    f"All {len(fault_domains)} fault domains out of capacity. "
+                    f"Sleeping {wait_s}s before next attempt (giving up at "
+                    f"{capacity_wait_minutes} min)."
+                )
+                time.sleep(wait_s)
+
+        if instance is None:
+            die(
+                "Could not obtain capacity for "
+                f"{shape['name']} in {ad} within {capacity_wait_minutes} minutes. "
+                "Always-Free A1 capacity in some regions (us-sanjose-1, us-phoenix-1, "
+                "ap-tokyo-1) can be saturated for hours-to-days. Options: "
+                "(1) re-run later — script will reuse network resources. "
+                "(2) switch region via `oci session authenticate` (e.g. eu-frankfurt-1, "
+                "us-ashburn-1 often have headroom). "
+                "(3) request a paid quota bump in the console (free A1 is best-effort)."
+            )
+
         # Wait for RUNNING.
-        deadline = time.time() + 300
-        while time.time() < deadline:
+        wait_deadline = time.time() + 300
+        while time.time() < wait_deadline:
             inst = compute.get_instance(instance.id).data
             if inst.lifecycle_state == "RUNNING":
                 instance = inst
                 break
             time.sleep(5)
         else:
-            die("Instance did not reach RUNNING within 5 minutes")
+            die("Instance did not reach RUNNING within 5 minutes after launch.")
 
     # Get the public IP.
     vnics = compute.list_vnic_attachments(compartment_id=compartment_id, instance_id=instance.id).data
@@ -554,6 +631,9 @@ def main() -> int:
                         help="Skip VM/network creation. Requires --existing-ip.")
     parser.add_argument("--existing-ip", default=None,
                         help="Use with --skip-provision to deploy onto an existing VM.")
+    parser.add_argument("--capacity-wait", type=int, default=60,
+                        help="Minutes to keep retrying on 'Out of host capacity' (Always-Free A1 in "
+                             "constrained regions can take hours). Default 60.")
     args = parser.parse_args()
 
     if args.skip_provision and not args.existing_ip:
@@ -600,8 +680,9 @@ def main() -> int:
         # 5. VM.
         section(f"Launching instance {args.instance_name}")
         instance, public_ip = launch_instance(
-            compute, vnet, compartment_id, ad, shape, image_id, subnet.id,
+            identity, compute, vnet, compartment_id, ad, shape, image_id, subnet.id,
             ssh_pub_key, args.instance_name, args.domain,
+            capacity_wait_minutes=args.capacity_wait,
         )
         ok(f"Instance: {instance.id}")
         ok(f"Public IP: {public_ip}")
