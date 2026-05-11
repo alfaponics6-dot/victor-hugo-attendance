@@ -85,33 +85,32 @@ fi
 # 3. Service user. Reuse if it exists; create otherwise.
 # ----------------------------------------------------------------------
 if ! id victorhugo &>/dev/null; then
-  echo "==> Creating victorhugo system user with a home dir (npm cache needs it)"
-  useradd --system --create-home --home-dir /var/lib/victorhugo --shell /bin/bash victorhugo
-elif [ ! -d /var/lib/victorhugo ]; then
-  # Existing user without a home — fix it. npm ci writes to ~/.npm; without
-  # this we hit EACCES creating /home/victorhugo on Ubuntu.
-  echo "==> Adding home dir to existing victorhugo user"
-  mkdir -p /var/lib/victorhugo
-  chown victorhugo:victorhugo /var/lib/victorhugo
-  usermod -d /var/lib/victorhugo -s /bin/bash victorhugo
+  echo "==> Creating victorhugo system user (runtime only — build runs as ubuntu)"
+  useradd --system --no-create-home --shell /usr/sbin/nologin victorhugo
 fi
-chown -R victorhugo:victorhugo "$REPO_DIR"
+# Build will run as the ubuntu user (npm needs a real home with its cache);
+# only the systemd service runs as the victorhugo user. We chown the tree
+# AFTER npm finishes, in step 4 below.
 
 # ----------------------------------------------------------------------
 # 4. Build the app.
 # ----------------------------------------------------------------------
-echo "==> Installing server deps"
-cd "$REPO_DIR/server"
-# Wipe any half-extracted node_modules from a prior failed run; without this
-# `npm ci` complains about ENOTEMPTY on the cleanup step.
-rm -rf node_modules
-sudo -u victorhugo --preserve-env=HOME -H npm ci --omit=dev
+# Wipe any half-extracted node_modules / cache from prior failed runs to
+# avoid ENOTEMPTY on cleanup and root-owned cache files.
+rm -rf "$REPO_DIR/server/node_modules" "$REPO_DIR/client/node_modules"
+rm -rf /home/ubuntu/.npm /var/lib/victorhugo/.npm 2>/dev/null || true
 
-echo "==> Building client"
+echo "==> Installing server deps (as ubuntu — npm cache needs a real home)"
+cd "$REPO_DIR/server"
+sudo -u ubuntu -H npm ci --omit=dev
+
+echo "==> Building client (as ubuntu)"
 cd "$REPO_DIR/client"
-rm -rf node_modules
-sudo -u victorhugo --preserve-env=HOME -H npm ci
-sudo -u victorhugo --preserve-env=HOME -H npm run build
+sudo -u ubuntu -H npm ci
+sudo -u ubuntu -H npm run build
+
+# Hand the runtime tree to the unprivileged service user.
+chown -R victorhugo:victorhugo "$REPO_DIR"
 
 # ----------------------------------------------------------------------
 # 5. Server .env (only write if absent — preserve any operator edits).
