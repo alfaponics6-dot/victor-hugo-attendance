@@ -56,7 +56,9 @@ const Orb = ({ className, color, delay = 0, scale = 1 }) => (
 
 /* A faint, animated sparkline — decorative only.
    Hidden on phones (the hero panel itself is hidden < lg:); rendering this
-   on small screens would just be confusing fake data. */
+   on small screens would just be confusing fake data. Fills its container
+   exactly via `inset-0`; the previous bottom-10/h-28 combo left a ~40px
+   strip of empty surface below the curve. */
 const HeroSparkline = () => {
   const points = useMemo(() => {
     const seed = [0.42, 0.55, 0.48, 0.62, 0.58, 0.71, 0.66, 0.78, 0.72, 0.88, 0.83, 0.95];
@@ -66,7 +68,7 @@ const HeroSparkline = () => {
     <svg
       viewBox="0 0 100 100"
       preserveAspectRatio="none"
-      className="absolute inset-x-0 bottom-10 h-28 w-full opacity-60"
+      className="absolute inset-0 w-full h-full opacity-60"
       aria-hidden
     >
       <defs>
@@ -326,11 +328,11 @@ function Login() {
                 immediately (the dashboards have the real charts). */}
             <motion.div
               variants={fieldVariants}
-              className="hidden lg:block relative z-10 mt-10 surface rounded-2xl p-5 overflow-hidden"
+              className="hidden lg:block relative z-10 mt-8 surface rounded-2xl p-4 overflow-hidden max-w-md"
               aria-hidden="true"
             >
-              <div className="flex items-start justify-between mb-1">
-                <div>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="min-w-0">
                   <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[color:var(--color-fg-subtle)]">
                     {t('hero.statLabel')}
                   </div>
@@ -343,11 +345,12 @@ function Login() {
                     </span>
                   </div>
                 </div>
-                <div className="text-[10px] font-medium tabular text-[color:var(--color-fg-subtle)]">
+                <div className="text-[10px] font-medium tabular text-[color:var(--color-fg-subtle)] shrink-0">
                   {t('hero.statCaption')}
                 </div>
               </div>
-              <div className="relative h-24 -mx-1">
+              {/* Sparkline area: ~64px tall, fills container edge-to-edge. */}
+              <div className="relative h-16">
                 <HeroSparkline />
               </div>
             </motion.div>
