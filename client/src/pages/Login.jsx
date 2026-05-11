@@ -104,6 +104,17 @@ function Login() {
     fetchLeadersWithRetry();
   }, []);
 
+  // Make the body transparent on the login page only. index.css paints an
+  // opaque gradient on the body that sits above our fixed -z-10 bg div, so
+  // without this the photo is invisible. Restore on unmount so other pages
+  // keep their nice dark theme gradient.
+  useEffect(() => {
+    const body = document.body;
+    const prev = body.style.cssText;
+    body.style.background = 'transparent';
+    return () => { body.style.cssText = prev; };
+  }, []);
+
   const fetchLeadersWithRetry = async (retries = 3, delay = 1000) => {
     setLoadingLeaders(true);
     setError('');
