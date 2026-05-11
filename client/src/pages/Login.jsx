@@ -262,7 +262,11 @@ function Login() {
         <LanguageSwitcher />
       </div>
 
-      <main className="relative flex-1 flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-10">
+      {/* pt-20 on phones leaves room for the absolute LanguageSwitcher
+          (top-4 + ~44 px button = ~64 px reserved) so the login card top
+          never tucks under it. From sm: onward there's enough viewport
+          height that items-center keeps a natural gap. */}
+      <main className="relative flex-1 flex items-center justify-center px-4 pt-20 pb-8 sm:px-6 sm:py-12 lg:px-10">
         <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-16 items-center">
 
           {/* ===================== HERO COLUMN ===================== */}
