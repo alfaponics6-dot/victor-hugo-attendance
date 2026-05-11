@@ -18,6 +18,8 @@ import { useAuth } from '../context/useAuth.js';
 import { getLeaders, login } from '../api/client';
 import Footer from '../components/common/Footer';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeToggle from '../components/ui/ThemeToggle';
+import { useTheme } from '../lib/useTheme';
 import { cn } from '../lib/cn';
 import { getProjectLabel } from '../lib/projectI18n';
 
@@ -99,6 +101,7 @@ function Login() {
   const [error, setError] = useState('');
   const { loginLeader } = useAuth();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   useEffect(() => {
     fetchLeadersWithRetry();
@@ -216,30 +219,27 @@ function Login() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
-      {/* Background image. Subtle blur + slight scale-up to hide the blur's
-          edge bleed. `fixed` so it doesn't scroll-jitter; sits behind all
-          content via negative z-index. The `surface` utility on cards already
-          has `backdrop-filter: blur(12px)` so cards will read crisply on top. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/login-bg.jpg')",
-          // Earlier 0.6 brightness was crushing the photo into the dark theme.
-          // 0.85 keeps the photo readable while still leaving enough contrast
-          // for headline text outside the card. saturate(1.1) brings back
-          // some colour life that the blur otherwise dulls.
-          filter: 'blur(3px) brightness(0.85) saturate(1.1)',
-          transform: 'scale(1.04)',
-        }}
-      />
-      {/* Subtle dark veil so light/orange parts of the photo don't blow out
-          the bottom-row footer text. Much lighter than before — the photo
-          should be visible, not fighting for survival. */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/20 to-black/30"
-      />
+      {/* Background image — only in dark mode. The photo is a moody sunset
+          shot that clashes with the light theme's bright/clean palette.
+          When isDark is false, we fall through to the html element's light
+          --color-bg painting (handled by the body-transparent useEffect). */}
+      {isDark && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/login-bg.jpg')",
+              filter: 'blur(3px) brightness(0.85) saturate(1.1)',
+              transform: 'scale(1.04)',
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/20 to-black/30"
+          />
+        </>
+      )}
 
       {/* faint global grid pattern — still works on top of the photo,
           just with a quieter opacity since the bg already provides texture. */}
@@ -258,7 +258,8 @@ function Login() {
       />
 
       {/* Top-right language switcher - Login has no header bar, so it floats. */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
 
@@ -408,7 +409,7 @@ function Login() {
                   <img
                     src="/Logo-Universidad-EARTH_academico-300x257.png"
                     alt="Universidad EARTH"
-                    className="relative size-10 sm:size-12 object-contain brightness-0 invert"
+                    className="themed-logo relative size-10 sm:size-12 object-contain"
                   />
                 </div>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-balance">

@@ -44,6 +44,7 @@ import {
 import { getTodayDate, addDays, formatDateForDisplay } from '../utils/dateUtils';
 import AppShell, { PageHeader, SectionTitle } from '../components/ui/AppShell';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -423,6 +424,7 @@ function ProfesorDashboard() {
         }
         actions={
           <>
+            <ThemeToggle />
             <LanguageSwitcher align="left" />
             <Button
               variant="ghost"

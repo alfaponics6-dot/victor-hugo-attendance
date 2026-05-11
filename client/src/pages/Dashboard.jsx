@@ -22,6 +22,7 @@ import Card from '../components/ui/Card';
 import Skeleton from '../components/ui/Skeleton';
 import Badge from '../components/ui/Badge';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import { getAttendanceByProjectAndDate } from '../api/client';
 import { formatDateToYYYYMMDD } from '../utils/dateUtils';
 
@@ -67,7 +68,7 @@ function Dashboard() {
             <img
               src="/Logo-Universidad-EARTH_academico-300x257.png"
               alt={t('common:app.university')}
-              className="h-7 sm:h-9 w-auto opacity-90 brightness-0 invert"
+              className="themed-logo h-7 sm:h-9 w-auto opacity-90"
             />
             <span>{t('dashboard.title')}</span>
           </span>
@@ -88,6 +89,7 @@ function Dashboard() {
         }
         actions={
           <>
+            <ThemeToggle />
             <LanguageSwitcher align="left" />
             <Button
               variant="ghost"

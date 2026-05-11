@@ -9,6 +9,7 @@ import AppShell from '../components/ui/AppShell';
 import Tabs from '../components/ui/Tabs';
 import Button from '../components/ui/Button';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import ThemeToggle from '../components/ui/ThemeToggle';
 import Loading from '../components/common/Loading';
 
 const Statistics = lazy(() => import('./Statistics'));
@@ -63,7 +64,7 @@ function AdminDashboard() {
           <img
             src="/Logo-Universidad-EARTH_academico-300x257.png"
             alt="EARTH"
-            className="h-9 sm:h-11 w-auto opacity-90 select-none brightness-0 invert shrink-0"
+            className="themed-logo h-9 sm:h-11 w-auto opacity-90 select-none shrink-0"
             draggable={false}
           />
           <div className="space-y-1 min-w-0">
@@ -80,6 +81,7 @@ function AdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          <ThemeToggle />
           <LanguageSwitcher align="left" />
           <Button
             variant="outline"

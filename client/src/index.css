@@ -87,6 +87,19 @@ button { cursor: pointer; }
 /* Tabular numerals - keeps stat numbers from jittering on update. */
 .tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
+/* Logo that needs to be visible on BOTH themes.
+   - Dark mode: invert the EARTH logo to pure white (the source is a dark
+     blue glyph on transparent).
+   - Light mode: leave it untouched so the original colours read against
+     light backgrounds.
+   Replace every `brightness-0 invert` in JSX with `themed-logo`. */
+.themed-logo {
+  filter: brightness(0) invert(1);
+}
+:root.light .themed-logo {
+  filter: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }

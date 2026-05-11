@@ -98,5 +98,9 @@
   "language": {
     "switch": "Cambiar idioma",
     "selected": "Idioma actual"
+  },
+  "theme": {
+    "switchToLight": "Cambiar a modo claro",
+    "switchToDark": "Cambiar a modo oscuro"
   }
 }
