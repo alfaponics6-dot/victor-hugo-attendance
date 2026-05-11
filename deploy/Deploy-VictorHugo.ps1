@@ -98,26 +98,55 @@ foreach ($cmd in @('oci','ssh','ssh-keygen')) {
     Write-Ok "$cmd present"
 }
 
-# Verify OCI auth works. `oci iam region list` is a cheap, read-only call.
-try {
-    $null = & oci iam region list --output json 2>&1
-    if ($LASTEXITCODE -ne 0) { throw 'oci returned non-zero' }
-    Write-Ok 'OCI CLI authenticated'
-} catch {
+# Detect auth mode. If the config has security_token_file=, this is a
+# session-based auth (set up via `oci session authenticate`), and every
+# oci call needs --auth security_token. Otherwise we use the default
+# api-key auth.
+$ociConfigPath = Join-Path $HOME '.oci\config'
+if (-not (Test-Path $ociConfigPath)) {
     Die @"
-OCI CLI is installed but not configured. Run:
+Missing $ociConfigPath. Set up OCI CLI auth first:
 
-    oci setup config
+  Option A (session, easier — opens browser):
+      oci session authenticate
 
-then add the generated public key to your Oracle Cloud user under
-Profile > User Settings > API Keys. See the script header for full
-prereq notes.
+  Option B (api-key, persistent):
+      oci setup config
+      (then upload the generated public key in Oracle Console >
+       Profile > User Settings > API Keys)
 "@
 }
 
+$hasSessionToken = (Select-String -Path $ociConfigPath -Pattern '^security_token_file=' -Quiet)
+$script:OciAuthArgs = @()
+if ($hasSessionToken) {
+    $script:OciAuthArgs = @('--auth', 'security_token')
+    Write-Detail 'Using session-token auth (security_token)'
+} else {
+    Write-Detail 'Using api-key auth'
+}
+
+# Verify auth works. `oci iam region list` is cheap and read-only. If the
+# session is expired, the CLI prints a re-auth prompt; we detect that and
+# direct the user instead of letting it block.
+try {
+    $regionOut = & oci @script:OciAuthArgs iam region list --output json 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0 -or $regionOut -match 'session has expired|session is expired|cannot currently be used') {
+        Die @"
+Your OCI session has expired. Refresh it with:
+
+    oci session authenticate
+
+That opens a browser, you log in, control returns to PowerShell, then
+re-run this script. Tokens last ~1 hour by default.
+"@
+    }
+    Write-Ok 'OCI CLI authenticated'
+} catch {
+    Die "OCI CLI auth failed: $($_.Exception.Message)"
+}
+
 # Read tenancy OCID from the config - we'll use it as compartment by default.
-$ociConfigPath = Join-Path $HOME '.oci\config'
-if (-not (Test-Path $ociConfigPath)) { Die "Missing $ociConfigPath" }
 $cfgLine = Select-String -Path $ociConfigPath -Pattern '^tenancy=' | Select-Object -First 1
 if (-not $cfgLine) { Die 'No tenancy= line found in ~/.oci/config' }
 $TenancyOcid = ($cfgLine.Line -split '=', 2)[1].Trim()
@@ -150,11 +179,11 @@ $ShapeConfig = @{
 $S = $ShapeConfig[$Shape]
 Write-Detail "Shape: $($S.Name) ($($S.Ocpus) OCPU, $($S.MemGb) GB)"
 
-$ad = (& oci iam availability-domain list --compartment-id $CompartmentOcid --output json | ConvertFrom-Json).data[0].name
+$ad = (& oci @script:OciAuthArgs iam availability-domain list --compartment-id $CompartmentOcid --output json | ConvertFrom-Json).data[0].name
 Write-Detail "Availability domain: $ad"
 
 # Find latest Ubuntu 22.04 image matching this shape's architecture.
-$imageJson = & oci compute image list `
+$imageJson = & oci @script:OciAuthArgs compute image list `
     --compartment-id $CompartmentOcid `
     --operating-system 'Canonical Ubuntu' `
     --operating-system-version '22.04' `
@@ -181,11 +210,11 @@ if (-not $SkipProvision) {
     Write-Section 'Provisioning network'
 
     # VCN
-    $vcnList = & oci network vcn list --compartment-id $CompartmentOcid --output json | ConvertFrom-Json
+    $vcnList = & oci @script:OciAuthArgs network vcn list --compartment-id $CompartmentOcid --output json | ConvertFrom-Json
     $vcn = Get-ByName $vcnList 'victor-hugo-vcn'
     if (-not $vcn) {
         Write-Detail 'Creating VCN victor-hugo-vcn (10.0.0.0/16)'
-        $vcn = (& oci network vcn create `
+        $vcn = (& oci @script:OciAuthArgs network vcn create `
             --compartment-id $CompartmentOcid `
             --cidr-block '10.0.0.0/16' `
             --display-name 'victor-hugo-vcn' `
@@ -196,11 +225,11 @@ if (-not $SkipProvision) {
     Write-Ok "VCN: $($vcn.id)"
 
     # Internet Gateway
-    $igwList = & oci network internet-gateway list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
+    $igwList = & oci @script:OciAuthArgs network internet-gateway list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
     $igw = Get-ByName $igwList 'victor-hugo-igw'
     if (-not $igw) {
         Write-Detail 'Creating Internet Gateway'
-        $igw = (& oci network internet-gateway create `
+        $igw = (& oci @script:OciAuthArgs network internet-gateway create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --is-enabled $true `
@@ -211,7 +240,7 @@ if (-not $SkipProvision) {
     Write-Ok "IGW: $($igw.id)"
 
     # Route Table
-    $rtList = & oci network route-table list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
+    $rtList = & oci @script:OciAuthArgs network route-table list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
     $rt = Get-ByName $rtList 'victor-hugo-rt'
     if (-not $rt) {
         Write-Detail 'Creating Route Table to IGW'
@@ -222,7 +251,7 @@ if (-not $SkipProvision) {
                 networkEntityId = $igw.id
             }
         ) | ConvertTo-Json -Compress -Depth 4)
-        $rt = (& oci network route-table create `
+        $rt = (& oci @script:OciAuthArgs network route-table create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --display-name 'victor-hugo-rt' `
@@ -233,7 +262,7 @@ if (-not $SkipProvision) {
     Write-Ok "RT: $($rt.id)"
 
     # Security List - ingress 22, 80, 443
-    $slList = & oci network security-list list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
+    $slList = & oci @script:OciAuthArgs network security-list list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
     $sl = Get-ByName $slList 'victor-hugo-sl'
     if (-not $sl) {
         Write-Detail 'Creating Security List (open 22/80/443)'
@@ -245,7 +274,7 @@ if (-not $SkipProvision) {
         $egress = (@(
             @{ destination='0.0.0.0/0'; destinationType='CIDR_BLOCK'; protocol='all'; isStateless=$false }
         ) | ConvertTo-Json -Compress -Depth 4)
-        $sl = (& oci network security-list create `
+        $sl = (& oci @script:OciAuthArgs network security-list create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --display-name 'victor-hugo-sl' `
@@ -257,11 +286,11 @@ if (-not $SkipProvision) {
     Write-Ok "SL: $($sl.id)"
 
     # Subnet
-    $subnetList = & oci network subnet list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
+    $subnetList = & oci @script:OciAuthArgs network subnet list --compartment-id $CompartmentOcid --vcn-id $vcn.id --output json | ConvertFrom-Json
     $subnet = Get-ByName $subnetList 'victor-hugo-subnet'
     if (-not $subnet) {
         Write-Detail 'Creating subnet 10.0.0.0/24'
-        $subnet = (& oci network subnet create `
+        $subnet = (& oci @script:OciAuthArgs network subnet create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --cidr-block '10.0.0.0/24' `
@@ -305,11 +334,11 @@ if (-not $SkipProvision) {
     }
 
     Write-Detail '(this takes ~2 minutes)'
-    $instance = (& oci @launchArgs | ConvertFrom-Json).data
+    $instance = (& oci @script:OciAuthArgs @launchArgs | ConvertFrom-Json).data
     Write-Ok "Instance: $($instance.id)"
 
     # Get the public IP. After RUNNING there is one VNIC attached.
-    $vnic = (& oci compute instance list-vnics --instance-id $instance.id --output json | ConvertFrom-Json).data
+    $vnic = (& oci @script:OciAuthArgs compute instance list-vnics --instance-id $instance.id --output json | ConvertFrom-Json).data
     $publicIp = $vnic[0].'public-ip'
     Write-Ok "Public IP: $publicIp"
 } else {
