@@ -230,16 +230,20 @@ router.get('/project/:projectId/date/:date', [...validateProjectId, ...validateD
   }
 });
 
-// Get attendance history for a specific student
+// Get attendance history for a specific student.
+// For a leader, we return 403 uniformly whether the student doesn't exist OR
+// exists in a different project — distinguishing 404 vs 403 here would leak
+// existence-in-other-projects. Admin/profesor (no projectId) keep the 404.
 router.get('/student/:studentId', validateStudentId, async (req, res) => {
   try {
     const { studentId } = req.params;
     const student = await db.getStudentById(studentId);
+    const isLeader = req.user && req.user.role !== 'admin' && req.user.role !== 'profesor';
+    if (isLeader && (!student || !userOwnsProject(req.user, student.project_id))) {
+      return res.status(403).json({ error: 'Forbidden: cannot view this student' });
+    }
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
-    }
-    if (!userOwnsProject(req.user, student.project_id)) {
-      return res.status(403).json({ error: 'Forbidden: cannot view this student' });
     }
     const attendance = await db.getAttendanceByStudent(studentId);
     res.json(attendance);
@@ -248,17 +252,19 @@ router.get('/student/:studentId', validateStudentId, async (req, res) => {
   }
 });
 
-// Download attachment for a specific student and date
+// Download attachment for a specific student and date. Same 403-uniform
+// leader treatment as /student/:studentId above — don't leak existence.
 router.get('/attachment/:studentId/:date', async (req, res) => {
   try {
     const { studentId, date } = req.params;
 
     const student = await db.getStudentById(studentId);
+    const isLeader = req.user && req.user.role !== 'admin' && req.user.role !== 'profesor';
+    if (isLeader && (!student || !userOwnsProject(req.user, student.project_id))) {
+      return res.status(403).json({ error: 'Forbidden: cannot view this student' });
+    }
     if (!student) {
       return res.status(404).json({ error: 'Student not found' });
-    }
-    if (!userOwnsProject(req.user, student.project_id)) {
-      return res.status(403).json({ error: 'Forbidden: cannot view this student' });
     }
 
     const attendance = await db.getAttendanceByStudent(studentId);
