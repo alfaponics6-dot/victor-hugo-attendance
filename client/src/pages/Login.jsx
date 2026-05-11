@@ -258,7 +258,7 @@ function Login() {
               hidden: { opacity: 0 },
               visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
             }}
-            className="relative hidden lg:flex flex-col justify-between min-h-[560px] overflow-hidden"
+            className="relative hidden lg:flex flex-col gap-6 overflow-hidden"
           >
             {/* floating orbs */}
             <Orb
@@ -326,9 +326,13 @@ function Login() {
                 marketing-flavoured chrome; the numbers are clearly stylised
                 so anyone evaluating them as truth would see the inconsistency
                 immediately (the dashboards have the real charts). */}
+            {/* Sparkline lives as a flush sub-region of the hero column —
+                no `surface` wrapper because that made it read as a separate
+                floating card overlapping the parent. Just a top divider +
+                inline numbers + edge-to-edge SVG below. */}
             <motion.div
               variants={fieldVariants}
-              className="hidden lg:block relative z-10 mt-8 surface rounded-2xl p-4 overflow-hidden max-w-md"
+              className="hidden lg:block relative z-10 pt-6 max-w-md border-t border-[color:var(--color-border)]"
               aria-hidden="true"
             >
               <div className="flex items-start justify-between gap-3 mb-2">
@@ -349,7 +353,6 @@ function Login() {
                   {t('hero.statCaption')}
                 </div>
               </div>
-              {/* Sparkline area: ~64px tall, fills container edge-to-edge. */}
               <div className="relative h-16">
                 <HeroSparkline />
               </div>
