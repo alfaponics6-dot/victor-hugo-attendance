@@ -39,7 +39,9 @@
       "realtime": "Real time",
       "secure": "Secure access",
       "data": "Instant data"
-    }
+    },
+    "statLabel": "Cumulative attendance",
+    "statCaption": "last 12 sessions"
   },
   "footer": {
     "encrypted": "Encrypted connection · EARTH University",
