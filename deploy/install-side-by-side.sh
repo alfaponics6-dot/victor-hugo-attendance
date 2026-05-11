@@ -85,8 +85,15 @@ fi
 # 3. Service user. Reuse if it exists; create otherwise.
 # ----------------------------------------------------------------------
 if ! id victorhugo &>/dev/null; then
-  echo "==> Creating victorhugo system user"
-  useradd --system --no-create-home --shell /usr/sbin/nologin victorhugo
+  echo "==> Creating victorhugo system user with a home dir (npm cache needs it)"
+  useradd --system --create-home --home-dir /var/lib/victorhugo --shell /bin/bash victorhugo
+elif [ ! -d /var/lib/victorhugo ]; then
+  # Existing user without a home — fix it. npm ci writes to ~/.npm; without
+  # this we hit EACCES creating /home/victorhugo on Ubuntu.
+  echo "==> Adding home dir to existing victorhugo user"
+  mkdir -p /var/lib/victorhugo
+  chown victorhugo:victorhugo /var/lib/victorhugo
+  usermod -d /var/lib/victorhugo -s /bin/bash victorhugo
 fi
 chown -R victorhugo:victorhugo "$REPO_DIR"
 
@@ -95,12 +102,16 @@ chown -R victorhugo:victorhugo "$REPO_DIR"
 # ----------------------------------------------------------------------
 echo "==> Installing server deps"
 cd "$REPO_DIR/server"
-sudo -u victorhugo npm ci --omit=dev
+# Wipe any half-extracted node_modules from a prior failed run; without this
+# `npm ci` complains about ENOTEMPTY on the cleanup step.
+rm -rf node_modules
+sudo -u victorhugo --preserve-env=HOME -H npm ci --omit=dev
 
 echo "==> Building client"
 cd "$REPO_DIR/client"
-sudo -u victorhugo npm ci
-sudo -u victorhugo npm run build
+rm -rf node_modules
+sudo -u victorhugo --preserve-env=HOME -H npm ci
+sudo -u victorhugo --preserve-env=HOME -H npm run build
 
 # ----------------------------------------------------------------------
 # 5. Server .env (only write if absent — preserve any operator edits).
