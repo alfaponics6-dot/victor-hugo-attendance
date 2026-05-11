@@ -32,28 +32,6 @@ const FieldLabel = ({ htmlFor, children }) => (
   </label>
 );
 
-/* Animated gradient orb in the hero column */
-const Orb = ({ className, color, delay = 0, scale = 1 }) => (
-  <motion.div
-    aria-hidden
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{
-      opacity: [0.5, 0.85, 0.5],
-      scale: [scale * 0.95, scale * 1.05, scale * 0.95],
-      x: [0, 18, 0],
-      y: [0, -14, 0],
-    }}
-    transition={{
-      duration: 12,
-      delay,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    }}
-    className={cn('pointer-events-none absolute rounded-full blur-3xl', className)}
-    style={{ background: `radial-gradient(circle, ${color}, transparent 65%)` }}
-  />
-);
-
 /* A faint, animated sparkline — decorative only.
    Hidden on phones (the hero panel itself is hidden < lg:); rendering this
    on small screens would just be confusing fake data. Fills its container
@@ -286,25 +264,9 @@ function Login() {
             }}
             className="relative hidden lg:flex flex-col gap-6 overflow-hidden"
           >
-            {/* floating orbs */}
-            <Orb
-              className="-top-24 -left-16 size-[420px]"
-              color="color-mix(in oklch, var(--color-accent) 28%, transparent)"
-              delay={0}
-              scale={1}
-            />
-            <Orb
-              className="bottom-0 -right-10 size-[360px]"
-              color="color-mix(in oklch, var(--color-accent-2) 30%, transparent)"
-              delay={2}
-              scale={1.1}
-            />
-            <Orb
-              className="top-1/2 left-1/3 size-[260px]"
-              color="color-mix(in oklch, var(--color-accent) 18%, transparent)"
-              delay={4}
-              scale={0.9}
-            />
+            {/* Decorative accent orbs were here on the plain dark background;
+                with the bg photo behind everything they just covered up the
+                image. The photo carries the visual atmosphere now. */}
 
             <div className="relative z-10 space-y-6">
               <motion.h1
