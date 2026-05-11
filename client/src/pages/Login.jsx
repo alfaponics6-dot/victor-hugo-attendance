@@ -377,7 +377,14 @@ function Login() {
               }}
             />
 
-            <div className="relative surface rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10">
+            {/* Inline `background` overrides the `surface` utility's 88 %
+                opacity. ~62 % lets the bg photo show through more clearly
+                while keeping form text readable against the bigger
+                backdrop-blur. */}
+            <div
+              className="relative surface rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10"
+              style={{ background: 'color-mix(in oklch, var(--color-surface) 62%, transparent)' }}
+            >
               {/* Logo + heading */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
