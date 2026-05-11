@@ -92,6 +92,20 @@ fi
 # only the systemd service runs as the victorhugo user. We chown the tree
 # AFTER npm finishes, in step 4 below.
 
+# CRITICAL on the 1 GB MICRO: Vite's bundler will OOM-kill the build (and
+# can crash the whole VM, including sshd) without swap. Add 2 GB of swap
+# BEFORE running npm. Idempotent — skips if /swapfile already present.
+echo "==> Ensuring 2 GB swap exists (Vite build needs more than 1 GB physical)"
+if [ ! -f /swapfile ]; then
+  fallocate -l 2G /swapfile
+  chmod 600 /swapfile
+  mkswap /swapfile >/dev/null
+  swapon /swapfile
+  echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
+swapon --show
+free -h | head -2
+
 # ----------------------------------------------------------------------
 # 4. Build the app.
 # ----------------------------------------------------------------------
