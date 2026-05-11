@@ -39,9 +39,7 @@
       "realtime": "Tempo real",
       "secure": "Acesso seguro",
       "data": "Dados instantâneos"
-    },
-    "statLabel": "Presença acumulada",
-    "statCaption": "últimas 12 sessões"
+    }
   },
   "footer": {
     "encrypted": "Conexão criptografada · Universidade EARTH",

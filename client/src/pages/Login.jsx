@@ -54,52 +54,6 @@ const Orb = ({ className, color, delay = 0, scale = 1 }) => (
   />
 );
 
-/* A faint, animated sparkline – decorative only */
-const HeroSparkline = () => {
-  const points = useMemo(() => {
-    const seed = [0.42, 0.55, 0.48, 0.62, 0.58, 0.71, 0.66, 0.78, 0.72, 0.88, 0.83, 0.95];
-    return seed.map((y, i) => `${(i / (seed.length - 1)) * 100},${(1 - y) * 100}`).join(' ');
-  }, []);
-  return (
-    <svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className="absolute inset-x-0 bottom-10 h-28 w-full opacity-60"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="sparkFill" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="sparkLine" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="var(--color-accent)" />
-          <stop offset="100%" stopColor="var(--color-accent-2)" />
-        </linearGradient>
-      </defs>
-      <motion.polyline
-        points={points}
-        fill="none"
-        stroke="url(#sparkLine)"
-        strokeWidth="0.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 1.8, ease: [0.25, 1, 0.5, 1], delay: 0.4 }}
-        vectorEffect="non-scaling-stroke"
-      />
-      <motion.polygon
-        points={`0,100 ${points} 100,100`}
-        fill="url(#sparkFill)"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.2, delay: 1.4 }}
-      />
-    </svg>
-  );
-};
-
 /* ---------- the page --------------------------------------------------- */
 
 function Login() {
@@ -316,33 +270,6 @@ function Login() {
               </motion.div>
             </div>
 
-            {/* sparkline + label panel anchored bottom */}
-            <motion.div
-              variants={fieldVariants}
-              className="relative z-10 mt-10 surface rounded-2xl p-5 overflow-hidden"
-            >
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-[color:var(--color-fg-subtle)]">
-                    {t('hero.statLabel')}
-                  </div>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold tabular tracking-tight">
-                      94.2<span className="text-[color:var(--color-fg-subtle)] text-base">%</span>
-                    </span>
-                    <span className="text-[11px] font-medium tabular text-[color:var(--color-success)]">
-                      ▲ 2.4
-                    </span>
-                  </div>
-                </div>
-                <div className="text-[10px] font-medium tabular text-[color:var(--color-fg-subtle)]">
-                  {t('hero.statCaption')}
-                </div>
-              </div>
-              <div className="relative h-24 -mx-1">
-                <HeroSparkline />
-              </div>
-            </motion.div>
           </motion.section>
 
           {/* ===================== LOGIN CARD COLUMN ===================== */}
