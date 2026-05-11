@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "eyebrow": "Accès administrateur",
+    "title": "Panneau",
+    "titleAccent": "d'Administration",
+    "loading": "Chargement…",
+    "logoutAria": "Se déconnecter",
+    "tabs": {
+      "home": "Accueil",
+      "students": "Étudiants",
+      "stats": "Statistiques"
+    }
+  },
+  "overview": {
+    "kpi": {
+      "totalStudents": "Total étudiants",
+      "totalStudentsHint_one": "{{count}} projet actif",
+      "totalStudentsHint_other": "{{count}} projets actifs",
+      "totalProjects": "Total projets",
+      "totalProjectsHint": "Enregistrés dans le système",
+      "attendanceToday": "Présence aujourd'hui",
+      "attendanceTodayHint": "{{present}} sur {{total}} marqués",
+      "absencesToday": "Absences aujourd'hui",
+      "absencesUnjustified": "{{count}} non justifiée(s)",
+      "absencesNone": "Aucun signalement"
+    },
+    "chart": {
+      "title": "Présence · 14 derniers jours",
+      "subtitle": "Présents vs. absents par jour",
+      "present": "Présents",
+      "absent": "Absents",
+      "empty": "Pas encore d'historique"
+    },
+    "activity": {
+      "title": "Activité récente",
+      "subtitle": "Taux de présence journalier",
+      "empty": "Aucune activité à afficher.",
+      "summary": "{{present}} prés. · {{absent}} abs. · {{total}} total"
+    }
+  },
+  "students": {
+    "loadError": "Impossible de charger les étudiants.",
+    "confirmDelete": "Supprimer {{name}} ? Cette action est irréversible.",
+    "deleteSuccess": "{{name}} a été supprimé.",
+    "deleteError": "Échec de la suppression de l'étudiant.",
+    "deleteAria": "Supprimer {{name}}",
+    "search": "Rechercher par nom, identifiant, email ou projet…",
+    "filterAll": "Tous les projets",
+    "countBadge": "{{filtered}} sur {{total}}",
+    "columns": {
+      "name": "Nom",
+      "studentId": "Identifiant",
+      "email": "Email",
+      "project": "Projet",
+      "actions": "Actions"
+    },
+    "empty": "Aucun étudiant enregistré.",
+    "noResults": "Aucun résultat avec les filtres appliqués.",
+    "labels": {
+      "total": "Total"
+    },
+    "actions": {
+      "delete": "Supprimer"
+    }
+  },
+  "statistics": {
+    "eyebrow": "Télémétrie · Présence",
+    "title": "Statistiques",
+    "titleSuffix": "Générales",
+    "subtitle": "Vue complète de la présence pour tous les projets du Scénario Forestier.",
+    "loading": "Chargement des statistiques…",
+    "modes": {
+      "single": "Date unique",
+      "range": "Plage"
+    },
+    "dateLabels": {
+      "date": "Date",
+      "from": "Du",
+      "to": "Au",
+      "showingFrom": "Affichage du",
+      "showingTo": "au"
+    },
+    "history": {
+      "last7": "7 derniers jours",
+      "last14": "14 derniers jours",
+      "last30": "30 derniers jours"
+    },
+    "kpi": {
+      "totalStudents": "Total étudiants",
+      "totalStudentsHint_one": "{{count}} projet",
+      "totalStudentsHint_other": "{{count}} projets",
+      "present": "Présents",
+      "absent": "Absents",
+      "absentUnjustified": "{{count}} non justifiée(s)",
+      "absentNone": "Aucun signalement",
+      "rate": "Taux de présence",
+      "rateHint": "{{present}} / {{total}} marqués"
+    },
+    "charts": {
+      "daily": "Présence journalière",
+      "dailySubtitle": "Tendance des présents et absents sur la période",
+      "byProject": "Présence par projet",
+      "byProjectSubtitle": "Comparatif entre les projets du Scénario Forestier",
+      "distribution": "Répartition",
+      "distributionSubtitle": "État de présence aujourd'hui",
+      "present": "Présents",
+      "absent": "Absents",
+      "justified": "Justifiés",
+      "unjustified": "Non justifiés",
+      "unmarked": "Non marqués",
+      "emptyRange": "Aucune donnée dans la plage sélectionnée.",
+      "emptyProjects": "Aucun projet à afficher.",
+      "emptyDistribution": "Sélectionnez une date pour voir la répartition."
+    },
+    "tooltip": {
+      "project": "Projet n°{{number}}",
+      "total": "Total"
+    },
+    "table": {
+      "title": "Détail par projet",
+      "subtitle": "{{filtered}} sur {{total}} projets",
+      "search": "Rechercher un projet…",
+      "noResults": "Aucun projet trouvé.",
+      "noData": "Aucune donnée disponible.",
+      "columns": {
+        "projectNumber": "Projet n°",
+        "name": "Nom",
+        "students": "Étudiants",
+        "present": "Présents",
+        "absent": "Absents",
+        "rate": "Taux"
+      },
+      "mobile": {
+        "total": "Total",
+        "present": "{{count}} prés.",
+        "absent": "{{count}} abs."
+      }
+    },
+    "export": "Exporter",
+    "excel": {
+      "title": "VictorHugo - Statistiques de Présence",
+      "date": "Date :",
+      "allDates": "Toutes les dates",
+      "summarySection": "Résumé général",
+      "totalProjects": "Total de projets",
+      "totalStudents": "Total d'étudiants",
+      "present": "Présents",
+      "justified": "Absents justifiés",
+      "unjustified": "Absents non justifiés",
+      "sheetSummary": "Résumé",
+      "sheetProjects": "Projets",
+      "sheetStudents": "Étudiants",
+      "sheetHistory": "Historique",
+      "projectNumber": "Projet n°",
+      "projectName": "Nom du projet",
+      "studentsTotal": "Total étudiants",
+      "absentCol": "Absents",
+      "rateCol": "Taux de présence (%)",
+      "studentName": "Nom",
+      "studentId": "Identifiant",
+      "email": "Email",
+      "noEmail": "Sans email",
+      "status": "Statut",
+      "justification": "Justification",
+      "observation": "Observation",
+      "statusPresent": "Présent",
+      "statusAbsent": "Absent",
+      "statusUnmarked": "Non marqué",
+      "justifiedLabel": "Justifiée",
+      "unjustifiedLabel": "Non justifiée",
+      "historyDate": "Date",
+      "historyTotal": "Total marqué"
+    }
+  }
+}

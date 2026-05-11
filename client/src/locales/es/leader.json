@@ -1,0 +1,266 @@
+{
+  "dashboard": {
+    "tabs": {
+      "home": "Inicio",
+      "attendance": "Asistencia",
+      "students": "Estudiantes",
+      "statistics": "Estadísticas",
+      "mail": "Correos"
+    },
+    "title": "Panel de Control",
+    "welcome": "Bienvenida, {{name}}",
+    "projectBadge": "Proyecto #{{number}}",
+    "summary": "Resumen rápido",
+    "trend": {
+      "title": "Asistencia · últimos 14 días",
+      "subtitle": "Tasa diaria de presencia en sesiones registradas",
+      "average": "Promedio",
+      "rate": "Tasa",
+      "emptyTitle": "Aún no hay registros de asistencia en los últimos 14 días.",
+      "emptySubtitle": "La gráfica aparecerá en cuanto se marque la primera sesión."
+    }
+  },
+  "attendance": {
+    "sectionTitle": "Marcar asistencia",
+    "heading": "Sesión del día",
+    "rotation": "Rotación {{number}}",
+    "loading": "Cargando estudiantes...",
+    "noRotation": "No hay rotación activa en este momento.",
+    "noStudents": "No hay estudiantes en su lista todavía.",
+    "noRotationHint": "Puede ver las asignaciones de estudiantes en la pestaña \"Estudiantes\".",
+    "addStudentsHint": "Vaya a la pestaña \"Estudiantes\" para agregar estudiantes a su rotación.",
+    "lockedTitle": "Asistencia bloqueada.",
+    "lockedSubtitle": "Esta sesión ya fue guardada y no puede modificarse.",
+    "searchPlaceholder": "Buscar por nombre, carnet o email...",
+    "noSearchResults": "No se encontraron estudiantes que coincidan con \"{{query}}\".",
+    "quickMark": {
+      "allPresentShort": "Presentes",
+      "allPresent": "Todos presentes",
+      "allAbsentShort": "Ausentes",
+      "allAbsent": "Todos ausentes"
+    },
+    "counts": {
+      "marked": "Marcados",
+      "present": "Presentes",
+      "justified": "Justificadas",
+      "unjustified": "Injustificadas",
+      "unmarked": "Sin marcar",
+      "presentShort": "pres",
+      "absentShort": "aus",
+      "markedShort": "marcados",
+      "markedTiny": "mrk"
+    },
+    "row": {
+      "studentId": "Carnet · {{id}}",
+      "observationPlaceholder": "Observación (opcional)…",
+      "changeAttachment": "Cambiar adjunto",
+      "addAttachment": "Adjuntar archivo",
+      "viewFile": "Ver",
+      "removeFile": "Eliminar archivo"
+    },
+    "save": {
+      "saving": "Guardando...",
+      "savingShort": "Guardando…",
+      "saved": "Asistencia guardada",
+      "savedShort": "Guardada",
+      "submit": "Guardar asistencia",
+      "submitShort": "Guardar"
+    },
+    "messages": {
+      "loadPrevError": "Error al cargar asistencia previa",
+      "selectOne": "Por favor marque la asistencia de al menos un estudiante",
+      "savedSuccess": "Asistencia guardada exitosamente para {{date}}",
+      "alreadySaved": "La asistencia ya fue guardada para esta fecha. No se puede modificar.",
+      "saveError": "Error al guardar asistencia",
+      "partialSave": "Guardados {{saved}} de {{total}}. Fallaron: {{names}}. Reintente solo los adjuntos faltantes."
+    },
+    "csv": {
+      "headers": {
+        "name": "Nombre",
+        "studentId": "Carnet",
+        "email": "Email",
+        "status": "Estado",
+        "justification": "Justificación",
+        "observation": "Observación",
+        "attachment": "Adjunto",
+        "date": "Fecha",
+        "project": "Proyecto",
+        "leader": "Líder"
+      },
+      "noEmail": "Sin email",
+      "unmarked": "Sin Marcar",
+      "filenamePrefix": "asistencia"
+    }
+  },
+  "students": {
+    "sectionTitle": "Gestión de estudiantes",
+    "heading": "Lista de estudiantes",
+    "showing": "Mostrando <1>{{shown}}</1> de <2>{{total}}</2> estudiantes",
+    "currentRotationBadge": "Rotación actual",
+    "rotationLabel": "Rotación",
+    "rotationOption": "R{{n}}",
+    "rotationOptionCurrent": "R{{n}} · Actual",
+    "noRotations": "Sin rotaciones",
+    "addStudent": "Agregar estudiante",
+    "searchPlaceholder": "Buscar por nombre, carnet o email…",
+    "loading": "Cargando estudiantes...",
+    "emptyTitle": "Sin estudiantes en esta rotación",
+    "emptyHint": "Haga clic en \"Agregar estudiante\" para comenzar.",
+    "noSearchResults": "No se encontraron estudiantes que coincidan con \"<1>{{query}}</1>\".",
+    "modal": {
+      "editTitle": "Editar estudiante",
+      "addTitle": "Agregar nuevo estudiante",
+      "editDescription": "Actualice la información del estudiante.",
+      "addDescription": "Complete los datos para agregar un estudiante a la rotación.",
+      "nameRequired": "Nombre *",
+      "studentId": "Carnet",
+      "email": "Correo electrónico",
+      "update": "Actualizar",
+      "add": "Agregar"
+    },
+    "card": {
+      "noStudentId": "Sin carnet",
+      "noEmail": "Sin email",
+      "history": "Historial",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "viewHistory": "Ver historial"
+    },
+    "confirmDelete": "¿Eliminar a {{name}}?",
+    "messages": {
+      "nameRequired": "El nombre del estudiante es requerido",
+      "updated": "Estudiante actualizado exitosamente",
+      "added": "Estudiante agregado exitosamente",
+      "deleted": "Estudiante eliminado exitosamente",
+      "updateError": "Error al actualizar estudiante",
+      "addError": "Error al agregar estudiante",
+      "deleteError": "Error al eliminar estudiante",
+      "loadError": "Error al cargar estudiantes"
+    }
+  },
+  "alerts": {
+    "title": "Alertas de asistencia",
+    "subtitle": "Señales de riesgo en la rotación actual",
+    "count_one": "{{count}} alerta",
+    "count_other": "{{count}} alertas",
+    "emptyTitle": "No hay alertas en este momento",
+    "emptyHint": "Todos los estudiantes mantienen una asistencia saludable.",
+    "lowAttendance": {
+      "title": "Asistencia baja",
+      "subtitle": "< 75%",
+      "metricSub": "{{present}}/{{total}} días"
+    },
+    "consecutive": {
+      "title": "Ausencias consecutivas",
+      "subtitle": "≥ 3 días",
+      "metricSub": "días consecutivos"
+    },
+    "studentId": "Carnet · {{id}}"
+  },
+  "quickStats": {
+    "students": "Estudiantes",
+    "studentsHint": "Rotación actual",
+    "presentToday": "Presentes hoy",
+    "absentToday": "Ausentes hoy",
+    "ofTotal": "de {{n}} estudiantes",
+    "noRecords": "Sin registros",
+    "attendanceRate": "Tasa de asistencia",
+    "today": "Hoy"
+  },
+  "calendar": {
+    "subtitle": "Densidad de asistencia mensual",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "sessionDaysNote": "Mié · Sáb son días de sesión",
+    "modalTitle": "Asistencia · {{date}}",
+    "modalDescription": "Detalle de los registros del proyecto",
+    "noRecordsTitle": "No hay registros de asistencia para esta fecha",
+    "noRecordsHint": "La asistencia aún no ha sido marcada",
+    "summary": {
+      "total": "Total",
+      "present": "Presentes",
+      "justified": "Justificados",
+      "unjustified": "Injustificados"
+    },
+    "weekdays": {
+      "sunFull": "Dom",
+      "monFull": "Lun",
+      "tueFull": "Mar",
+      "wedFull": "Mié",
+      "thuFull": "Jue",
+      "friFull": "Vie",
+      "satFull": "Sáb",
+      "sunShort": "D",
+      "monShort": "L",
+      "tueShort": "M",
+      "wedShort": "X",
+      "thuShort": "J",
+      "friShort": "V",
+      "satShort": "S"
+    },
+    "rowBadge": {
+      "justifiedShort": "Justif.",
+      "unjustifiedShort": "Injust."
+    }
+  },
+  "rotation": {
+    "title": "Calendario de rotaciones",
+    "subtitle": "Cronograma del semestre",
+    "rotationLabel": "R{{n}}",
+    "currentBadge": "Actual",
+    "completedBadge": "Cerrada",
+    "upcomingBadge": "Próxima",
+    "fourSessions": "4 sesiones",
+    "nextChange_one": "Próximo: <1>R{{rotation}}</1> en <2>{{days}}</2> día",
+    "nextChange_other": "Próximo: <1>R{{rotation}}</1> en <2>{{days}}</2> días"
+  },
+  "history": {
+    "title": "Historial de asistencia",
+    "loadError": "Error al cargar historial de asistencia",
+    "noRecords": "No hay registros de asistencia para este estudiante.",
+    "totalLabel": "{{count}} total",
+    "summary": {
+      "records": "Registros",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "rate": "Tasa"
+    },
+    "monthlyTrend": "Tendencia mensual",
+    "legend": {
+      "present": "Presente",
+      "absent": "Ausente"
+    },
+    "detailedRecords": "Registros detallados",
+    "table": {
+      "date": "Fecha",
+      "project": "Proyecto",
+      "leader": "Líder",
+      "status": "Estado"
+    },
+    "leaderPrefix": "Líder · {{name}}"
+  },
+  "mail": {
+    "sectionTitle": "Correos por rotación",
+    "heading": "Enviar correo a una rotación",
+    "subtitle": "Abre tu app de correo con los estudiantes de la rotación en \"Para\" y los colaboradores en \"CC\".",
+    "rotationLabel": "Rotación",
+    "rotationOption": "Rotación {{n}}",
+    "rotationOptionCurrent": "Rotación {{n}} · Actual",
+    "rotationDates": "{{from}} – {{to}}",
+    "toLabel": "Para ({{count}})",
+    "ccLabel": "CC ({{count}})",
+    "ccAlways": "Copia fija",
+    "ccCollaborators": "Colaboradores",
+    "fromLabel": "De (cuenta del remitente)",
+    "fromHint": "Tu app de correo enviará desde la cuenta donde hayas iniciado sesión. Verifica que esté en {{email}} antes de enviar.",
+    "fromMissing": "Aún no tienes un email registrado. Pídele a una administradora que lo agregue para que tu firma sea correcta.",
+    "subjectLabel": "Asunto",
+    "subjectDefault": "Escenario Forestal · {{project}} · Rotación {{n}}",
+    "sendButton": "Abrir en mi correo",
+    "noStudents": "No hay estudiantes en esta rotación.",
+    "noEmails": "Ninguno de los estudiantes tiene email registrado todavía.",
+    "missingEmailWarning_one": "{{count}} estudiante sin email no será incluido.",
+    "missingEmailWarning_other": "{{count}} estudiantes sin email no serán incluidos.",
+    "loading": "Cargando…"
+  }
+}

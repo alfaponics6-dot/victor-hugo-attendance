@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Plataforma de Presença Digital",
+    "tagline": "Cenário Florestal 2026",
+    "university": "Universidade EARTH"
+  },
+  "actions": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "add": "Adicionar",
+    "update": "Atualizar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "continue": "Continuar",
+    "retry": "Tentar novamente",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "clear": "Limpar",
+    "export": "Exportar",
+    "exportCsv": "Exportar CSV",
+    "download": "Baixar",
+    "print": "Imprimir",
+    "refresh": "Atualizar",
+    "logout": "Sair",
+    "login": "Entrar",
+    "viewHistory": "Ver histórico",
+    "viewAll": "Ver todos",
+    "loading": "Carregando…",
+    "saving": "Salvando…",
+    "confirm": "Confirmar"
+  },
+  "status": {
+    "present": "Presente",
+    "absent": "Ausente",
+    "unmarked": "Sem marcar",
+    "justified": "Justificada",
+    "unjustified": "Injustificada"
+  },
+  "labels": {
+    "date": "Data",
+    "time": "Hora",
+    "name": "Nome",
+    "email": "E-mail",
+    "studentId": "Matrícula",
+    "project": "Projeto",
+    "leader": "Líder",
+    "rotation": "Rotação",
+    "currentRotation": "Rotação atual",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "allDates": "Todas as datas",
+    "observation": "Observação",
+    "justification": "Justificativa",
+    "attachment": "Anexo",
+    "actions": "Ações",
+    "status": "Status",
+    "country": "País",
+    "total": "Total",
+    "students": "Estudantes",
+    "leaders": "Líderes",
+    "projects": "Projetos",
+    "rate": "Taxa",
+    "attendanceRate": "Taxa de presença",
+    "noData": "Sem dados"
+  },
+  "roles": {
+    "admin": "Administradora",
+    "profesor": "Professor",
+    "leader": "Líder"
+  },
+  "errors": {
+    "generic": "Ocorreu um erro. Por favor, tente novamente.",
+    "network": "Erro de rede. Verifique sua conexão.",
+    "loadFailed": "Falha ao carregar os dados.",
+    "saveFailed": "Falha ao salvar.",
+    "deleteFailed": "Falha ao excluir.",
+    "alreadySubmitted": "A presença já foi salva e não pode ser modificada.",
+    "fileType": "Tipo de arquivo inválido. Apenas PNG, JPG, JPEG e PDF são permitidos.",
+    "fileSize": "O arquivo excede o tamanho máximo de 5 MB."
+  },
+  "messages": {
+    "saved": "Alterações salvas com sucesso.",
+    "deleted": "Excluído com sucesso.",
+    "added": "Adicionado com sucesso.",
+    "updated": "Atualizado com sucesso."
+  },
+  "errorBoundary": {
+    "title": "Algo deu errado!",
+    "description": "Desculpe, ocorreu um erro inesperado.",
+    "detailsSummary": "Detalhes do erro (somente em desenvolvimento)",
+    "tryAgain": "Tentar novamente",
+    "backHome": "Voltar ao início"
+  },
+  "language": {
+    "switch": "Alterar idioma",
+    "selected": "Idioma atual"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Plateforme de présence numérique",
+    "tagline": "Scénario Forestier 2026",
+    "university": "Université EARTH"
+  },
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "update": "Mettre à jour",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "continue": "Continuer",
+    "retry": "Réessayer",
+    "submit": "Envoyer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "clear": "Effacer",
+    "export": "Exporter",
+    "exportCsv": "Exporter CSV",
+    "download": "Télécharger",
+    "print": "Imprimer",
+    "refresh": "Actualiser",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "viewHistory": "Voir l'historique",
+    "viewAll": "Voir tout",
+    "loading": "Chargement…",
+    "saving": "Enregistrement…",
+    "confirm": "Confirmer"
+  },
+  "status": {
+    "present": "Présent",
+    "absent": "Absent",
+    "unmarked": "Non marqué",
+    "justified": "Justifiée",
+    "unjustified": "Injustifiée"
+  },
+  "labels": {
+    "date": "Date",
+    "time": "Heure",
+    "name": "Nom",
+    "email": "Courriel",
+    "studentId": "Matricule",
+    "project": "Projet",
+    "leader": "Responsable",
+    "rotation": "Rotation",
+    "currentRotation": "Rotation actuelle",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "allDates": "Toutes les dates",
+    "observation": "Observation",
+    "justification": "Justification",
+    "attachment": "Pièce jointe",
+    "actions": "Actions",
+    "status": "Statut",
+    "country": "Pays",
+    "total": "Total",
+    "students": "Étudiants",
+    "leaders": "Responsables",
+    "projects": "Projets",
+    "rate": "Taux",
+    "attendanceRate": "Taux de présence",
+    "noData": "Aucune donnée"
+  },
+  "roles": {
+    "admin": "Administratrice",
+    "profesor": "Professeur",
+    "leader": "Responsable"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "network": "Erreur réseau. Vérifiez votre connexion.",
+    "loadFailed": "Impossible de charger les données.",
+    "saveFailed": "Échec de l'enregistrement.",
+    "deleteFailed": "Échec de la suppression.",
+    "alreadySubmitted": "La présence a déjà été enregistrée et ne peut pas être modifiée.",
+    "fileType": "Type de fichier invalide. Seuls PNG, JPG, JPEG et PDF sont acceptés.",
+    "fileSize": "Le fichier dépasse la taille maximale de 5 Mo."
+  },
+  "messages": {
+    "saved": "Modifications enregistrées.",
+    "deleted": "Supprimé avec succès.",
+    "added": "Ajouté avec succès.",
+    "updated": "Mis à jour avec succès."
+  },
+  "errorBoundary": {
+    "title": "Une erreur est survenue !",
+    "description": "Désolé, une erreur inattendue s'est produite.",
+    "detailsSummary": "Détails de l'erreur (visible uniquement en développement)",
+    "tryAgain": "Réessayer",
+    "backHome": "Retour à l'accueil"
+  },
+  "language": {
+    "switch": "Changer de langue",
+    "selected": "Langue actuelle"
+  }
+}

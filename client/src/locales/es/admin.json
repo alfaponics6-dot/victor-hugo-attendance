@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "eyebrow": "Acceso administrador",
+    "title": "Panel de",
+    "titleAccent": "Administración",
+    "loading": "Cargando…",
+    "logoutAria": "Cerrar sesión",
+    "tabs": {
+      "home": "Inicio",
+      "students": "Estudiantes",
+      "stats": "Estadísticas"
+    }
+  },
+  "overview": {
+    "kpi": {
+      "totalStudents": "Total estudiantes",
+      "totalStudentsHint_one": "{{count}} proyecto activo",
+      "totalStudentsHint_other": "{{count}} proyectos activos",
+      "totalProjects": "Total proyectos",
+      "totalProjectsHint": "Inscritos en el sistema",
+      "attendanceToday": "Asistencia hoy",
+      "attendanceTodayHint": "{{present}} de {{total}} marcados",
+      "absencesToday": "Ausencias hoy",
+      "absencesUnjustified": "{{count}} sin justificar",
+      "absencesNone": "Sin reportes"
+    },
+    "chart": {
+      "title": "Asistencia · últimos 14 días",
+      "subtitle": "Presentes vs. ausentes por día",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "empty": "No hay historial todavía"
+    },
+    "activity": {
+      "title": "Actividad reciente",
+      "subtitle": "Tasa diaria de asistencia",
+      "empty": "No hay actividad para mostrar.",
+      "summary": "{{present}} pres. · {{absent}} aus. · {{total}} total"
+    }
+  },
+  "students": {
+    "loadError": "No se pudieron cargar los estudiantes.",
+    "confirmDelete": "¿Eliminar a {{name}}? Esta acción no se puede deshacer.",
+    "deleteSuccess": "{{name}} fue eliminado.",
+    "deleteError": "Error al eliminar estudiante.",
+    "deleteAria": "Eliminar {{name}}",
+    "search": "Buscar por nombre, carnet, email o proyecto…",
+    "filterAll": "Todos los proyectos",
+    "countBadge": "{{filtered}} de {{total}}",
+    "columns": {
+      "name": "Nombre",
+      "studentId": "Carnet",
+      "email": "Email",
+      "project": "Proyecto",
+      "actions": "Acciones"
+    },
+    "empty": "No hay estudiantes registrados.",
+    "noResults": "No se encontraron resultados con los filtros aplicados.",
+    "labels": {
+      "total": "Total"
+    },
+    "actions": {
+      "delete": "Eliminar"
+    }
+  },
+  "statistics": {
+    "eyebrow": "Telemetría · Asistencia",
+    "title": "Estadísticas",
+    "titleSuffix": "Generales",
+    "subtitle": "Vista completa de asistencia para todos los proyectos del Escenario Forestal.",
+    "loading": "Cargando estadísticas…",
+    "modes": {
+      "single": "Fecha única",
+      "range": "Rango"
+    },
+    "dateLabels": {
+      "date": "Fecha",
+      "from": "Desde",
+      "to": "Hasta",
+      "showingFrom": "Mostrando del",
+      "showingTo": "al"
+    },
+    "history": {
+      "last7": "Últimos 7 días",
+      "last14": "Últimos 14 días",
+      "last30": "Últimos 30 días"
+    },
+    "kpi": {
+      "totalStudents": "Total estudiantes",
+      "totalStudentsHint_one": "{{count}} proyecto",
+      "totalStudentsHint_other": "{{count}} proyectos",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "absentUnjustified": "{{count}} sin justificar",
+      "absentNone": "Sin reportes",
+      "rate": "Tasa de asistencia",
+      "rateHint": "{{present}} / {{total}} marcados"
+    },
+    "charts": {
+      "daily": "Asistencia diaria",
+      "dailySubtitle": "Tendencia de presentes y ausentes a lo largo del periodo",
+      "byProject": "Asistencia por proyecto",
+      "byProjectSubtitle": "Comparativa entre los proyectos del Escenario Forestal",
+      "distribution": "Distribución",
+      "distributionSubtitle": "Estado de asistencia hoy",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "justified": "Justificados",
+      "unjustified": "Injustificados",
+      "unmarked": "Sin marcar",
+      "emptyRange": "No hay datos en el rango seleccionado.",
+      "emptyProjects": "No hay proyectos para mostrar.",
+      "emptyDistribution": "Selecciona una fecha para ver la distribución."
+    },
+    "tooltip": {
+      "project": "Proyecto #{{number}}",
+      "total": "Total"
+    },
+    "table": {
+      "title": "Desglose por proyecto",
+      "subtitle": "{{filtered}} de {{total}} proyectos",
+      "search": "Buscar proyecto…",
+      "noResults": "No se encontraron proyectos.",
+      "noData": "No hay datos disponibles.",
+      "columns": {
+        "projectNumber": "Proyecto #",
+        "name": "Nombre",
+        "students": "Estudiantes",
+        "present": "Presentes",
+        "absent": "Ausentes",
+        "rate": "Tasa"
+      },
+      "mobile": {
+        "total": "Total",
+        "present": "{{count}} pres.",
+        "absent": "{{count}} aus."
+      }
+    },
+    "export": "Exportar",
+    "excel": {
+      "title": "VictorHugo - Estadísticas de Asistencia",
+      "date": "Fecha:",
+      "allDates": "Todas las fechas",
+      "summarySection": "Resumen General",
+      "totalProjects": "Total de Proyectos",
+      "totalStudents": "Total de Estudiantes",
+      "present": "Presentes",
+      "justified": "Ausentes Justificados",
+      "unjustified": "Ausentes Injustificados",
+      "sheetSummary": "Resumen",
+      "sheetProjects": "Proyectos",
+      "sheetStudents": "Estudiantes",
+      "sheetHistory": "Historial",
+      "projectNumber": "Proyecto #",
+      "projectName": "Nombre del Proyecto",
+      "studentsTotal": "Total Estudiantes",
+      "absentCol": "Ausentes",
+      "rateCol": "Tasa de Asistencia (%)",
+      "studentName": "Nombre",
+      "studentId": "Carnet",
+      "email": "Email",
+      "noEmail": "Sin email",
+      "status": "Estado",
+      "justification": "Justificación",
+      "observation": "Observación",
+      "statusPresent": "Presente",
+      "statusAbsent": "Ausente",
+      "statusUnmarked": "Sin Marcar",
+      "justifiedLabel": "Justificada",
+      "unjustifiedLabel": "Injustificada",
+      "historyDate": "Fecha",
+      "historyTotal": "Total Marcado"
+    }
+  }
+}

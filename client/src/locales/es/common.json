@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Plataforma de Asistencia Digital",
+    "tagline": "Escenario Forestal 2026",
+    "university": "Universidad EARTH"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "update": "Actualizar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "continue": "Continuar",
+    "retry": "Reintentar",
+    "submit": "Enviar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "clear": "Limpiar",
+    "export": "Exportar",
+    "exportCsv": "Exportar CSV",
+    "download": "Descargar",
+    "print": "Imprimir",
+    "refresh": "Actualizar",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión",
+    "viewHistory": "Ver historial",
+    "viewAll": "Ver todos",
+    "loading": "Cargando…",
+    "saving": "Guardando…",
+    "confirm": "Confirmar"
+  },
+  "status": {
+    "present": "Presente",
+    "absent": "Ausente",
+    "unmarked": "Sin marcar",
+    "justified": "Justificada",
+    "unjustified": "Injustificada"
+  },
+  "labels": {
+    "date": "Fecha",
+    "time": "Hora",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "studentId": "Carnet",
+    "project": "Proyecto",
+    "leader": "Líder",
+    "rotation": "Rotación",
+    "currentRotation": "Rotación actual",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "allDates": "Todas las fechas",
+    "observation": "Observación",
+    "justification": "Justificación",
+    "attachment": "Adjunto",
+    "actions": "Acciones",
+    "status": "Estado",
+    "country": "País",
+    "total": "Total",
+    "students": "Estudiantes",
+    "leaders": "Líderes",
+    "projects": "Proyectos",
+    "rate": "Tasa",
+    "attendanceRate": "Tasa de asistencia",
+    "noData": "Sin datos"
+  },
+  "roles": {
+    "admin": "Administradora",
+    "profesor": "Profesor",
+    "leader": "Líder"
+  },
+  "errors": {
+    "generic": "Ocurrió un error. Por favor intente de nuevo.",
+    "network": "Error de red. Verifique su conexión.",
+    "loadFailed": "Error al cargar los datos.",
+    "saveFailed": "Error al guardar.",
+    "deleteFailed": "Error al eliminar.",
+    "alreadySubmitted": "Esta asistencia ya fue guardada y no se puede modificar.",
+    "fileType": "Tipo de archivo no válido. Solo se permiten PNG, JPG, JPEG y PDF.",
+    "fileSize": "El archivo excede el tamaño máximo permitido de 5MB."
+  },
+  "messages": {
+    "saved": "Cambios guardados correctamente.",
+    "deleted": "Eliminado correctamente.",
+    "added": "Agregado correctamente.",
+    "updated": "Actualizado correctamente."
+  },
+  "errorBoundary": {
+    "title": "¡Algo salió mal!",
+    "description": "Lo sentimos, ha ocurrido un error inesperado.",
+    "detailsSummary": "Detalles del error (solo visible en desarrollo)",
+    "tryAgain": "Intentar de nuevo",
+    "backHome": "Volver al inicio"
+  },
+  "language": {
+    "switch": "Cambiar idioma",
+    "selected": "Idioma actual"
+  }
+}

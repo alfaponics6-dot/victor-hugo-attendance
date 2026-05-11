@@ -1,0 +1,657 @@
+\documentclass[11pt,a4paper]{article}
+
+% ============================================
+% PACKAGES
+% ============================================
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+
+% ============================================
+% COLORS
+% ============================================
+\definecolor{primarygreen}{HTML}{2E7D32}
+\definecolor{lightgreen}{HTML}{E8F5E9}
+\definecolor{darkgreen}{HTML}{1B5E20}
+\definecolor{accentblue}{HTML}{1976D2}
+\definecolor{warningyellow}{HTML}{F9A825}
+\definecolor{errorred}{HTML}{D32F2F}
+\definecolor{graytext}{HTML}{616161}
+\definecolor{lightgray}{HTML}{F5F5F5}
+
+% ============================================
+% TCOLORBOX STYLES
+% ============================================
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{infobox}{
+  colback=lightgreen,
+  colframe=primarygreen,
+  boxrule=1pt,
+  arc=4pt,
+  left=10pt,
+  right=10pt,
+  top=8pt,
+  bottom=8pt
+}
+
+\newtcolorbox{warningbox}{
+  colback=yellow!10,
+  colframe=warningyellow,
+  boxrule=1pt,
+  arc=4pt,
+  left=10pt,
+  right=10pt,
+  top=8pt,
+  bottom=8pt
+}
+
+\newtcolorbox{tipbox}{
+  colback=blue!5,
+  colframe=accentblue,
+  boxrule=1pt,
+  arc=4pt,
+  left=10pt,
+  right=10pt,
+  top=8pt,
+  bottom=8pt
+}
+
+% ============================================
+% HEADER AND FOOTER
+% ============================================
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{graytext}{\small Manual de Usuario - Líderes}}
+\fancyhead[R]{\textcolor{graytext}{\small Escenario Forestal 2026}}
+\fancyfoot[C]{\textcolor{graytext}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ============================================
+% SECTION STYLING
+% ============================================
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primarygreen}}
+  {\thesection}{1em}{}[\titlerule]
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{darkgreen}}
+  {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{accentblue}}
+  {\thesubsubsection}{1em}{}
+
+% ============================================
+% HYPERREF SETUP
+% ============================================
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primarygreen,
+  urlcolor=accentblue,
+  pdftitle={Manual de Usuario - Plataforma de Asistencia Digital},
+  pdfauthor={Universidad EARTH}
+}
+
+% ============================================
+% DOCUMENT
+% ============================================
+\begin{document}
+
+% ============================================
+% COVER PAGE
+% ============================================
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+
+  \includegraphics[width=5cm]{logo.png}
+
+  \vspace{1.5cm}
+
+  {\Huge\bfseries\color{primarygreen} Plataforma de Asistencia Digital\par}
+
+  \vspace{0.5cm}
+
+  {\LARGE\color{darkgreen} Escenario Forestal 2026\par}
+
+  \vspace{2cm}
+
+  \begin{tikzpicture}
+    \fill[lightgreen,rounded corners=10pt] (-6,-1.5) rectangle (6,1.5);
+    \node[font=\Large\bfseries,color=darkgreen] at (0,0.5) {MANUAL DE USUARIO};
+    \node[font=\large,color=graytext] at (0,-0.5) {Guía Completa para Líderes de Proyecto};
+  \end{tikzpicture}
+
+  \vfill
+
+  {\large\color{graytext} Universidad EARTH\par}
+  {\color{graytext} Febrero 2026\par}
+
+  \vspace{1cm}
+
+  {\small\color{graytext} Versión 1.0\par}
+\end{titlepage}
+
+% ============================================
+% TABLE OF CONTENTS
+% ============================================
+\tableofcontents
+\newpage
+
+% ============================================
+% INTRODUCTION
+% ============================================
+\section{Introducción}
+
+Bienvenido a la \textbf{Plataforma de Asistencia Digital} del Escenario Forestal 2026 de la Universidad EARTH. Este manual le guiará paso a paso en el uso de todas las funcionalidades disponibles para los líderes de proyecto.
+
+\subsection{¿Qué es esta plataforma?}
+
+La Plataforma de Asistencia Digital es una herramienta web diseñada para facilitar el registro y seguimiento de la asistencia de los estudiantes durante las rotaciones del Escenario Forestal. Como líder de proyecto, usted podrá:
+
+\begin{itemize}
+  \item Marcar la asistencia de los estudiantes asignados a su proyecto
+  \item Registrar justificaciones para ausencias
+  \item Agregar observaciones y documentos de soporte
+  \item Visualizar estadísticas de asistencia
+  \item Gestionar la lista de estudiantes de su proyecto
+  \item Consultar el calendario de rotaciones
+\end{itemize}
+
+\subsection{Requisitos del Sistema}
+
+\begin{itemize}
+  \item Navegador web moderno (Chrome, Firefox, Safari o Edge)
+  \item Conexión a internet estable
+  \item Dispositivo con pantalla (computadora, tablet o smartphone)
+\end{itemize}
+
+\begin{infobox}
+\textbf{Información:} La plataforma está optimizada para funcionar en cualquier dispositivo. Sin embargo, recomendamos usar una computadora o tablet para una mejor experiencia al marcar asistencia.
+\end{infobox}
+
+% ============================================
+% LOGIN
+% ============================================
+\section{Inicio de Sesión}
+
+\subsection{Acceso a la Plataforma}
+
+Para acceder a la plataforma, siga estos pasos:
+
+\textbf{Paso 1:} Abra su navegador web y vaya a la dirección proporcionada por el administrador del sistema.
+
+\textbf{Paso 2:} En la pantalla de inicio de sesión, verá el logo de la Universidad EARTH y un menú desplegable con la lista de líderes.
+
+\textbf{Paso 3:} Haga clic en el menú desplegable ``Seleccione su nombre'' y busque su nombre en la lista.
+
+\textbf{Paso 4:} Seleccione su nombre. Automáticamente se mostrará el proyecto al que está asignado.
+
+\textbf{Paso 5:} Haga clic en el botón ``Continuar'' para acceder al panel de control.
+
+\begin{warningbox}
+\textbf{Importante:} No comparta sus credenciales de acceso con otras personas. Cada líder tiene acceso únicamente a su proyecto asignado.
+\end{warningbox}
+
+% ============================================
+% DASHBOARD
+% ============================================
+\section{Panel de Control (Dashboard)}
+
+Una vez que inicie sesión, accederá al Panel de Control. Este es el centro de operaciones donde podrá acceder a todas las funcionalidades de la plataforma.
+
+\subsection{Estructura del Panel}
+
+El panel de control está organizado en las siguientes secciones:
+
+\subsubsection{Encabezado}
+En la parte superior encontrará:
+\begin{itemize}
+  \item Logo de la Universidad EARTH
+  \item Nombre de su proyecto
+  \item Su nombre como líder
+  \item Botón de ``Cerrar Sesión''
+\end{itemize}
+
+\subsubsection{Pestañas de Navegación}
+Debajo del encabezado encontrará cuatro pestañas principales:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Pestaña} & \textbf{Descripción} \\
+\midrule
+Inicio & Vista general con calendario y alertas \\
+Marcar Asistencia & Registro de asistencia diaria \\
+Gestionar Estudiantes & Administración de estudiantes \\
+Estadísticas & Reportes y métricas de asistencia \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Pestaña de Inicio}
+
+La pestaña de Inicio muestra:
+
+\begin{itemize}
+  \item \textbf{Estadísticas Rápidas}: Resumen de asistencia del día
+  \item \textbf{Alertas}: Notificaciones importantes sobre estudiantes con baja asistencia o ausencias consecutivas
+  \item \textbf{Calendario de Asistencia}: Vista mensual con indicadores de asistencia por día
+\end{itemize}
+
+\begin{tipbox}
+\textbf{Consejo:} El calendario muestra colores diferentes según el porcentaje de asistencia:
+\begin{itemize}
+  \item \textcolor{primarygreen}{\textbf{Verde}}: 80\% o más de asistencia
+  \item \textcolor{warningyellow}{\textbf{Amarillo}}: Entre 50\% y 79\% de asistencia
+  \item \textcolor{errorred}{\textbf{Rojo}}: Menos del 50\% de asistencia
+\end{itemize}
+\end{tipbox}
+
+% ============================================
+% ATTENDANCE
+% ============================================
+\section{Marcar Asistencia}
+
+Esta es la función principal de la plataforma. Aquí registrará la asistencia de los estudiantes asignados a su proyecto.
+
+\subsection{Acceder a la Función}
+
+Haga clic en la pestaña ``Marcar Asistencia'' en el menú de navegación.
+
+\subsection{Seleccionar la Fecha}
+
+\textbf{Paso 1:} En la parte superior derecha, encontrará un selector de fecha con un icono de calendario.
+
+\textbf{Paso 2:} Por defecto, se muestra la fecha actual. Para cambiar la fecha, haga clic en el campo y seleccione la fecha deseada.
+
+\begin{warningbox}
+\textbf{Importante:} Solo puede marcar asistencia para la fecha actual o fechas anteriores. No es posible registrar asistencia para fechas futuras.
+\end{warningbox}
+
+\begin{warningbox}
+\textbf{MUY IMPORTANTE:} Una vez que guarde la asistencia para una fecha, \textbf{no podrá modificarla}. Asegúrese de verificar todos los registros antes de guardar.
+\end{warningbox}
+
+\subsection{Calendario de Rotaciones}
+
+En la parte superior de la pantalla de asistencia, verá el \textbf{Calendario de Rotaciones} que muestra:
+
+\begin{itemize}
+  \item Las rotaciones programadas (R1, R2, R3, etc.)
+  \item Las fechas de inicio y fin de cada rotación
+  \item La rotación activa actualmente (marcada como ``Actual'')
+  \item Cuántos días faltan para el próximo cambio de rotación
+\end{itemize}
+
+\subsection{Lista de Estudiantes}
+
+Debajo del calendario, verá la tabla con todos los estudiantes asignados a su proyecto en la rotación actual. La tabla incluye:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+\toprule
+\textbf{Columna} & \textbf{Descripción} \\
+\midrule
+Nombre del Estudiante & Nombre completo del estudiante \\
+Carnet & Número de identificación estudiantil \\
+Email & Correo electrónico del estudiante \\
+Estado & Botones para marcar Presente o Ausente \\
+Justificación & Opciones de justificación (solo para ausentes) \\
+Observación & Campo de texto para notas adicionales \\
+Adjunto & Opción para subir documentos de soporte \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Marcar Estado de Asistencia}
+
+Para cada estudiante, debe seleccionar uno de los siguientes estados:
+
+\subsubsection{Presente}
+\begin{itemize}
+  \item Haga clic en el botón verde ``Presente''
+  \item El botón se resaltará indicando la selección
+  \item No se requiere información adicional
+\end{itemize}
+
+\subsubsection{Ausente}
+\begin{itemize}
+  \item Haga clic en el botón rojo ``Ausente''
+  \item Al seleccionar ``Ausente'', aparecerán opciones adicionales:
+    \begin{itemize}
+      \item \textbf{Justificación}: Seleccione ``Justificada'' o ``Injustificada''
+      \item \textbf{Observación}: Campo de texto para detalles adicionales
+      \item \textbf{Adjunto}: Botón para subir documentos de soporte
+    \end{itemize}
+\end{itemize}
+
+\begin{tipbox}
+\textbf{Consejo:} Use el campo de observación para registrar detalles importantes como:
+\begin{itemize}
+  \item Motivo de la ausencia
+  \item Acuerdos con el estudiante
+  \item Cualquier información relevante para el seguimiento
+\end{itemize}
+\end{tipbox}
+
+\subsection{Acciones Rápidas}
+
+Para facilitar el registro cuando todos o la mayoría de estudiantes tienen el mismo estado, puede usar los botones de acción rápida:
+
+\begin{itemize}
+  \item \textbf{``Marcar Todos Presentes''}: Marca a todos los estudiantes como presentes
+  \item \textbf{``Marcar Todos Ausentes''}: Marca a todos los estudiantes como ausentes
+\end{itemize}
+
+\begin{infobox}
+\textbf{Información:} Después de usar una acción rápida, puede modificar individualmente el estado de cualquier estudiante.
+\end{infobox}
+
+\subsection{Adjuntar Documentos}
+
+Para agregar un documento de soporte (por ejemplo, un justificante médico):
+
+\textbf{Paso 1:} Haga clic en el icono de clip en la columna ``Adjunto'' del estudiante.
+
+\textbf{Paso 2:} Seleccione el archivo desde su dispositivo. Formatos aceptados:
+\begin{itemize}
+  \item Imágenes: JPG, PNG, GIF
+  \item Documentos: PDF
+\end{itemize}
+
+\textbf{Paso 3:} El nombre del archivo aparecerá junto al icono indicando que se ha adjuntado correctamente.
+
+\begin{warningbox}
+\textbf{Importante:} El tamaño máximo de archivo es de 5 MB. Si necesita adjuntar un archivo más grande, comprímalo primero o contacte al administrador.
+\end{warningbox}
+
+\subsection{Guardar la Asistencia}
+
+Una vez que haya marcado el estado de todos los estudiantes:
+
+\textbf{Paso 1:} Revise cuidadosamente todos los registros.
+
+\textbf{Paso 2:} Haga clic en el botón verde ``Guardar Asistencia'' ubicado al final de la página.
+
+\textbf{Paso 3:} Espere la confirmación. Aparecerá un mensaje indicando que la asistencia se guardó exitosamente.
+
+\begin{warningbox}
+\textbf{RECUERDE:} La asistencia solo puede guardarse una vez por fecha. Después de guardar, el botón se deshabilitará y mostrará ``Asistencia Guardada''.
+\end{warningbox}
+
+\subsection{Exportar a CSV}
+
+Puede exportar los registros de asistencia a un archivo CSV para uso en Excel:
+
+\begin{itemize}
+  \item Haga clic en el botón ``Exportar a CSV''
+  \item Se descargará un archivo con todos los datos de asistencia de la fecha seleccionada
+\end{itemize}
+
+% ============================================
+% STUDENT MANAGEMENT
+% ============================================
+\section{Gestionar Estudiantes}
+
+En esta sección puede ver y administrar la lista de estudiantes asignados a su proyecto.
+
+\subsection{Acceder a la Función}
+
+Haga clic en la pestaña ``Gestionar Estudiantes'' en el menú de navegación.
+
+\subsection{Lista de Estudiantes}
+
+Verá una tabla con todos los estudiantes asignados a su proyecto, incluyendo:
+
+\begin{itemize}
+  \item Nombre completo
+  \item Número de carnet
+  \item Correo electrónico
+  \item Botón para ver historial de asistencia
+\end{itemize}
+
+\subsection{Ver Historial de Asistencia}
+
+Para ver el historial completo de asistencia de un estudiante:
+
+\textbf{Paso 1:} Localice al estudiante en la lista.
+
+\textbf{Paso 2:} Haga clic en el botón ``Ver Historial'' o en el icono de historial.
+
+\textbf{Paso 3:} Se abrirá una ventana modal mostrando:
+\begin{itemize}
+  \item Resumen de asistencia (total de registros, presentes, ausentes)
+  \item Tasa de asistencia en porcentaje
+  \item Lista detallada de cada registro con fecha, proyecto y estado
+\end{itemize}
+
+\begin{tipbox}
+\textbf{Consejo:} Use el historial para identificar patrones de ausencia y dar seguimiento personalizado a los estudiantes que lo necesiten.
+\end{tipbox}
+
+% ============================================
+% STATISTICS
+% ============================================
+\section{Estadísticas}
+
+La sección de estadísticas le permite visualizar datos agregados sobre la asistencia de su proyecto.
+
+\subsection{Acceder a la Función}
+
+Haga clic en la pestaña ``Estadísticas'' en el menú de navegación.
+
+\subsection{Información Disponible}
+
+En esta sección encontrará:
+
+\subsubsection{Resumen General}
+\begin{itemize}
+  \item Total de estudiantes en el proyecto
+  \item Número de presentes y ausentes
+  \item Porcentaje de asistencia
+\end{itemize}
+
+\subsubsection{Gráficos}
+\begin{itemize}
+  \item Gráfico de barras con asistencia por fecha
+  \item Distribución de presentes vs ausentes
+\end{itemize}
+
+\subsubsection{Filtros}
+\begin{itemize}
+  \item Selección de fecha específica
+  \item Rango de fechas para análisis histórico
+\end{itemize}
+
+\begin{infobox}
+\textbf{Información:} Las estadísticas se actualizan automáticamente cada vez que se registra nueva asistencia.
+\end{infobox}
+
+% ============================================
+% CALENDAR
+% ============================================
+\section{Calendario de Rotaciones}
+
+El sistema de rotaciones es fundamental para el Escenario Forestal. A continuación se explica cómo funciona:
+
+\subsection{¿Qué son las Rotaciones?}
+
+Las rotaciones son períodos de tiempo durante los cuales los estudiantes trabajan en proyectos específicos. Cada rotación tiene:
+
+\begin{itemize}
+  \item Un número identificador (R1, R2, R3, etc.)
+  \item Una fecha de inicio
+  \item Una fecha de fin
+  \item Un número de sesiones (generalmente 3-4)
+\end{itemize}
+
+\subsection{Días de Asistencia}
+
+La asistencia se registra únicamente los días de sesión:
+
+\begin{itemize}
+  \item \textbf{Miércoles}: Sesiones regulares
+  \item \textbf{Sábados}: Sesiones regulares
+\end{itemize}
+
+\begin{infobox}
+\textbf{Información:} En el calendario, los días que no son miércoles o sábado aparecen deshabilitados y no se puede marcar asistencia para esos días.
+\end{infobox}
+
+\subsection{Visualización del Calendario}
+
+El calendario muestra:
+
+\begin{itemize}
+  \item Vista mensual con todos los días
+  \item Indicadores de color según porcentaje de asistencia
+  \item Conteo de presentes y ausentes por día
+  \item Día actual resaltado
+\end{itemize}
+
+Para ver los detalles de asistencia de un día específico:
+\begin{enumerate}
+  \item Haga clic en un día del calendario (miércoles o sábado)
+  \item Se abrirá una ventana con el detalle de asistencia de ese día
+  \item Podrá ver qué estudiantes estuvieron presentes o ausentes
+\end{enumerate}
+
+% ============================================
+% TROUBLESHOOTING
+% ============================================
+\section{Solución de Problemas}
+
+\subsection{Problemas Comunes}
+
+\subsubsection{No puedo iniciar sesión}
+\begin{itemize}
+  \item Verifique que está seleccionando el nombre correcto
+  \item Actualice la página e intente nuevamente
+  \item Contacte al administrador si el problema persiste
+\end{itemize}
+
+\subsubsection{No veo estudiantes en la lista}
+\begin{itemize}
+  \item Verifique que hay una rotación activa para la fecha seleccionada
+  \item Los estudiantes aparecen según la rotación vigente
+  \item Contacte al administrador si la lista debería tener estudiantes
+\end{itemize}
+
+\subsubsection{No puedo guardar la asistencia}
+\begin{itemize}
+  \item Verifique que ha marcado al menos un estudiante
+  \item Si el botón dice ``Asistencia Guardada'', ya se registró para esa fecha
+  \item Verifique su conexión a internet
+\end{itemize}
+
+\subsubsection{El archivo adjunto no se sube}
+\begin{itemize}
+  \item Verifique que el archivo es JPG, PNG, GIF o PDF
+  \item Verifique que el archivo no excede 5 MB
+  \item Intente con un archivo diferente
+\end{itemize}
+
+\subsection{Contacto de Soporte}
+
+Si experimenta problemas técnicos que no puede resolver:
+
+\begin{center}
+\begin{tcolorbox}[colback=lightgreen,colframe=primarygreen,width=10cm]
+\centering
+\textbf{Soporte Técnico}\\[5pt]
+Email: cchery@earth.ac.cr\\[3pt]
+Desarrollador: Carly Chery
+\end{tcolorbox}
+\end{center}
+
+% ============================================
+% BEST PRACTICES
+% ============================================
+\section{Mejores Prácticas}
+
+Para aprovechar al máximo la plataforma, siga estas recomendaciones:
+
+\subsection{Registro de Asistencia}
+
+\begin{enumerate}
+  \item \textbf{Registre la asistencia el mismo día}: Evite dejar el registro para después
+  \item \textbf{Verifique antes de guardar}: Recuerde que no puede modificar después
+  \item \textbf{Sea consistente}: Marque la asistencia a la misma hora cada sesión
+  \item \textbf{Documente las ausencias}: Use el campo de observación para registrar motivos
+\end{enumerate}
+
+\subsection{Seguimiento de Estudiantes}
+
+\begin{enumerate}
+  \item \textbf{Revise las alertas regularmente}: El sistema le notificará sobre estudiantes con problemas de asistencia
+  \item \textbf{Use el historial}: Consulte el historial para identificar patrones
+  \item \textbf{Comuníquese proactivamente}: Contacte a estudiantes con ausencias frecuentes
+\end{enumerate}
+
+\subsection{Seguridad}
+
+\begin{enumerate}
+  \item \textbf{Cierre sesión al terminar}: Especialmente en dispositivos compartidos
+  \item \textbf{No comparta su acceso}: Cada líder debe usar su propia cuenta
+  \item \textbf{Reporte actividades sospechosas}: Contacte al administrador si nota algo inusual
+\end{enumerate}
+
+% ============================================
+% GLOSSARY
+% ============================================
+\section{Glosario}
+
+\begin{description}
+  \item[Asistencia] Registro de la presencia o ausencia de un estudiante en una sesión.
+  \item[Dashboard] Panel de control principal de la plataforma.
+  \item[Justificación] Clasificación de una ausencia como justificada o injustificada.
+  \item[Líder] Usuario responsable de registrar la asistencia de un proyecto.
+  \item[Observación] Nota adicional asociada a un registro de asistencia.
+  \item[Proyecto] Actividad del Escenario Forestal a la que se asignan estudiantes.
+  \item[Rotación] Período de tiempo durante el cual los estudiantes están asignados a un proyecto específico.
+  \item[Sesión] Día de trabajo en el Escenario Forestal (miércoles o sábado).
+\end{description}
+
+% ============================================
+% FINAL PAGE
+% ============================================
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\includegraphics[width=4cm]{logo.png}
+
+\vspace{1cm}
+
+{\Large\bfseries\color{primarygreen} Plataforma de Asistencia Digital}
+
+\vspace{0.5cm}
+
+{\color{graytext} Escenario Forestal 2026}
+
+\vspace{2cm}
+
+{\small\color{graytext}
+Desarrollado por Carly Chery\\
+Universidad EARTH\\
+Febrero 2026
+}
+\end{center}
+\vspace*{\fill}
+
+\end{document}

@@ -1,0 +1,50 @@
+{
+  "welcomeBack": "Welcome back",
+  "subtitle": "Enter your credentials to continue",
+  "fields": {
+    "identity": "Identity",
+    "selectLeader": "- Select a leader -",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "accessCode": "Access code",
+    "accessCodePlaceholder": "Enter the access code",
+    "loadingLeaders": "Loading leaders…"
+  },
+  "optionRole": {
+    "admin": "Administrator",
+    "profesor": "Professor"
+  },
+  "roleHint": {
+    "admin": "Administrative access",
+    "profesor": "Professor access",
+    "leader": "Leader · {{project}}",
+    "leaderFallback": "Project"
+  },
+  "errors": {
+    "selectName": "Please select your name",
+    "needPassword": "Please enter your password",
+    "needAccessCode": "Please enter the access code",
+    "wrongPassword": "Incorrect password",
+    "wrongAccessCode": "Incorrect access code",
+    "loginFailed": "Sign-in failed. Please try again.",
+    "leadersLoadFailed": "Failed to load leaders. Please reload the page."
+  },
+  "hero": {
+    "liveBadge": "2026 Edition · Live",
+    "titleLead": "Forest",
+    "titleAccent": "Scenario",
+    "titleSubheading": "Digital Attendance Platform",
+    "subtitle": "Smart check-in, real-time metrics, and complete traceability for every academic activity.",
+    "features": {
+      "realtime": "Real time",
+      "secure": "Secure access",
+      "data": "Instant data"
+    },
+    "statLabel": "Cumulative attendance",
+    "statCaption": "last 12 sessions"
+  },
+  "footer": {
+    "encrypted": "Encrypted connection · EARTH University",
+    "loadingSession": "Signing in…"
+  }
+}

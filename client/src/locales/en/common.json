@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Digital Attendance Platform",
+    "tagline": "Forest Scenario 2026",
+    "university": "EARTH University"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "update": "Update",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "retry": "Retry",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "export": "Export",
+    "exportCsv": "Export CSV",
+    "download": "Download",
+    "print": "Print",
+    "refresh": "Refresh",
+    "logout": "Sign out",
+    "login": "Sign in",
+    "viewHistory": "View history",
+    "viewAll": "View all",
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "confirm": "Confirm"
+  },
+  "status": {
+    "present": "Present",
+    "absent": "Absent",
+    "unmarked": "Unmarked",
+    "justified": "Justified",
+    "unjustified": "Unjustified"
+  },
+  "labels": {
+    "date": "Date",
+    "time": "Time",
+    "name": "Name",
+    "email": "Email",
+    "studentId": "Student ID",
+    "project": "Project",
+    "leader": "Leader",
+    "rotation": "Rotation",
+    "currentRotation": "Current rotation",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "allDates": "All dates",
+    "observation": "Observation",
+    "justification": "Justification",
+    "attachment": "Attachment",
+    "actions": "Actions",
+    "status": "Status",
+    "country": "Country",
+    "total": "Total",
+    "students": "Students",
+    "leaders": "Leaders",
+    "projects": "Projects",
+    "rate": "Rate",
+    "attendanceRate": "Attendance rate",
+    "noData": "No data"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "profesor": "Professor",
+    "leader": "Leader"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Network error. Check your connection.",
+    "loadFailed": "Failed to load data.",
+    "saveFailed": "Failed to save.",
+    "deleteFailed": "Failed to delete.",
+    "alreadySubmitted": "Attendance was already saved and cannot be modified.",
+    "fileType": "Invalid file type. Only PNG, JPG, JPEG and PDF are allowed.",
+    "fileSize": "File exceeds the 5MB maximum size."
+  },
+  "messages": {
+    "saved": "Changes saved successfully.",
+    "deleted": "Deleted successfully.",
+    "added": "Added successfully.",
+    "updated": "Updated successfully."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong!",
+    "description": "Sorry, an unexpected error occurred.",
+    "detailsSummary": "Error details (development only)",
+    "tryAgain": "Try again",
+    "backHome": "Back to home"
+  },
+  "language": {
+    "switch": "Change language",
+    "selected": "Current language"
+  }
+}

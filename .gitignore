@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Database
+*.db
+
+# Backups
+server/backups/
+
+# Uploads
+server/uploads/
+
+# Build
+client/dist/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp
+*.tmp
+.temp/
+
+# LaTeX build artifacts
+*.aux
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Office lock files
+~$*
+
+# Stray Windows reserved-name capture (occurs when a Unix-style "> nul" runs in PowerShell)
+docs/nul

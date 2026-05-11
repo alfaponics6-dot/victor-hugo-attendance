@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "eyebrow": "Administrator access",
+    "title": "Administration",
+    "titleAccent": "Panel",
+    "loading": "Loading…",
+    "logoutAria": "Sign out",
+    "tabs": {
+      "home": "Home",
+      "students": "Students",
+      "stats": "Statistics"
+    }
+  },
+  "overview": {
+    "kpi": {
+      "totalStudents": "Total students",
+      "totalStudentsHint_one": "{{count}} active project",
+      "totalStudentsHint_other": "{{count}} active projects",
+      "totalProjects": "Total projects",
+      "totalProjectsHint": "Registered in the system",
+      "attendanceToday": "Attendance today",
+      "attendanceTodayHint": "{{present}} of {{total}} marked",
+      "absencesToday": "Absences today",
+      "absencesUnjustified": "{{count}} unjustified",
+      "absencesNone": "No reports"
+    },
+    "chart": {
+      "title": "Attendance · last 14 days",
+      "subtitle": "Present vs. absent per day",
+      "present": "Present",
+      "absent": "Absent",
+      "empty": "No history yet"
+    },
+    "activity": {
+      "title": "Recent activity",
+      "subtitle": "Daily attendance rate",
+      "empty": "No activity to display.",
+      "summary": "{{present}} pres. · {{absent}} abs. · {{total}} total"
+    }
+  },
+  "students": {
+    "loadError": "Failed to load students.",
+    "confirmDelete": "Delete {{name}}? This action cannot be undone.",
+    "deleteSuccess": "{{name}} was deleted.",
+    "deleteError": "Failed to delete student.",
+    "deleteAria": "Delete {{name}}",
+    "search": "Search by name, ID, email or project…",
+    "filterAll": "All projects",
+    "countBadge": "{{filtered}} of {{total}}",
+    "columns": {
+      "name": "Name",
+      "studentId": "Student ID",
+      "email": "Email",
+      "project": "Project",
+      "actions": "Actions"
+    },
+    "empty": "No students registered.",
+    "noResults": "No results matching the applied filters.",
+    "labels": {
+      "total": "Total"
+    },
+    "actions": {
+      "delete": "Delete"
+    }
+  },
+  "statistics": {
+    "eyebrow": "Telemetry · Attendance",
+    "title": "Statistics",
+    "titleSuffix": "Overview",
+    "subtitle": "Complete attendance overview for all Forest Scenario projects.",
+    "loading": "Loading statistics…",
+    "modes": {
+      "single": "Single date",
+      "range": "Range"
+    },
+    "dateLabels": {
+      "date": "Date",
+      "from": "From",
+      "to": "To",
+      "showingFrom": "Showing from",
+      "showingTo": "to"
+    },
+    "history": {
+      "last7": "Last 7 days",
+      "last14": "Last 14 days",
+      "last30": "Last 30 days"
+    },
+    "kpi": {
+      "totalStudents": "Total students",
+      "totalStudentsHint_one": "{{count}} project",
+      "totalStudentsHint_other": "{{count}} projects",
+      "present": "Present",
+      "absent": "Absent",
+      "absentUnjustified": "{{count}} unjustified",
+      "absentNone": "No reports",
+      "rate": "Attendance rate",
+      "rateHint": "{{present}} / {{total}} marked"
+    },
+    "charts": {
+      "daily": "Daily attendance",
+      "dailySubtitle": "Present and absent trends across the period",
+      "byProject": "Attendance by project",
+      "byProjectSubtitle": "Comparison across Forest Scenario projects",
+      "distribution": "Distribution",
+      "distributionSubtitle": "Today's attendance status",
+      "present": "Present",
+      "absent": "Absent",
+      "justified": "Justified",
+      "unjustified": "Unjustified",
+      "unmarked": "Unmarked",
+      "emptyRange": "No data in the selected range.",
+      "emptyProjects": "No projects to display.",
+      "emptyDistribution": "Select a date to view the distribution."
+    },
+    "tooltip": {
+      "project": "Project #{{number}}",
+      "total": "Total"
+    },
+    "table": {
+      "title": "Project breakdown",
+      "subtitle": "{{filtered}} of {{total}} projects",
+      "search": "Search project…",
+      "noResults": "No projects found.",
+      "noData": "No data available.",
+      "columns": {
+        "projectNumber": "Project #",
+        "name": "Name",
+        "students": "Students",
+        "present": "Present",
+        "absent": "Absent",
+        "rate": "Rate"
+      },
+      "mobile": {
+        "total": "Total",
+        "present": "{{count}} pres.",
+        "absent": "{{count}} abs."
+      }
+    },
+    "export": "Export",
+    "excel": {
+      "title": "VictorHugo - Attendance Statistics",
+      "date": "Date:",
+      "allDates": "All dates",
+      "summarySection": "General Summary",
+      "totalProjects": "Total Projects",
+      "totalStudents": "Total Students",
+      "present": "Present",
+      "justified": "Absent - Justified",
+      "unjustified": "Absent - Unjustified",
+      "sheetSummary": "Summary",
+      "sheetProjects": "Projects",
+      "sheetStudents": "Students",
+      "sheetHistory": "History",
+      "projectNumber": "Project #",
+      "projectName": "Project Name",
+      "studentsTotal": "Total Students",
+      "absentCol": "Absent",
+      "rateCol": "Attendance Rate (%)",
+      "studentName": "Name",
+      "studentId": "Student ID",
+      "email": "Email",
+      "noEmail": "No email",
+      "status": "Status",
+      "justification": "Justification",
+      "observation": "Observation",
+      "statusPresent": "Present",
+      "statusAbsent": "Absent",
+      "statusUnmarked": "Unmarked",
+      "justifiedLabel": "Justified",
+      "unjustifiedLabel": "Unjustified",
+      "historyDate": "Date",
+      "historyTotal": "Total Marked"
+    }
+  }
+}

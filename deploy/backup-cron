@@ -1,0 +1,5 @@
+# /etc/cron.d/victorhugo-backup
+# Daily SQLite backup at 02:30 server time. Keeps the last 30 backups
+# (handled by server/scripts/backup.js).
+
+30 2 * * * victorhugo cd /opt/victorhugo/server && /usr/bin/node scripts/backup.js >> /var/log/victorhugo-backup.log 2>&1

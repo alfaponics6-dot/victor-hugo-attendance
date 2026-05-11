@@ -1,0 +1,266 @@
+{
+  "dashboard": {
+    "tabs": {
+      "home": "Accueil",
+      "attendance": "Présence",
+      "students": "Étudiants",
+      "statistics": "Statistiques",
+      "mail": "Courriels"
+    },
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue, {{name}}",
+    "projectBadge": "Projet n° {{number}}",
+    "summary": "Aperçu rapide",
+    "trend": {
+      "title": "Présence · 14 derniers jours",
+      "subtitle": "Taux de présence quotidien sur les séances enregistrées",
+      "average": "Moyenne",
+      "rate": "Taux",
+      "emptyTitle": "Aucun enregistrement de présence sur les 14 derniers jours.",
+      "emptySubtitle": "Le graphique apparaîtra dès la première séance enregistrée."
+    }
+  },
+  "attendance": {
+    "sectionTitle": "Marquer la présence",
+    "heading": "Séance du jour",
+    "rotation": "Rotation {{number}}",
+    "loading": "Chargement des étudiants...",
+    "noRotation": "Aucune rotation active en ce moment.",
+    "noStudents": "Aucun étudiant dans votre liste pour le moment.",
+    "noRotationHint": "Vous pouvez consulter les affectations des étudiants dans l'onglet « Étudiants ».",
+    "addStudentsHint": "Allez dans l'onglet « Étudiants » pour ajouter des étudiants à votre rotation.",
+    "lockedTitle": "Présence verrouillée.",
+    "lockedSubtitle": "Cette séance a déjà été enregistrée et ne peut plus être modifiée.",
+    "searchPlaceholder": "Rechercher par nom, matricule ou e-mail...",
+    "noSearchResults": "Aucun étudiant ne correspond à « {{query}} ».",
+    "quickMark": {
+      "allPresentShort": "Présents",
+      "allPresent": "Tous présents",
+      "allAbsentShort": "Absents",
+      "allAbsent": "Tous absents"
+    },
+    "counts": {
+      "marked": "Marqués",
+      "present": "Présents",
+      "justified": "Justifiées",
+      "unjustified": "Injustifiées",
+      "unmarked": "Non marqués",
+      "presentShort": "prés",
+      "absentShort": "abs",
+      "markedShort": "marqués",
+      "markedTiny": "mrq"
+    },
+    "row": {
+      "studentId": "Matricule · {{id}}",
+      "observationPlaceholder": "Observation (facultatif)…",
+      "changeAttachment": "Changer la pièce jointe",
+      "addAttachment": "Joindre un fichier",
+      "viewFile": "Voir",
+      "removeFile": "Supprimer le fichier"
+    },
+    "save": {
+      "saving": "Enregistrement...",
+      "savingShort": "Enregistr.…",
+      "saved": "Présence enregistrée",
+      "savedShort": "Enregistrée",
+      "submit": "Enregistrer la présence",
+      "submitShort": "Enregistrer"
+    },
+    "messages": {
+      "loadPrevError": "Erreur lors du chargement de la présence précédente",
+      "selectOne": "Veuillez marquer la présence d'au moins un étudiant",
+      "savedSuccess": "Présence enregistrée avec succès pour {{date}}",
+      "alreadySaved": "La présence a déjà été enregistrée pour cette date et ne peut plus être modifiée.",
+      "saveError": "Erreur lors de l'enregistrement de la présence",
+      "partialSave": "Enregistrés {{saved}} sur {{total}}. Échecs : {{names}}. Réessayez uniquement les pièces jointes manquantes."
+    },
+    "csv": {
+      "headers": {
+        "name": "Nom",
+        "studentId": "Matricule",
+        "email": "E-mail",
+        "status": "Statut",
+        "justification": "Justification",
+        "observation": "Observation",
+        "attachment": "Pièce jointe",
+        "date": "Date",
+        "project": "Projet",
+        "leader": "Responsable"
+      },
+      "noEmail": "Sans e-mail",
+      "unmarked": "Non marqué",
+      "filenamePrefix": "presence"
+    }
+  },
+  "students": {
+    "sectionTitle": "Gestion des étudiants",
+    "heading": "Liste des étudiants",
+    "showing": "Affichage de <1>{{shown}}</1> sur <2>{{total}}</2> étudiants",
+    "currentRotationBadge": "Rotation actuelle",
+    "rotationLabel": "Rotation",
+    "rotationOption": "R{{n}}",
+    "rotationOptionCurrent": "R{{n}} · Actuelle",
+    "noRotations": "Aucune rotation",
+    "addStudent": "Ajouter un étudiant",
+    "searchPlaceholder": "Rechercher par nom, matricule ou e-mail…",
+    "loading": "Chargement des étudiants...",
+    "emptyTitle": "Aucun étudiant dans cette rotation",
+    "emptyHint": "Cliquez sur « Ajouter un étudiant » pour commencer.",
+    "noSearchResults": "Aucun étudiant ne correspond à « <1>{{query}}</1> ».",
+    "modal": {
+      "editTitle": "Modifier l'étudiant",
+      "addTitle": "Ajouter un nouvel étudiant",
+      "editDescription": "Mettez à jour les informations de l'étudiant.",
+      "addDescription": "Remplissez les informations pour ajouter un étudiant à la rotation.",
+      "nameRequired": "Nom *",
+      "studentId": "Matricule",
+      "email": "Adresse e-mail",
+      "update": "Mettre à jour",
+      "add": "Ajouter"
+    },
+    "card": {
+      "noStudentId": "Sans matricule",
+      "noEmail": "Sans e-mail",
+      "history": "Historique",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "viewHistory": "Voir l'historique"
+    },
+    "confirmDelete": "Supprimer {{name}} ?",
+    "messages": {
+      "nameRequired": "Le nom de l'étudiant est obligatoire",
+      "updated": "Étudiant mis à jour avec succès",
+      "added": "Étudiant ajouté avec succès",
+      "deleted": "Étudiant supprimé avec succès",
+      "updateError": "Erreur lors de la mise à jour de l'étudiant",
+      "addError": "Erreur lors de l'ajout de l'étudiant",
+      "deleteError": "Erreur lors de la suppression de l'étudiant",
+      "loadError": "Erreur lors du chargement des étudiants"
+    }
+  },
+  "alerts": {
+    "title": "Alertes de présence",
+    "subtitle": "Signaux de risque dans la rotation actuelle",
+    "count_one": "{{count}} alerte",
+    "count_other": "{{count}} alertes",
+    "emptyTitle": "Aucune alerte pour le moment",
+    "emptyHint": "Tous les étudiants maintiennent une présence saine.",
+    "lowAttendance": {
+      "title": "Présence faible",
+      "subtitle": "< 75 %",
+      "metricSub": "{{present}}/{{total}} jours"
+    },
+    "consecutive": {
+      "title": "Absences consécutives",
+      "subtitle": "≥ 3 jours",
+      "metricSub": "jours consécutifs"
+    },
+    "studentId": "Matricule · {{id}}"
+  },
+  "quickStats": {
+    "students": "Étudiants",
+    "studentsHint": "Rotation actuelle",
+    "presentToday": "Présents aujourd'hui",
+    "absentToday": "Absents aujourd'hui",
+    "ofTotal": "sur {{n}} étudiants",
+    "noRecords": "Aucun enregistrement",
+    "attendanceRate": "Taux de présence",
+    "today": "Aujourd'hui"
+  },
+  "calendar": {
+    "subtitle": "Densité de présence mensuelle",
+    "prevMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "sessionDaysNote": "Mer · Sam sont des jours de séance",
+    "modalTitle": "Présence · {{date}}",
+    "modalDescription": "Détail des enregistrements du projet",
+    "noRecordsTitle": "Aucun enregistrement de présence pour cette date",
+    "noRecordsHint": "La présence n'a pas encore été marquée",
+    "summary": {
+      "total": "Total",
+      "present": "Présents",
+      "justified": "Justifiés",
+      "unjustified": "Injustifiés"
+    },
+    "weekdays": {
+      "sunFull": "Dim",
+      "monFull": "Lun",
+      "tueFull": "Mar",
+      "wedFull": "Mer",
+      "thuFull": "Jeu",
+      "friFull": "Ven",
+      "satFull": "Sam",
+      "sunShort": "D",
+      "monShort": "L",
+      "tueShort": "M",
+      "wedShort": "M",
+      "thuShort": "J",
+      "friShort": "V",
+      "satShort": "S"
+    },
+    "rowBadge": {
+      "justifiedShort": "Justif.",
+      "unjustifiedShort": "Injust."
+    }
+  },
+  "rotation": {
+    "title": "Calendrier des rotations",
+    "subtitle": "Calendrier du semestre",
+    "rotationLabel": "R{{n}}",
+    "currentBadge": "Actuelle",
+    "completedBadge": "Terminée",
+    "upcomingBadge": "À venir",
+    "fourSessions": "4 séances",
+    "nextChange_one": "Prochaine : <1>R{{rotation}}</1> dans <2>{{days}}</2> jour",
+    "nextChange_other": "Prochaine : <1>R{{rotation}}</1> dans <2>{{days}}</2> jours"
+  },
+  "history": {
+    "title": "Historique de présence",
+    "loadError": "Erreur lors du chargement de l'historique",
+    "noRecords": "Aucun enregistrement de présence pour cet étudiant.",
+    "totalLabel": "{{count}} au total",
+    "summary": {
+      "records": "Enregistrements",
+      "present": "Présents",
+      "absent": "Absents",
+      "rate": "Taux"
+    },
+    "monthlyTrend": "Tendance mensuelle",
+    "legend": {
+      "present": "Présent",
+      "absent": "Absent"
+    },
+    "detailedRecords": "Enregistrements détaillés",
+    "table": {
+      "date": "Date",
+      "project": "Projet",
+      "leader": "Responsable",
+      "status": "Statut"
+    },
+    "leaderPrefix": "Responsable · {{name}}"
+  },
+  "mail": {
+    "sectionTitle": "Courriels par rotation",
+    "heading": "Envoyer un courriel à une rotation",
+    "subtitle": "Ouvre votre application de messagerie avec les étudiants de la rotation dans \"À\" et les collaborateurs en \"Cc\".",
+    "rotationLabel": "Rotation",
+    "rotationOption": "Rotation {{n}}",
+    "rotationOptionCurrent": "Rotation {{n}} · Actuelle",
+    "rotationDates": "{{from}} – {{to}}",
+    "toLabel": "À ({{count}})",
+    "ccLabel": "Cc ({{count}})",
+    "ccAlways": "Copie fixe",
+    "ccCollaborators": "Collaborateurs",
+    "fromLabel": "De (compte de l'expéditeur)",
+    "fromHint": "Votre messagerie enverra depuis le compte sur lequel vous êtes connecté(e). Vérifiez que c'est {{email}} avant d'envoyer.",
+    "fromMissing": "Vous n'avez pas encore d'adresse enregistrée. Demandez à un administrateur de l'ajouter pour que votre message soit correctement signé.",
+    "subjectLabel": "Objet",
+    "subjectDefault": "Scénario forestier · {{project}} · Rotation {{n}}",
+    "sendButton": "Ouvrir dans ma messagerie",
+    "noStudents": "Aucun étudiant dans cette rotation.",
+    "noEmails": "Aucun étudiant n'a encore d'adresse courriel enregistrée.",
+    "missingEmailWarning_one": "{{count}} étudiant sans courriel sera ignoré.",
+    "missingEmailWarning_other": "{{count}} étudiants sans courriel seront ignorés.",
+    "loading": "Chargement…"
+  }
+}

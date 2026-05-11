@@ -1,0 +1,266 @@
+{
+  "dashboard": {
+    "tabs": {
+      "home": "Home",
+      "attendance": "Attendance",
+      "students": "Students",
+      "statistics": "Statistics",
+      "mail": "Email"
+    },
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}",
+    "projectBadge": "Project #{{number}}",
+    "summary": "Quick overview",
+    "trend": {
+      "title": "Attendance · last 14 days",
+      "subtitle": "Daily attendance rate across recorded sessions",
+      "average": "Average",
+      "rate": "Rate",
+      "emptyTitle": "No attendance records in the last 14 days yet.",
+      "emptySubtitle": "The chart will appear as soon as the first session is marked."
+    }
+  },
+  "attendance": {
+    "sectionTitle": "Mark attendance",
+    "heading": "Today's session",
+    "rotation": "Rotation {{number}}",
+    "loading": "Loading students...",
+    "noRotation": "No active rotation at this time.",
+    "noStudents": "There are no students in your list yet.",
+    "noRotationHint": "You can review student assignments in the \"Students\" tab.",
+    "addStudentsHint": "Go to the \"Students\" tab to add students to your rotation.",
+    "lockedTitle": "Attendance locked.",
+    "lockedSubtitle": "This session has already been saved and cannot be modified.",
+    "searchPlaceholder": "Search by name, student ID or email...",
+    "noSearchResults": "No students matched \"{{query}}\".",
+    "quickMark": {
+      "allPresentShort": "Present",
+      "allPresent": "All present",
+      "allAbsentShort": "Absent",
+      "allAbsent": "All absent"
+    },
+    "counts": {
+      "marked": "Marked",
+      "present": "Present",
+      "justified": "Justified",
+      "unjustified": "Unjustified",
+      "unmarked": "Unmarked",
+      "presentShort": "pres",
+      "absentShort": "abs",
+      "markedShort": "marked",
+      "markedTiny": "mkd"
+    },
+    "row": {
+      "studentId": "ID · {{id}}",
+      "observationPlaceholder": "Observation (optional)…",
+      "changeAttachment": "Change attachment",
+      "addAttachment": "Attach file",
+      "viewFile": "View",
+      "removeFile": "Remove file"
+    },
+    "save": {
+      "saving": "Saving...",
+      "savingShort": "Saving…",
+      "saved": "Attendance saved",
+      "savedShort": "Saved",
+      "submit": "Save attendance",
+      "submitShort": "Save"
+    },
+    "messages": {
+      "loadPrevError": "Error loading previous attendance",
+      "selectOne": "Please mark attendance for at least one student",
+      "savedSuccess": "Attendance saved successfully for {{date}}",
+      "alreadySaved": "Attendance was already saved for this date and cannot be modified.",
+      "saveError": "Error saving attendance",
+      "partialSave": "Saved {{saved}} of {{total}}. Failed: {{names}}. Retry only the missing attachments."
+    },
+    "csv": {
+      "headers": {
+        "name": "Name",
+        "studentId": "Student ID",
+        "email": "Email",
+        "status": "Status",
+        "justification": "Justification",
+        "observation": "Observation",
+        "attachment": "Attachment",
+        "date": "Date",
+        "project": "Project",
+        "leader": "Leader"
+      },
+      "noEmail": "No email",
+      "unmarked": "Unmarked",
+      "filenamePrefix": "attendance"
+    }
+  },
+  "students": {
+    "sectionTitle": "Student management",
+    "heading": "Student list",
+    "showing": "Showing <1>{{shown}}</1> of <2>{{total}}</2> students",
+    "currentRotationBadge": "Current rotation",
+    "rotationLabel": "Rotation",
+    "rotationOption": "R{{n}}",
+    "rotationOptionCurrent": "R{{n}} · Current",
+    "noRotations": "No rotations",
+    "addStudent": "Add student",
+    "searchPlaceholder": "Search by name, student ID or email…",
+    "loading": "Loading students...",
+    "emptyTitle": "No students in this rotation",
+    "emptyHint": "Click \"Add student\" to get started.",
+    "noSearchResults": "No students matched \"<1>{{query}}</1>\".",
+    "modal": {
+      "editTitle": "Edit student",
+      "addTitle": "Add new student",
+      "editDescription": "Update the student's information.",
+      "addDescription": "Fill in the details to add a student to the rotation.",
+      "nameRequired": "Name *",
+      "studentId": "Student ID",
+      "email": "Email address",
+      "update": "Update",
+      "add": "Add"
+    },
+    "card": {
+      "noStudentId": "No ID",
+      "noEmail": "No email",
+      "history": "History",
+      "edit": "Edit",
+      "delete": "Delete",
+      "viewHistory": "View history"
+    },
+    "confirmDelete": "Delete {{name}}?",
+    "messages": {
+      "nameRequired": "The student's name is required",
+      "updated": "Student updated successfully",
+      "added": "Student added successfully",
+      "deleted": "Student deleted successfully",
+      "updateError": "Error updating student",
+      "addError": "Error adding student",
+      "deleteError": "Error deleting student",
+      "loadError": "Error loading students"
+    }
+  },
+  "alerts": {
+    "title": "Attendance alerts",
+    "subtitle": "Risk signals in the current rotation",
+    "count_one": "{{count}} alert",
+    "count_other": "{{count}} alerts",
+    "emptyTitle": "No alerts at this time",
+    "emptyHint": "All students are maintaining healthy attendance.",
+    "lowAttendance": {
+      "title": "Low attendance",
+      "subtitle": "< 75%",
+      "metricSub": "{{present}}/{{total}} days"
+    },
+    "consecutive": {
+      "title": "Consecutive absences",
+      "subtitle": "≥ 3 days",
+      "metricSub": "consecutive days"
+    },
+    "studentId": "ID · {{id}}"
+  },
+  "quickStats": {
+    "students": "Students",
+    "studentsHint": "Current rotation",
+    "presentToday": "Present today",
+    "absentToday": "Absent today",
+    "ofTotal": "of {{n}} students",
+    "noRecords": "No records",
+    "attendanceRate": "Attendance rate",
+    "today": "Today"
+  },
+  "calendar": {
+    "subtitle": "Monthly attendance density",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "sessionDaysNote": "Wed · Sat are session days",
+    "modalTitle": "Attendance · {{date}}",
+    "modalDescription": "Project record details",
+    "noRecordsTitle": "No attendance records for this date",
+    "noRecordsHint": "Attendance has not been marked yet",
+    "summary": {
+      "total": "Total",
+      "present": "Present",
+      "justified": "Justified",
+      "unjustified": "Unjustified"
+    },
+    "weekdays": {
+      "sunFull": "Sun",
+      "monFull": "Mon",
+      "tueFull": "Tue",
+      "wedFull": "Wed",
+      "thuFull": "Thu",
+      "friFull": "Fri",
+      "satFull": "Sat",
+      "sunShort": "S",
+      "monShort": "M",
+      "tueShort": "T",
+      "wedShort": "W",
+      "thuShort": "T",
+      "friShort": "F",
+      "satShort": "S"
+    },
+    "rowBadge": {
+      "justifiedShort": "Justif.",
+      "unjustifiedShort": "Unjust."
+    }
+  },
+  "rotation": {
+    "title": "Rotation schedule",
+    "subtitle": "Semester timeline",
+    "rotationLabel": "R{{n}}",
+    "currentBadge": "Current",
+    "completedBadge": "Closed",
+    "upcomingBadge": "Upcoming",
+    "fourSessions": "4 sessions",
+    "nextChange_one": "Next: <1>R{{rotation}}</1> in <2>{{days}}</2> day",
+    "nextChange_other": "Next: <1>R{{rotation}}</1> in <2>{{days}}</2> days"
+  },
+  "history": {
+    "title": "Attendance history",
+    "loadError": "Error loading attendance history",
+    "noRecords": "No attendance records for this student.",
+    "totalLabel": "{{count}} total",
+    "summary": {
+      "records": "Records",
+      "present": "Present",
+      "absent": "Absent",
+      "rate": "Rate"
+    },
+    "monthlyTrend": "Monthly trend",
+    "legend": {
+      "present": "Present",
+      "absent": "Absent"
+    },
+    "detailedRecords": "Detailed records",
+    "table": {
+      "date": "Date",
+      "project": "Project",
+      "leader": "Leader",
+      "status": "Status"
+    },
+    "leaderPrefix": "Leader · {{name}}"
+  },
+  "mail": {
+    "sectionTitle": "Rotation email",
+    "heading": "Send an email to a rotation",
+    "subtitle": "Opens your mail app with the rotation's students in \"To\" and collaborators in \"Cc\".",
+    "rotationLabel": "Rotation",
+    "rotationOption": "Rotation {{n}}",
+    "rotationOptionCurrent": "Rotation {{n}} · Current",
+    "rotationDates": "{{from}} – {{to}}",
+    "toLabel": "To ({{count}})",
+    "ccLabel": "Cc ({{count}})",
+    "ccAlways": "Always copied",
+    "ccCollaborators": "Collaborators",
+    "fromLabel": "From (sender account)",
+    "fromHint": "Your mail app will send from whichever account you're signed in to. Confirm it's {{email}} before sending.",
+    "fromMissing": "You don't have an email on file yet. Ask an administrator to add one so your message is signed correctly.",
+    "subjectLabel": "Subject",
+    "subjectDefault": "Forest Scenario · {{project}} · Rotation {{n}}",
+    "sendButton": "Open in my mail app",
+    "noStudents": "No students in this rotation.",
+    "noEmails": "None of the students have an email on file yet.",
+    "missingEmailWarning_one": "{{count}} student without email will be skipped.",
+    "missingEmailWarning_other": "{{count}} students without email will be skipped.",
+    "loading": "Loading…"
+  }
+}

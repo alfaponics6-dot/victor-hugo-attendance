@@ -1,0 +1,89 @@
+{
+  "eyebrow": "Audit view",
+  "title": "Professor Dashboard",
+  "actions": {
+    "print": "Print",
+    "clearSearch": "Clear search"
+  },
+  "stats": {
+    "totalAbsences": "Total absences",
+    "totalAbsencesHintAll": "All dates selected",
+    "justified": "Justified",
+    "unjustified": "Unjustified",
+    "projectsAffected": "Projects affected",
+    "percentOfTotal": "{{n}}% of total",
+    "ofTotal": "of {{n}} total"
+  },
+  "trend": {
+    "up": "▲ {{n}}% vs average",
+    "down": "▼ {{n}}% vs average"
+  },
+  "filters": {
+    "title": "Filters",
+    "search": "Search",
+    "searchPlaceholder": "Name, student ID or project…",
+    "allProjects": "All projects",
+    "allJustifications": "All"
+  },
+  "views": {
+    "list": "List",
+    "grouped": "By project"
+  },
+  "results": {
+    "title": "Absent students",
+    "records_one": "{{count}} record",
+    "records_other": "{{count}} records",
+    "recordsShort_one": "{{count}} rec.",
+    "recordsShort_other": "{{count}} recs.",
+    "empty": "No absences",
+    "emptyHint": "No records found with the selected filters.",
+    "searchHint": "Try a different search term."
+  },
+  "table": {
+    "student": "Student",
+    "noCarnet": "No student ID"
+  },
+  "grouped": {
+    "absences_one": "{{count}} absence",
+    "absences_other": "{{count}} absences",
+    "justifiedShort": "Just.",
+    "unjustifiedShort": "Unjust."
+  },
+  "history": {
+    "title": "{{name}}'s history",
+    "description": "Recorded attendance and justifications.",
+    "noRecords": "There are no attendance records for this student.",
+    "summary": {
+      "present": "Present",
+      "absent": "Absent",
+      "rate": "Rate"
+    },
+    "chartTitle": "Attendance rate (cumulative)",
+    "attendance": "Attendance",
+    "details": "Details ({{count}})"
+  },
+  "csv": {
+    "headers": {
+      "date": "Date",
+      "project": "Project",
+      "student": "Student",
+      "studentId": "Student ID",
+      "email": "Email",
+      "status": "Status",
+      "justification": "Justification",
+      "observation": "Observation",
+      "leader": "Leader"
+    },
+    "values": {
+      "absent": "Absent",
+      "justified": "Justified",
+      "unjustified": "Unjustified",
+      "notAvailable": "N/A",
+      "noObservation": "-"
+    },
+    "filenamePrefix": "absences",
+    "filenameAll": "all"
+  },
+  "downloadAttachmentTitle": "Download: {{name}}",
+  "downloadAttachmentAria": "Download attachment"
+}

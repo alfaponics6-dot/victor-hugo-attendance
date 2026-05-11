@@ -1,0 +1,38 @@
+{
+  "name": "@victor-hugo/server",
+  "version": "1.0.0",
+  "description": "Backend API for Digital Attendance Platform",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "backup": "node scripts/backup.js",
+    "reset-password": "node scripts/reset-admin-password.js",
+    "add-profesor": "node scripts/add-profesor.js",
+    "import-rotations": "node scripts/import-rotations.js"
+  },
+  "keywords": [
+    "attendance",
+    "express",
+    "sqlite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "sqlite3": "^5.1.6",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

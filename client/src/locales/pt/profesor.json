@@ -1,0 +1,89 @@
+{
+  "eyebrow": "Visão de auditoria",
+  "title": "Painel do Professor",
+  "actions": {
+    "print": "Imprimir",
+    "clearSearch": "Limpar busca"
+  },
+  "stats": {
+    "totalAbsences": "Total de ausências",
+    "totalAbsencesHintAll": "Todas as datas selecionadas",
+    "justified": "Justificadas",
+    "unjustified": "Injustificadas",
+    "projectsAffected": "Projetos afetados",
+    "percentOfTotal": "{{n}}% do total",
+    "ofTotal": "de {{n}} no total"
+  },
+  "trend": {
+    "up": "▲ {{n}}% vs média",
+    "down": "▼ {{n}}% vs média"
+  },
+  "filters": {
+    "title": "Filtros",
+    "search": "Buscar",
+    "searchPlaceholder": "Nome, matrícula ou projeto…",
+    "allProjects": "Todos os projetos",
+    "allJustifications": "Todas"
+  },
+  "views": {
+    "list": "Lista",
+    "grouped": "Por projeto"
+  },
+  "results": {
+    "title": "Estudantes ausentes",
+    "records_one": "{{count}} registro",
+    "records_other": "{{count}} registros",
+    "recordsShort_one": "{{count}} reg.",
+    "recordsShort_other": "{{count}} regs.",
+    "empty": "Sem ausências",
+    "emptyHint": "Não foram encontrados registros com os filtros selecionados.",
+    "searchHint": "Tente outro termo de busca."
+  },
+  "table": {
+    "student": "Estudante",
+    "noCarnet": "Sem matrícula"
+  },
+  "grouped": {
+    "absences_one": "{{count}} ausência",
+    "absences_other": "{{count}} ausências",
+    "justifiedShort": "Just.",
+    "unjustifiedShort": "Injust."
+  },
+  "history": {
+    "title": "Histórico de {{name}}",
+    "description": "Presença registrada e justificativas.",
+    "noRecords": "Não há registros de presença para este estudante.",
+    "summary": {
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "rate": "Taxa"
+    },
+    "chartTitle": "Taxa de presença (acumulada)",
+    "attendance": "Presença",
+    "details": "Detalhe ({{count}})"
+  },
+  "csv": {
+    "headers": {
+      "date": "Data",
+      "project": "Projeto",
+      "student": "Estudante",
+      "studentId": "Matrícula",
+      "email": "E-mail",
+      "status": "Status",
+      "justification": "Justificativa",
+      "observation": "Observação",
+      "leader": "Líder"
+    },
+    "values": {
+      "absent": "Ausente",
+      "justified": "Justificada",
+      "unjustified": "Injustificada",
+      "notAvailable": "N/D",
+      "noObservation": "-"
+    },
+    "filenamePrefix": "ausencias",
+    "filenameAll": "todas"
+  },
+  "downloadAttachmentTitle": "Baixar: {{name}}",
+  "downloadAttachmentAria": "Baixar anexo"
+}

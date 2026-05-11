@@ -1,0 +1,175 @@
+{
+  "dashboard": {
+    "eyebrow": "Acesso administrador",
+    "title": "Painel de",
+    "titleAccent": "Administração",
+    "loading": "Carregando…",
+    "logoutAria": "Sair",
+    "tabs": {
+      "home": "Início",
+      "students": "Estudantes",
+      "stats": "Estatísticas"
+    }
+  },
+  "overview": {
+    "kpi": {
+      "totalStudents": "Total de estudantes",
+      "totalStudentsHint_one": "{{count}} projeto ativo",
+      "totalStudentsHint_other": "{{count}} projetos ativos",
+      "totalProjects": "Total de projetos",
+      "totalProjectsHint": "Registrados no sistema",
+      "attendanceToday": "Presença hoje",
+      "attendanceTodayHint": "{{present}} de {{total}} marcados",
+      "absencesToday": "Ausências hoje",
+      "absencesUnjustified": "{{count}} sem justificar",
+      "absencesNone": "Sem relatos"
+    },
+    "chart": {
+      "title": "Presença · últimos 14 dias",
+      "subtitle": "Presentes vs. ausentes por dia",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "empty": "Ainda não há histórico"
+    },
+    "activity": {
+      "title": "Atividade recente",
+      "subtitle": "Taxa diária de presença",
+      "empty": "Nenhuma atividade para exibir.",
+      "summary": "{{present}} pres. · {{absent}} aus. · {{total}} total"
+    }
+  },
+  "students": {
+    "loadError": "Não foi possível carregar os estudantes.",
+    "confirmDelete": "Excluir {{name}}? Esta ação não pode ser desfeita.",
+    "deleteSuccess": "{{name}} foi excluído.",
+    "deleteError": "Erro ao excluir estudante.",
+    "deleteAria": "Excluir {{name}}",
+    "search": "Buscar por nome, matrícula, email ou projeto…",
+    "filterAll": "Todos os projetos",
+    "countBadge": "{{filtered}} de {{total}}",
+    "columns": {
+      "name": "Nome",
+      "studentId": "Matrícula",
+      "email": "Email",
+      "project": "Projeto",
+      "actions": "Ações"
+    },
+    "empty": "Nenhum estudante cadastrado.",
+    "noResults": "Nenhum resultado com os filtros aplicados.",
+    "labels": {
+      "total": "Total"
+    },
+    "actions": {
+      "delete": "Excluir"
+    }
+  },
+  "statistics": {
+    "eyebrow": "Telemetria · Presença",
+    "title": "Estatísticas",
+    "titleSuffix": "Gerais",
+    "subtitle": "Visão completa de presença para todos os projetos do Cenário Florestal.",
+    "loading": "Carregando estatísticas…",
+    "modes": {
+      "single": "Data única",
+      "range": "Intervalo"
+    },
+    "dateLabels": {
+      "date": "Data",
+      "from": "De",
+      "to": "Até",
+      "showingFrom": "Mostrando de",
+      "showingTo": "até"
+    },
+    "history": {
+      "last7": "Últimos 7 dias",
+      "last14": "Últimos 14 dias",
+      "last30": "Últimos 30 dias"
+    },
+    "kpi": {
+      "totalStudents": "Total de estudantes",
+      "totalStudentsHint_one": "{{count}} projeto",
+      "totalStudentsHint_other": "{{count}} projetos",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "absentUnjustified": "{{count}} sem justificar",
+      "absentNone": "Sem relatos",
+      "rate": "Taxa de presença",
+      "rateHint": "{{present}} / {{total}} marcados"
+    },
+    "charts": {
+      "daily": "Presença diária",
+      "dailySubtitle": "Tendência de presentes e ausentes ao longo do período",
+      "byProject": "Presença por projeto",
+      "byProjectSubtitle": "Comparativo entre os projetos do Cenário Florestal",
+      "distribution": "Distribuição",
+      "distributionSubtitle": "Estado de presença hoje",
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "justified": "Justificados",
+      "unjustified": "Não justificados",
+      "unmarked": "Sem marcar",
+      "emptyRange": "Sem dados no intervalo selecionado.",
+      "emptyProjects": "Nenhum projeto para exibir.",
+      "emptyDistribution": "Selecione uma data para ver a distribuição."
+    },
+    "tooltip": {
+      "project": "Projeto nº{{number}}",
+      "total": "Total"
+    },
+    "table": {
+      "title": "Detalhe por projeto",
+      "subtitle": "{{filtered}} de {{total}} projetos",
+      "search": "Buscar projeto…",
+      "noResults": "Nenhum projeto encontrado.",
+      "noData": "Sem dados disponíveis.",
+      "columns": {
+        "projectNumber": "Projeto nº",
+        "name": "Nome",
+        "students": "Estudantes",
+        "present": "Presentes",
+        "absent": "Ausentes",
+        "rate": "Taxa"
+      },
+      "mobile": {
+        "total": "Total",
+        "present": "{{count}} pres.",
+        "absent": "{{count}} aus."
+      }
+    },
+    "export": "Exportar",
+    "excel": {
+      "title": "VictorHugo - Estatísticas de Presença",
+      "date": "Data:",
+      "allDates": "Todas as datas",
+      "summarySection": "Resumo Geral",
+      "totalProjects": "Total de Projetos",
+      "totalStudents": "Total de Estudantes",
+      "present": "Presentes",
+      "justified": "Ausentes Justificados",
+      "unjustified": "Ausentes Não Justificados",
+      "sheetSummary": "Resumo",
+      "sheetProjects": "Projetos",
+      "sheetStudents": "Estudantes",
+      "sheetHistory": "Histórico",
+      "projectNumber": "Projeto nº",
+      "projectName": "Nome do Projeto",
+      "studentsTotal": "Total de Estudantes",
+      "absentCol": "Ausentes",
+      "rateCol": "Taxa de Presença (%)",
+      "studentName": "Nome",
+      "studentId": "Matrícula",
+      "email": "Email",
+      "noEmail": "Sem email",
+      "status": "Status",
+      "justification": "Justificativa",
+      "observation": "Observação",
+      "statusPresent": "Presente",
+      "statusAbsent": "Ausente",
+      "statusUnmarked": "Sem Marcar",
+      "justifiedLabel": "Justificada",
+      "unjustifiedLabel": "Não justificada",
+      "historyDate": "Data",
+      "historyTotal": "Total Marcado"
+    }
+  }
+}

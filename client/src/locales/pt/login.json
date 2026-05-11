@@ -1,0 +1,50 @@
+{
+  "welcomeBack": "Bem-vindo de volta",
+  "subtitle": "Insira suas credenciais para continuar",
+  "fields": {
+    "identity": "Identidade",
+    "selectLeader": "- Selecione um líder -",
+    "password": "Senha",
+    "passwordPlaceholder": "Insira sua senha",
+    "accessCode": "Código de acesso",
+    "accessCodePlaceholder": "Insira o código de acesso",
+    "loadingLeaders": "Carregando líderes…"
+  },
+  "optionRole": {
+    "admin": "Administradora",
+    "profesor": "Professor"
+  },
+  "roleHint": {
+    "admin": "Acesso administrativo",
+    "profesor": "Acesso de professor",
+    "leader": "Líder · {{project}}",
+    "leaderFallback": "Projeto"
+  },
+  "errors": {
+    "selectName": "Por favor, selecione seu nome",
+    "needPassword": "Por favor, insira sua senha",
+    "needAccessCode": "Por favor, insira o código de acesso",
+    "wrongPassword": "Senha incorreta",
+    "wrongAccessCode": "Código de acesso incorreto",
+    "loginFailed": "Falha ao entrar. Por favor, tente novamente.",
+    "leadersLoadFailed": "Falha ao carregar líderes. Por favor, recarregue a página."
+  },
+  "hero": {
+    "liveBadge": "Edição 2026 · Ao vivo",
+    "titleLead": "Cenário",
+    "titleAccent": "Florestal",
+    "titleSubheading": "Plataforma de Presença Digital",
+    "subtitle": "Registro inteligente, métricas em tempo real e rastreabilidade completa para cada atividade acadêmica.",
+    "features": {
+      "realtime": "Tempo real",
+      "secure": "Acesso seguro",
+      "data": "Dados instantâneos"
+    },
+    "statLabel": "Presença acumulada",
+    "statCaption": "últimas 12 sessões"
+  },
+  "footer": {
+    "encrypted": "Conexão criptografada · Universidade EARTH",
+    "loadingSession": "Entrando…"
+  }
+}

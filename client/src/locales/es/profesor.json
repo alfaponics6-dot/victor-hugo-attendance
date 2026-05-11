@@ -1,0 +1,89 @@
+{
+  "eyebrow": "Vista de auditoría",
+  "title": "Panel del Profesor",
+  "actions": {
+    "print": "Imprimir",
+    "clearSearch": "Limpiar búsqueda"
+  },
+  "stats": {
+    "totalAbsences": "Total ausencias",
+    "totalAbsencesHintAll": "Todas las fechas seleccionadas",
+    "justified": "Justificadas",
+    "unjustified": "Injustificadas",
+    "projectsAffected": "Proyectos afectados",
+    "percentOfTotal": "{{n}}% del total",
+    "ofTotal": "de {{n}} totales"
+  },
+  "trend": {
+    "up": "▲ {{n}}% vs promedio",
+    "down": "▼ {{n}}% vs promedio"
+  },
+  "filters": {
+    "title": "Filtros",
+    "search": "Buscar",
+    "searchPlaceholder": "Nombre, carnet o proyecto…",
+    "allProjects": "Todos los proyectos",
+    "allJustifications": "Todas"
+  },
+  "views": {
+    "list": "Lista",
+    "grouped": "Por proyecto"
+  },
+  "results": {
+    "title": "Estudiantes ausentes",
+    "records_one": "{{count}} registro",
+    "records_other": "{{count}} registros",
+    "recordsShort_one": "{{count}} reg.",
+    "recordsShort_other": "{{count}} regs.",
+    "empty": "Sin ausencias",
+    "emptyHint": "No se encontraron registros con los filtros seleccionados.",
+    "searchHint": "Intenta con otro término de búsqueda."
+  },
+  "table": {
+    "student": "Estudiante",
+    "noCarnet": "Sin carnet"
+  },
+  "grouped": {
+    "absences_one": "{{count}} ausencia",
+    "absences_other": "{{count}} ausencias",
+    "justifiedShort": "Just.",
+    "unjustifiedShort": "Injust."
+  },
+  "history": {
+    "title": "Historial de {{name}}",
+    "description": "Asistencia registrada y justificaciones.",
+    "noRecords": "No hay registros de asistencia para este estudiante.",
+    "summary": {
+      "present": "Presentes",
+      "absent": "Ausentes",
+      "rate": "Tasa"
+    },
+    "chartTitle": "Tasa de asistencia (acumulada)",
+    "attendance": "Asistencia",
+    "details": "Detalle ({{count}})"
+  },
+  "csv": {
+    "headers": {
+      "date": "Fecha",
+      "project": "Proyecto",
+      "student": "Estudiante",
+      "studentId": "Carnet",
+      "email": "Email",
+      "status": "Estado",
+      "justification": "Justificación",
+      "observation": "Observación",
+      "leader": "Líder"
+    },
+    "values": {
+      "absent": "Ausente",
+      "justified": "Justificada",
+      "unjustified": "Injustificada",
+      "notAvailable": "N/A",
+      "noObservation": "-"
+    },
+    "filenamePrefix": "ausencias",
+    "filenameAll": "todas"
+  },
+  "downloadAttachmentTitle": "Descargar: {{name}}",
+  "downloadAttachmentAria": "Descargar adjunto"
+}

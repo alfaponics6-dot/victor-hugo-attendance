@@ -1,0 +1,50 @@
+{
+  "welcomeBack": "Bon retour parmi nous",
+  "subtitle": "Saisissez vos identifiants pour continuer",
+  "fields": {
+    "identity": "Identité",
+    "selectLeader": "- Sélectionnez un responsable -",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Saisissez votre mot de passe",
+    "accessCode": "Code d'accès",
+    "accessCodePlaceholder": "Saisissez le code d'accès",
+    "loadingLeaders": "Chargement des responsables…"
+  },
+  "optionRole": {
+    "admin": "Administratrice",
+    "profesor": "Professeur"
+  },
+  "roleHint": {
+    "admin": "Accès administratif",
+    "profesor": "Accès professeur",
+    "leader": "Responsable · {{project}}",
+    "leaderFallback": "Projet"
+  },
+  "errors": {
+    "selectName": "Veuillez sélectionner votre nom",
+    "needPassword": "Veuillez saisir votre mot de passe",
+    "needAccessCode": "Veuillez saisir le code d'accès",
+    "wrongPassword": "Mot de passe incorrect",
+    "wrongAccessCode": "Code d'accès incorrect",
+    "loginFailed": "Échec de la connexion. Veuillez réessayer.",
+    "leadersLoadFailed": "Impossible de charger les responsables. Veuillez recharger la page."
+  },
+  "hero": {
+    "liveBadge": "Édition 2026 · En direct",
+    "titleLead": "Scénario",
+    "titleAccent": "Forestier",
+    "titleSubheading": "Plateforme de présence numérique",
+    "subtitle": "Pointage intelligent, métriques en temps réel et traçabilité complète pour chaque activité académique.",
+    "features": {
+      "realtime": "Temps réel",
+      "secure": "Accès sécurisé",
+      "data": "Données instantanées"
+    },
+    "statLabel": "Présence cumulée",
+    "statCaption": "12 dernières séances"
+  },
+  "footer": {
+    "encrypted": "Connexion chiffrée · Université EARTH",
+    "loadingSession": "Connexion en cours…"
+  }
+}

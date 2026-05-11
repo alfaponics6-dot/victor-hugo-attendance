@@ -1,0 +1,46 @@
+[Unit]
+Description=Victor Hugo - Attendance API (Node.js / Express)
+Documentation=https://github.com/anthropics/claude-code
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=victorhugo
+Group=victorhugo
+WorkingDirectory=/opt/victorhugo/server
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/victorhugo/server/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=victorhugo-api
+
+# Hardening
+# NOTE: MemoryDenyWriteExecute is intentionally NOT set. Node.js (V8) requires
+# writable-executable memory for its tiered JIT; the flag will SIGSEGV the
+# process either at boot or on first hot function. Same reason any JIT language
+# is incompatible with that flag.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# Grant write access to the whole server dir so SQLite can create -wal/-shm
+# siblings on a fresh install and so multer can write to uploads/.
+ReadWritePaths=/opt/victorhugo/server
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+
+# Resource limits
+LimitNOFILE=65535
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
