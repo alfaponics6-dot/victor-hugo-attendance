@@ -4,9 +4,9 @@
 
 set -u
 BASE=http://localhost:3000/api
-LEADER_CODE=${LEADER_ACCESS_CODE:-EARTHFOREST2026}
-ADMIN_PW=${ADMIN_PW:-Admin2026Test}
-PROFESOR_PW=${PROFESOR_PW:-Profesor2026}
+LEADER_CODE=${LEADER_ACCESS_CODE:?LEADER_ACCESS_CODE env var is required}
+ADMIN_PW=${ADMIN_PW:?ADMIN_PW env var is required}
+PROFESOR_PW=${PROFESOR_PW:?PROFESOR_PW env var is required}
 
 pass=0
 fail=0

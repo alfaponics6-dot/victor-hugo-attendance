@@ -29,7 +29,11 @@ const args = Object.fromEntries(
 );
 
 const BASE = process.env.BASE || 'http://localhost:3000/api';
-const ACCESS_CODE = process.env.LEADER_ACCESS_CODE || 'EARTHFOREST2026';
+const ACCESS_CODE = process.env.LEADER_ACCESS_CODE;
+if (!ACCESS_CODE) {
+  console.error('LEADER_ACCESS_CODE env var is required.');
+  process.exit(1);
+}
 const WAVES = parseInt(args.waves) || 1;
 const DATE = args.date || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 const TIME = '09:00';
