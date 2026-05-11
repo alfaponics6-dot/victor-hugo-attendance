@@ -227,10 +227,31 @@ function Login() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
-      {/* faint global grid pattern */}
+      {/* Background image. Subtle blur + slight scale-up to hide the blur's
+          edge bleed. `fixed` so it doesn't scroll-jitter; sits behind all
+          content via negative z-index. The `surface` utility on cards already
+          has `backdrop-filter: blur(12px)` so cards will read crisply on top. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.10] sm:opacity-[0.14] lg:opacity-[0.18]"
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/login-bg.jpg')",
+          filter: 'blur(3px) brightness(0.6) saturate(1.05)',
+          transform: 'scale(1.04)',
+        }}
+      />
+      {/* Soft tint overlay between the bg image and the content. Keeps text
+          contrast on accent colours without making the photo look flat. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/40 to-black/55"
+      />
+
+      {/* faint global grid pattern — still works on top of the photo,
+          just with a quieter opacity since the bg already provides texture. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.05] sm:opacity-[0.07] lg:opacity-[0.10]"
         style={{
           backgroundImage:
             'linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)',
