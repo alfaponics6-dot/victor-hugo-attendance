@@ -1,8 +1,11 @@
 # Dependencies
 node_modules/
 
-# Database
+# Database (incl. SQLite WAL/SHM siblings, which carry uncheckpointed data)
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 
 # Backups
 server/backups/
