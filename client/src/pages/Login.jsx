@@ -236,15 +236,20 @@ function Login() {
         className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
         style={{
           backgroundImage: "url('/login-bg.jpg')",
-          filter: 'blur(3px) brightness(0.6) saturate(1.05)',
+          // Earlier 0.6 brightness was crushing the photo into the dark theme.
+          // 0.85 keeps the photo readable while still leaving enough contrast
+          // for headline text outside the card. saturate(1.1) brings back
+          // some colour life that the blur otherwise dulls.
+          filter: 'blur(3px) brightness(0.85) saturate(1.1)',
           transform: 'scale(1.04)',
         }}
       />
-      {/* Soft tint overlay between the bg image and the content. Keeps text
-          contrast on accent colours without making the photo look flat. */}
+      {/* Subtle dark veil so light/orange parts of the photo don't blow out
+          the bottom-row footer text. Much lighter than before — the photo
+          should be visible, not fighting for survival. */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/30 via-black/40 to-black/55"
+        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/20 to-black/30"
       />
 
       {/* faint global grid pattern — still works on top of the photo,
