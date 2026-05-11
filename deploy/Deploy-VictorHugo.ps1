@@ -204,6 +204,19 @@ function Get-ByName($listJson, $name) {
     return ($listJson.data | Where-Object { $_.'display-name' -eq $name } | Select-Object -First 1)
 }
 
+# Windows PowerShell's argument-passing mangles JSON strings handed to native
+# exes (quote escaping is brittle), so we serialise to a UTF-8 temp file and
+# hand OCI CLI a file:// URI. Returns the URI; caller deletes after use.
+function New-JsonTempFile($obj) {
+    $path = [System.IO.Path]::GetTempFileName()
+    $json = ($obj | ConvertTo-Json -Compress -Depth 6)
+    # Write UTF-8 *without* BOM. Set-Content -Encoding utf8 in PS 5.1 adds a
+    # BOM that some CLIs choke on; this avoids that.
+    [System.IO.File]::WriteAllText($path, $json, [System.Text.UTF8Encoding]::new($false))
+    # OCI CLI accepts "file://<absolute-path>" with forward slashes on Windows.
+    return 'file://' + ($path -replace '\\', '/')
+}
+
 $publicIp = $null
 
 if (-not $SkipProvision) {
@@ -244,18 +257,16 @@ if (-not $SkipProvision) {
     $rt = Get-ByName $rtList 'victor-hugo-rt'
     if (-not $rt) {
         Write-Detail 'Creating Route Table to IGW'
-        $routeRules = (@(
-            @{
-                destination = '0.0.0.0/0'
-                destinationType = 'CIDR_BLOCK'
-                networkEntityId = $igw.id
-            }
-        ) | ConvertTo-Json -Compress -Depth 4)
+        $rulesUri = New-JsonTempFile @(@{
+            destination = '0.0.0.0/0'
+            destinationType = 'CIDR_BLOCK'
+            networkEntityId = $igw.id
+        })
         $rt = (& oci @script:OciAuthArgs network route-table create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --display-name 'victor-hugo-rt' `
-            --route-rules $routeRules `
+            --route-rules $rulesUri `
             --wait-for-state AVAILABLE `
             --output json | ConvertFrom-Json).data
     }
@@ -266,20 +277,20 @@ if (-not $SkipProvision) {
     $sl = Get-ByName $slList 'victor-hugo-sl'
     if (-not $sl) {
         Write-Detail 'Creating Security List (open 22/80/443)'
-        $ingress = (@(
+        $ingressUri = New-JsonTempFile @(
             @{ source='0.0.0.0/0'; sourceType='CIDR_BLOCK'; protocol='6'; isStateless=$false; tcpOptions=@{ destinationPortRange=@{ min=22; max=22 } } },
             @{ source='0.0.0.0/0'; sourceType='CIDR_BLOCK'; protocol='6'; isStateless=$false; tcpOptions=@{ destinationPortRange=@{ min=80; max=80 } } },
             @{ source='0.0.0.0/0'; sourceType='CIDR_BLOCK'; protocol='6'; isStateless=$false; tcpOptions=@{ destinationPortRange=@{ min=443; max=443 } } }
-        ) | ConvertTo-Json -Compress -Depth 6)
-        $egress = (@(
+        )
+        $egressUri = New-JsonTempFile @(
             @{ destination='0.0.0.0/0'; destinationType='CIDR_BLOCK'; protocol='all'; isStateless=$false }
-        ) | ConvertTo-Json -Compress -Depth 4)
+        )
         $sl = (& oci @script:OciAuthArgs network security-list create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --display-name 'victor-hugo-sl' `
-            --ingress-security-rules $ingress `
-            --egress-security-rules $egress `
+            --ingress-security-rules $ingressUri `
+            --egress-security-rules $egressUri `
             --wait-for-state AVAILABLE `
             --output json | ConvertFrom-Json).data
     }
@@ -290,13 +301,14 @@ if (-not $SkipProvision) {
     $subnet = Get-ByName $subnetList 'victor-hugo-subnet'
     if (-not $subnet) {
         Write-Detail 'Creating subnet 10.0.0.0/24'
+        $slIdsUri = New-JsonTempFile @($sl.id)
         $subnet = (& oci @script:OciAuthArgs network subnet create `
             --compartment-id $CompartmentOcid `
             --vcn-id $vcn.id `
             --cidr-block '10.0.0.0/24' `
             --display-name 'victor-hugo-subnet' `
             --route-table-id $rt.id `
-            --security-list-ids "[`"$($sl.id)`"]" `
+            --security-list-ids $slIdsUri `
             --dns-label 'vh' `
             --wait-for-state AVAILABLE `
             --output json | ConvertFrom-Json).data
@@ -308,10 +320,10 @@ if (-not $SkipProvision) {
     # -----------------------------------------------------------------
     Write-Section "Launching VM $InstanceName"
 
-    # Metadata: SSH key. The JSON is sensitive to quoting so we serialise once
-    # and pass the whole blob.
-    $metadata = (@{ ssh_authorized_keys = $SshPubKey } | ConvertTo-Json -Compress)
-    $tags = (@{ app = 'victor-hugo'; domain = $Domain } | ConvertTo-Json -Compress)
+    # All JSON blobs go through temp-file URIs to dodge the Windows argv
+    # quote-escaping problem (same reason as the network rules above).
+    $metaUri = New-JsonTempFile @{ ssh_authorized_keys = $SshPubKey }
+    $tagsUri = New-JsonTempFile @{ app = 'victor-hugo'; domain = $Domain }
 
     $launchArgs = @(
         'compute','instance','launch',
@@ -323,14 +335,14 @@ if (-not $SkipProvision) {
         '--display-name', $InstanceName,
         '--assign-public-ip', 'true',
         '--hostname-label', 'vh',
-        '--metadata', $metadata,
-        '--freeform-tags', $tags,
+        '--metadata', $metaUri,
+        '--freeform-tags', $tagsUri,
         '--wait-for-state', 'RUNNING',
         '--output', 'json'
     )
     if ($S.Name -eq 'VM.Standard.A1.Flex') {
-        $shapeCfg = (@{ ocpus = $S.Ocpus; memoryInGBs = $S.MemGb } | ConvertTo-Json -Compress)
-        $launchArgs += @('--shape-config', $shapeCfg)
+        $shapeUri = New-JsonTempFile @{ ocpus = $S.Ocpus; memoryInGBs = $S.MemGb }
+        $launchArgs += @('--shape-config', $shapeUri)
     }
 
     Write-Detail '(this takes ~2 minutes)'
