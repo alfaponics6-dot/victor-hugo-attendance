@@ -73,11 +73,15 @@ function Dashboard() {
           </span>
         }
         subtitle={
-          <span className="inline-flex items-center gap-2 flex-wrap">
+          // `flex-wrap` lets the project name drop to its own line on phones
+          // when the badge + text combined would overflow. `min-w-0` on the
+          // text span enables proper text-wrapping inside a flex parent
+          // (without it, the text refuses to wrap and overflows the row).
+          <span className="flex items-center gap-2 flex-wrap">
             <Badge tone="accent" className="!h-6">
               {t('dashboard.projectBadge', { number: leader.projectNumber })}
             </Badge>
-            <span className="text-[color:var(--color-fg-muted)] truncate">
+            <span className="text-[color:var(--color-fg-muted)] min-w-0 break-words">
               {getProjectLabel(tProject, { project_number: leader.projectNumber, project_name: leader.projectName })}
             </span>
           </span>
