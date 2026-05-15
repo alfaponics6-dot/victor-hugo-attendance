@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Share, Plus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -48,9 +48,25 @@ function readDismissed() {
 
 export default function InstallIosHint() {
   const { t } = useTranslation('common');
-  const [show] = useState(isIosSafariNonStandalone);
+  const [show, setShow] = useState(isIosSafariNonStandalone);
   const [dismissed, setDismissed] = useState(readDismissed);
   const [expanded, setExpanded] = useState(false);
+
+  // Re-check on display-mode change so the banner hides as soon as the
+  // user finishes installing the PWA — without this, it stays visible
+  // until the next reload.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(display-mode: standalone)');
+    const handler = () => setShow(isIosSafariNonStandalone());
+    // Safari < 14 only supports addListener, modern browsers prefer addEventListener
+    if (mql.addEventListener) mql.addEventListener('change', handler);
+    else if (mql.addListener) mql.addListener(handler);
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', handler);
+      else if (mql.removeListener) mql.removeListener(handler);
+    };
+  }, []);
 
   if (!show || dismissed) return null;
 

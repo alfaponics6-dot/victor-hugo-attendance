@@ -144,6 +144,7 @@ async function drainQueueInSW() {
 
   let processed = 0;
   let conflicts = 0;
+  let skipped = 0;
   for (const item of items) {
     const result = await replayItem(item);
     if (result === 'success') {
@@ -176,6 +177,7 @@ async function drainQueueInSW() {
       // with stored Blobs from inside the SW context, so the page-side
       // drain has to handle them. Leave the item alone — no retry-bump,
       // no conflict-record. It'll be processed next tab open.
+      skipped += 1;
       continue;
     } else {
       // network / 5xx in SW context: DO NOT bump retries. The page-side
@@ -200,6 +202,16 @@ async function drainQueueInSW() {
   try {
     const remaining = await db.count(STORE_PENDING).catch(() => null);
     if (remaining !== null) {
+      // Special case: if everything we touched was FormData (which the
+      // SW can't replay), report queueSize=0 so the cron stops pushing.
+      // The page-side drain will replay these items on next tab open
+      // and its heartbeat will restore the flag if work remains. Without
+      // this the server would push us every cron tick forever for items
+      // we have no way to drain in SW context.
+      const effective =
+        processed === 0 && conflicts === 0 && skipped > 0 && remaining === skipped
+          ? 0
+          : remaining;
       // Update the home-screen app badge so the leader sees the new
       // pending count next time they look at their iPad. This is the
       // primary "you have offline work waiting" signal on iOS — push
@@ -215,7 +227,7 @@ async function drainQueueInSW() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ queueSize: remaining }),
+        body: JSON.stringify({ queueSize: effective }),
       }).catch(() => null);
     }
   } catch { /* ignore */ }

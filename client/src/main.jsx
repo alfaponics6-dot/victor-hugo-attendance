@@ -7,6 +7,7 @@ import './lib/i18n'
 // for users who picked light last session.
 import './lib/useTheme'
 import { initSyncQueue } from './lib/syncQueue'
+import { ensurePushSubscription } from './lib/pushSubscribe'
 import App from './App.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary'
 
@@ -14,6 +15,12 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 // offline session. Safe to call before React mounts; offline operations
 // won't kick in until the axios interceptor enqueues something.
 initSyncQueue()
+
+// If the user previously granted notification permission but the push
+// subscription was never landed (e.g. they granted while offline, or a
+// VAPID key fetch failed mid-flow), recover it on every boot. Safe and
+// idempotent — silently no-ops when permission is default/denied.
+ensurePushSubscription().catch(() => {})
 
 // When a new service worker takes control (e.g. immediately after a
 // deploy, via skipWaiting + clients.claim), reload the page so the tab

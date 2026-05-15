@@ -38,10 +38,20 @@ async function runOnce() {
       keys: { p256dh: sub.p256dh, auth: sub.auth },
     };
     try {
-      await webpush.sendNotification(subscription, payload, {
-        TTL: 60 * 5, // discard if not delivered within 5 min
-        urgency: 'normal',
-      });
+      // web-push uses Node's default HTTPS agent which has NO socket
+      // timeout. A single hung push endpoint would stall the entire
+      // cron tick — Promise.race with a 10s deadline forces forward
+      // progress so a misbehaving Apple/Mozilla edge can't block the
+      // other leaders' wake-ups.
+      await Promise.race([
+        webpush.sendNotification(subscription, payload, {
+          TTL: 60 * 5,
+          urgency: 'normal',
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('push timeout')), 10_000),
+        ),
+      ]);
       sent += 1;
       db.markPushed(sub.endpoint, 200).catch(() => {});
     } catch (err) {

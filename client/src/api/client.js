@@ -155,15 +155,20 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
 };
 
 export const logout = async () => {
+  // Clear the in-memory plaintext credential FIRST. If we hit /auth/logout
+  // after this and the server takes a moment, another tab's drainQueue
+  // could otherwise call silentRelogin with the still-live cred and
+  // reissue a cookie for the user we're trying to log out. Killing the
+  // cred before the server call closes that window.
+  clearLiveCredential();
   try {
     await api.post('/auth/logout');
   } catch {
     // Even if the server call fails, drop local state.
   }
   clearStoredUser();
-  // Defense-in-depth: tear down everything that could leak the previous
-  // user's data to whoever logs in next on this device.
-  clearLiveCredential();
+  // Defense-in-depth: tear down everything else that could leak the
+  // previous user's data to whoever logs in next on this device.
   await purgeCachedAuth().catch(() => {});
   await purgeServiceWorkerCaches().catch(() => {});
   // Drop the push subscription so the cron stops poking this device for

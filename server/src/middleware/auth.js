@@ -126,16 +126,21 @@ const requireProfesor = (req, res, next) => {
 // Convert the JWT_EXPIRES_IN string ("8h", "30m", "60s") into milliseconds for
 // the cookie's Max-Age. Defaults to 8h if the format is unrecognized.
 const tokenLifetimeMs = () => {
-  const v = process.env.JWT_EXPIRES_IN || '8h';
+  // Default MUST match the JWT signing default above (currently '30d').
+  // If they diverge, the cookie maxAge expires before the JWT itself —
+  // a stale leader gets booted out at maxAge even though the JWT is
+  // still valid. Both fall back to 30 days if unset.
+  const v = process.env.JWT_EXPIRES_IN || JWT_EXPIRES_IN || '30d';
   const m = String(v).match(/^(\d+)([smhd])$/);
-  if (!m) return 8 * 60 * 60 * 1000;
+  const fallback = 30 * 24 * 60 * 60 * 1000;
+  if (!m) return fallback;
   const n = parseInt(m[1], 10);
   switch (m[2]) {
     case 's': return n * 1000;
     case 'm': return n * 60 * 1000;
     case 'h': return n * 60 * 60 * 1000;
     case 'd': return n * 24 * 60 * 60 * 1000;
-    default: return 8 * 60 * 60 * 1000;
+    default: return fallback;
   }
 };
 

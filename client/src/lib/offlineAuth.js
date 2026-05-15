@@ -168,10 +168,21 @@ function buildProfileFromLeader(leader) {
 // Returns true if a cached credential exists for this leader and hasn't
 // expired. Used to decide whether to show the offline-login affordance
 // vs. a "no internet, no cached login" message.
-export async function hasCachedCredential(leaderId) {
-  if (!leaderId) return false;
+//
+// Checks BOTH paths the verifier checks: shared `role:leader` cache and
+// per-user cache. Without the shared-cache check this returned false for
+// leaders on a tablet where another leader had primed the shared
+// credential — wrong answer, UI would discourage an offline-login that
+// actually would have worked.
+export async function hasCachedCredential(leaderId, opts = {}) {
+  const role = opts.role || 'leader';
   try {
     const db = await getDB();
+    if (role === 'leader') {
+      const shared = await db.get(STORE_AUTH, SHARED_LEADER_KEY);
+      if (shared && Date.now() <= shared.expiresAt) return true;
+    }
+    if (!leaderId) return false;
     const record = await db.get(STORE_AUTH, Number(leaderId));
     return !!record && Date.now() <= record.expiresAt;
   } catch {
@@ -257,4 +268,10 @@ export function getLiveCredential() {
 export function clearLiveCredential() {
   liveCredential = null;
   try { localStorage.removeItem(LIVE_STORAGE_KEY); } catch { /* ignore */ }
+  // Notify listeners so the silentReloginPermanentlyFailed latch (and
+  // any future state pegged to credential identity) resets on explicit
+  // logout, not just on credential ROTATION via rememberLiveCredential.
+  for (const l of credChangeListeners) {
+    try { l(null); } catch { /* don't let one listener kill another */ }
+  }
 }

@@ -4,6 +4,7 @@ import { ChevronLeft, AlertTriangle } from 'lucide-react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import { listConflicts } from '../../lib/offlineQueue';
+import { subscribe as subscribeSyncQueue } from '../../lib/syncQueue';
 import { useAuth } from '../../context/useAuth.js';
 import AttendanceConflictResolver from './AttendanceConflictResolver';
 import GenericConflictResolver from './GenericConflictResolver';
@@ -41,6 +42,12 @@ export default function ConflictsModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return;
     refresh();
+    // Subscribe to the sync queue's pub/sub so the list reacts when
+    // another tab (or the SW) drains a conflict away — without this,
+    // a leader with two PWA windows open would stay drilled into a
+    // phantom conflict that's already been resolved elsewhere.
+    const unsubscribe = subscribeSyncQueue(() => { refresh(); });
+    return unsubscribe;
   }, [open, refresh]);
 
   const handleResolved = async () => {

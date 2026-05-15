@@ -49,7 +49,15 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
   const time = myPayload?.time;
 
   useEffect(() => {
-    if (!projectId || !date) return;
+    // If we have no projectId (e.g. admin/profesor with no fixed project)
+    // or no date (malformed conflict), we can't fetch the server's
+    // current state. Skip the fetch but unblock the UI by setting
+    // serverRows to [] — the resolver renders "no server record" for
+    // each row and the leader's offline data flows through unchanged.
+    if (!projectId || !date) {
+      setServerRows([]);
+      return;
+    }
     let cancelled = false;
     getAttendanceByProjectAndDate(projectId, date)
       .then((rows) => { if (!cancelled) setServerRows(rows || []); })
