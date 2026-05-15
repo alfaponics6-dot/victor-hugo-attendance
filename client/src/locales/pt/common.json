@@ -103,6 +103,16 @@
     "switchToLight": "Modo claro",
     "switchToDark": "Modo escuro"
   },
+  "install": {
+    "title": "Adicione este app à Tela de Início",
+    "subtitle": "Para que a chamada funcione offline mesmo ao abrir o app do zero, instale-o como aplicativo.",
+    "showHow": "Como",
+    "hideHow": "Ocultar",
+    "step1": "Toque no botão Compartilhar do Safari (quadrado com seta para cima).",
+    "step2": "Role e toque em \"Tela de Início\"",
+    "step3": "Abra o app pelo novo ícone, não pelo Safari.",
+    "dismiss": "Não mostrar"
+  },
   "offline": {
     "banner": "Sem conexão — trabalhando com dados salvos",
     "bannerWithPending_one": "Sem conexão · 1 alteração salva localmente",

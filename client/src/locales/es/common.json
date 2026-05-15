@@ -103,6 +103,16 @@
     "switchToLight": "Cambiar a modo claro",
     "switchToDark": "Cambiar a modo oscuro"
   },
+  "install": {
+    "title": "Agregue esta app a su pantalla de inicio",
+    "subtitle": "Para que la asistencia funcione sin conexión incluso al abrir la app desde cero, instálela como aplicación.",
+    "showHow": "Cómo hacerlo",
+    "hideHow": "Ocultar pasos",
+    "step1": "Toque el botón Compartir de Safari (cuadrado con una flecha hacia arriba).",
+    "step2": "Desplácese y toque «Agregar a pantalla de inicio»",
+    "step3": "Abra la app desde el icono nuevo, no desde Safari.",
+    "dismiss": "No mostrar"
+  },
   "offline": {
     "banner": "Sin conexión — trabajando con datos guardados",
     "bannerWithPending_one": "Sin conexión · 1 cambio guardado localmente",

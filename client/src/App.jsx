@@ -5,6 +5,7 @@ import { useAuth } from './context/useAuth.js';
 import Footer from './components/common/Footer';
 import Loading from './components/common/Loading';
 import OfflineIndicator from './components/common/OfflineIndicator';
+import InstallIosHint from './components/common/InstallIosHint';
 import './App.css';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -57,6 +58,10 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        {/* iOS install hint sits above all routes (login + dashboards)
+            because the leaders most need it BEFORE first offline use,
+            which is typically right after first login. */}
+        <InstallIosHint />
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<Login />} />

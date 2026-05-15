@@ -103,6 +103,16 @@
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
   },
+  "install": {
+    "title": "Add this app to your Home Screen",
+    "subtitle": "So attendance works offline even when you open the app from cold, install it as an app.",
+    "showHow": "How",
+    "hideHow": "Hide steps",
+    "step1": "Tap Safari's Share button (square with an up arrow).",
+    "step2": "Scroll and tap \"Add to Home Screen\"",
+    "step3": "Open the app from the new icon, not from Safari.",
+    "dismiss": "Don't show"
+  },
   "offline": {
     "banner": "No connection — working with saved data",
     "bannerWithPending_one": "No connection · 1 change saved locally",

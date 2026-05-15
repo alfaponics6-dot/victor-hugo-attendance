@@ -103,6 +103,16 @@
     "switchToLight": "Passer au mode clair",
     "switchToDark": "Passer au mode sombre"
   },
+  "install": {
+    "title": "Ajoutez cette app à votre écran d'accueil",
+    "subtitle": "Pour que les présences fonctionnent hors-ligne même en ouvrant l'app à froid, installez-la comme application.",
+    "showHow": "Comment",
+    "hideHow": "Masquer",
+    "step1": "Touchez le bouton Partager de Safari (carré avec une flèche).",
+    "step2": "Faites défiler et touchez « Sur l'écran d'accueil »",
+    "step3": "Ouvrez l'app depuis la nouvelle icône, pas depuis Safari.",
+    "dismiss": "Ne plus afficher"
+  },
   "offline": {
     "banner": "Pas de connexion — travail avec données enregistrées",
     "bannerWithPending_one": "Pas de connexion · 1 changement enregistré localement",
