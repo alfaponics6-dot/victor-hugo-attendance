@@ -187,21 +187,53 @@ export async function purgeCachedAuth(leaderId) {
   } catch { /* nothing to do */ }
 }
 
-// In-memory plaintext credential, scoped to the current tab's lifetime.
-// Used by syncQueue.drainQueue to silently re-login when the server cookie
-// has expired during a long offline session — without it, queued writes
-// would 401 forever until the leader manually logs in again.
+// In-memory plaintext credential, used by syncQueue.drainQueue to silently
+// re-login when the server cookie expired (or pre-emptively when a
+// different leader offline-logs-in on a shared tablet).
 //
-// Not persisted (no localStorage / IDB) so closing the tab evicts it.
-// We track which credential field (accessCode vs password) it represents
-// so silent relogin only sends the right one, not both.
-let liveCredential = null;
+// For the LEADER role, we also persist the credential to localStorage so
+// it survives a PWA cold-restart on iOS — without persistence, an iPad
+// that kills the standalone PWA in the background loses the cred and the
+// user has to manually re-login to flush the queue. The leader access
+// code is already shared org-wide and cached as a hash in IDB; storing
+// it as plaintext is a marginal extra exposure on an unlocked device,
+// well worth the offline-resilience win.
+//
+// Admin/profesor credentials are PERSONAL passwords — those stay
+// in-memory only.
+const LIVE_STORAGE_KEY = 'live_leader_cred';
+
+function loadPersistedCredential() {
+  try {
+    const raw = localStorage.getItem(LIVE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.leaderId || !parsed?.credential) return null;
+    return {
+      leaderId: Number(parsed.leaderId),
+      credential: String(parsed.credential),
+      mode: parsed.mode === 'password' ? 'password' : 'accessCode',
+    };
+  } catch {
+    return null;
+  }
+}
+
+let liveCredential = loadPersistedCredential();
 
 export function rememberLiveCredential({ leaderId, credential, mode }) {
   if (!leaderId || !credential) return;
-  // Default to accessCode (leader role); explicit 'password' for admin/profesor.
   const safeMode = mode === 'password' ? 'password' : 'accessCode';
   liveCredential = { leaderId: Number(leaderId), credential, mode: safeMode };
+  // Only persist for shared-code leader role. Personal passwords would
+  // turn the device into a long-term password leak surface.
+  if (safeMode === 'accessCode') {
+    try {
+      localStorage.setItem(LIVE_STORAGE_KEY, JSON.stringify(liveCredential));
+    } catch { /* quota / private mode — drop silently */ }
+  } else {
+    try { localStorage.removeItem(LIVE_STORAGE_KEY); } catch { /* ignore */ }
+  }
 }
 
 export function getLiveCredential() {
@@ -210,4 +242,5 @@ export function getLiveCredential() {
 
 export function clearLiveCredential() {
   liveCredential = null;
+  try { localStorage.removeItem(LIVE_STORAGE_KEY); } catch { /* ignore */ }
 }

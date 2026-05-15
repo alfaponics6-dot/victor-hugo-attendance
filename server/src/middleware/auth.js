@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+// Default raised from 8h to 30d for the offline-first deployment: leaders
+// often go offline for the bulk of their shift and come back hours later
+// to sync. An 8h cookie expiring mid-shift forces a re-login and breaks
+// auto-sync of queued writes. Override via JWT_EXPIRES_IN env if a shorter
+// session is desired (testing, CI, security rotation drills).
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 
 // Fail fast at module load: a bad secret here was producing the same 500
 // later on every login. Catching it during boot makes the misconfiguration
