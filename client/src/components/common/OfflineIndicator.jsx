@@ -3,6 +3,7 @@ import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from '../../lib/useOnlineStatus';
 import { useSyncStatus } from '../../lib/useSyncStatus';
+import { drainQueue } from '../../lib/syncQueue';
 import ConflictsModal from './ConflictsModal';
 
 // Single banner that surfaces three related states:
@@ -12,8 +13,11 @@ import ConflictsModal from './ConflictsModal';
 // We collapse into one slot to avoid stacking banners; precedence is
 // offline > conflicts > syncing > idle-pending > nothing.
 //
-// When conflicts > 0 the banner becomes a button — clicking it opens the
-// resolver modal. Other states render as a static <div role="status">.
+// Clickable states:
+//   - conflicts > 0           → opens the resolver modal
+//   - online + pending > 0 + !syncing → triggers an immediate drainQueue()
+//                               so the user can retry stuck-pending state
+//                               without reloading the tab.
 export default function OfflineIndicator() {
   const isOnline = useOnlineStatus();
   const { pending, conflicts, isSyncing } = useSyncStatus();
@@ -22,7 +26,7 @@ export default function OfflineIndicator() {
 
   if (isOnline && pending === 0 && conflicts === 0) return null;
 
-  let tone, Icon, message, spin = false;
+  let tone, Icon, message, spin = false, cta = null, onClick = null;
   if (!isOnline) {
     tone = 'amber';
     Icon = WifiOff;
@@ -33,15 +37,20 @@ export default function OfflineIndicator() {
     tone = 'orange';
     Icon = AlertTriangle;
     message = t('offline.conflicts', { count: conflicts });
+    cta = t('offline.conflictsCta');
+    onClick = () => setModalOpen(true);
   } else if (isSyncing) {
     tone = 'blue';
     Icon = RefreshCw;
     message = t('offline.syncing', { count: pending });
     spin = true;
   } else {
+    // online + pending > 0 + not actively syncing — tap to retry now
     tone = 'blue';
     Icon = RefreshCw;
     message = t('offline.pending', { count: pending });
+    cta = t('offline.syncNowCta');
+    onClick = () => { drainQueue().catch(() => {}); };
   }
 
   const tones = {
@@ -55,9 +64,9 @@ export default function OfflineIndicator() {
     <>
       <Icon className={`size-4 shrink-0 ${spin ? 'animate-spin' : ''}`} aria-hidden="true" />
       <span>{message}</span>
-      {conflicts > 0 && (
+      {cta && (
         <span className="ml-2 text-xs underline underline-offset-2 opacity-90">
-          {t('offline.conflictsCta')}
+          {cta}
         </span>
       )}
     </>
@@ -65,12 +74,12 @@ export default function OfflineIndicator() {
 
   return (
     <>
-      {conflicts > 0 ? (
+      {onClick ? (
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={onClick}
           className={`${baseCls} w-full hover:brightness-95 cursor-pointer text-center`}
-          aria-haspopup="dialog"
+          aria-haspopup={conflicts > 0 ? 'dialog' : undefined}
         >
           {inner}
         </button>

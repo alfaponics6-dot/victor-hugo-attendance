@@ -114,6 +114,7 @@
     "conflicts_one": "1 unresolved conflict",
     "conflicts_other": "{{count}} unresolved conflicts",
     "conflictsCta": "Resolve",
+    "syncNowCta": "Sync now",
     "conflictsModal": {
       "title": "Unresolved conflicts",
       "description": "The following changes couldn't sync. Resolve each one to save or discard.",

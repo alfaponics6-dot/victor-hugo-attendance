@@ -114,6 +114,7 @@
     "conflicts_one": "1 conflito não resolvido",
     "conflicts_other": "{{count}} conflitos não resolvidos",
     "conflictsCta": "Resolver",
+    "syncNowCta": "Sincronizar agora",
     "conflictsModal": {
       "title": "Conflitos não resolvidos",
       "description": "As alterações a seguir não puderam ser sincronizadas. Resolva cada uma para salvar ou descartar.",
