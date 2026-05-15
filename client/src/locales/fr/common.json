@@ -103,6 +103,12 @@
     "switchToLight": "Passer au mode clair",
     "switchToDark": "Passer au mode sombre"
   },
+  "notifications": {
+    "title": "Activez les notifications pour la synchronisation en arrière-plan",
+    "subtitle": "Permet à l'app d'envoyer les présences enregistrées dès le retour du signal, même app fermée.",
+    "enable": "Activer",
+    "dismiss": "Pas maintenant"
+  },
   "install": {
     "title": "Ajoutez cette app à votre écran d'accueil",
     "subtitle": "Pour que les présences fonctionnent hors-ligne même en ouvrant l'app à froid, installez-la comme application.",

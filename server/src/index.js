@@ -90,6 +90,7 @@ const projectRoutes = require('./routes/projects');
 const attendanceRoutes = require('./routes/attendance');
 const statisticsRoutes = require('./routes/statistics');
 const adminRoutes = require('./routes/admin');
+const pushRoutes = require('./routes/push');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 app.use('/api/', generalLimiter);
@@ -98,6 +99,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/statistics', statisticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/push', pushRoutes);
 
 // Liveness probe — cheap, no I/O. Use this for "is the process alive?" checks.
 app.get('/api/health', (req, res) => {
@@ -153,6 +155,12 @@ let server;
   server = app.listen(PORT, () => {
     process.stdout.write(`Server listening on port ${PORT}\n`);
   });
+  // Start the periodic push cron AFTER the server is listening so a slow
+  // DB seed doesn't keep the cron firing into a half-initialized app.
+  // Skip in NODE_ENV=test to avoid background timers leaking into specs.
+  if (process.env.NODE_ENV !== 'test' && process.env.PUSH_CRON_DISABLE !== 'true') {
+    require('./jobs/pushSyncCron').start();
+  }
 })();
 
 // Graceful shutdown: stop accepting new connections, let in-flight requests

@@ -103,6 +103,12 @@
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
   },
+  "notifications": {
+    "title": "Enable notifications for background sync",
+    "subtitle": "Lets the app send saved attendance when signal returns, even while the app is closed.",
+    "enable": "Enable",
+    "dismiss": "Not now"
+  },
   "install": {
     "title": "Add this app to your Home Screen",
     "subtitle": "So attendance works offline even when you open the app from cold, install it as an app.",

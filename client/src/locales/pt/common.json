@@ -103,6 +103,12 @@
     "switchToLight": "Modo claro",
     "switchToDark": "Modo escuro"
   },
+  "notifications": {
+    "title": "Ative notificações para sincronização em segundo plano",
+    "subtitle": "Permite que o app envie a presença salva quando o sinal voltar, mesmo com o app fechado.",
+    "enable": "Ativar",
+    "dismiss": "Agora não"
+  },
   "install": {
     "title": "Adicione este app à Tela de Início",
     "subtitle": "Para que a chamada funcione offline mesmo ao abrir o app do zero, instale-o como aplicativo.",

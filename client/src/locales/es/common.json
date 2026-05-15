@@ -103,6 +103,12 @@
     "switchToLight": "Cambiar a modo claro",
     "switchToDark": "Cambiar a modo oscuro"
   },
+  "notifications": {
+    "title": "Activar notificaciones para sincronizar en segundo plano",
+    "subtitle": "Permite que la app envíe la asistencia guardada cuando haya señal, aunque la app esté cerrada.",
+    "enable": "Activar",
+    "dismiss": "Ahora no"
+  },
   "install": {
     "title": "Agregue esta app a su pantalla de inicio",
     "subtitle": "Para que la asistencia funcione sin conexión incluso al abrir la app desde cero, instálela como aplicación.",

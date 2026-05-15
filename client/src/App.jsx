@@ -6,6 +6,7 @@ import Footer from './components/common/Footer';
 import Loading from './components/common/Loading';
 import OfflineIndicator from './components/common/OfflineIndicator';
 import InstallIosHint from './components/common/InstallIosHint';
+import NotificationPrompt from './components/common/NotificationPrompt';
 import './App.css';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -62,6 +63,11 @@ function App() {
             because the leaders most need it BEFORE first offline use,
             which is typically right after first login. */}
         <InstallIosHint />
+        {/* After install, we ask for notification permission so the
+            server's wake-up push can drain the queue without the leader
+            opening the app. Only renders when running standalone +
+            permission is undecided. */}
+        <NotificationPrompt />
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<Login />} />

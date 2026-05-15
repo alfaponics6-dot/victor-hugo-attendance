@@ -21,6 +21,9 @@ client/dist/
 .env.local
 .env.production
 
+# VAPID keys (Web Push) — generated on first server boot
+server/vapid-keys.json
+
 # IDE
 .vscode/
 .idea/

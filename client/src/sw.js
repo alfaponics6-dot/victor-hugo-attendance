@@ -285,6 +285,52 @@ async function showSyncNotification(processed, conflicts) {
   } catch { /* permission may have been revoked */ }
 }
 
+// ----- Web Push wake-up -----
+// The server pushes a periodic 'sync-trigger' so we can drain the queue
+// without the leader opening the app. Apple requires every push handler
+// on iOS to show a visible notification, so we always show one (the
+// drain logic decides whether it's "synced N records" or a quiet
+// "connected" stub).
+self.addEventListener('push', (event) => {
+  event.waitUntil(handlePush(event));
+});
+
+async function handlePush(event) {
+  let payload = {};
+  try {
+    if (event.data) payload = event.data.json();
+  } catch { /* opaque or empty push */ }
+
+  // Run the drain inside the lock so a concurrent page-side drain can't
+  // race us. drainQueueInSW() handles the notification + client postMessage
+  // when items get processed.
+  await drainWithLock();
+
+  // If drainWithLock emitted a notification (processed > 0), we're done.
+  // Otherwise iOS will penalize us for "silent push" — fall back to a
+  // quiet status notification with a short auto-dismiss so we satisfy
+  // the visible-notification requirement without spamming the user.
+  if (Notification.permission === 'granted') {
+    const recent = await self.registration.getNotifications({ tag: 'attendance-sync' });
+    if (recent.length === 0) {
+      await self.registration
+        .showNotification('Asistencia', {
+          body: 'Conectado y sincronizado.',
+          icon: '/Logo-Universidad-EARTH_academico-300x257.png',
+          tag: 'sync-status',
+          silent: true,
+          requireInteraction: false,
+        })
+        .catch(() => {});
+      // Auto-dismiss the quiet notification after 4s so it doesn't pile up.
+      setTimeout(async () => {
+        const stale = await self.registration.getNotifications({ tag: 'sync-status' });
+        for (const n of stale) n.close();
+      }, 4000);
+    }
+  }
+}
+
 // Clicking the notification focuses the app (or opens it if closed).
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

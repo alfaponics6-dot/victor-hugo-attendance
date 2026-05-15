@@ -164,6 +164,27 @@ class Database {
       this.db.run(`ALTER TABLE attendance_resolutions ADD COLUMN user_agent TEXT`, () => {});
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_resolutions_project_date ON attendance_resolutions(project_id, date)`);
 
+      // Web Push subscriptions. Used by the periodic cron to wake each
+      // installed PWA's service worker so it can drain the offline queue
+      // without the leader having to open the app. endpoint is unique
+      // per subscription (browser-issued URL); a leader can have multiple
+      // subscriptions if they install on multiple devices.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          leader_id INTEGER,
+          endpoint TEXT NOT NULL UNIQUE,
+          p256dh TEXT NOT NULL,
+          auth TEXT NOT NULL,
+          user_agent TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_pushed_at DATETIME,
+          last_status INTEGER,
+          FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE CASCADE
+        )
+      `);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_push_subs_leader ON push_subscriptions(leader_id)`);
+
       // Rotations table - track student rotation assignments
       this.db.run(`
         CREATE TABLE IF NOT EXISTS rotations (
@@ -1337,6 +1358,73 @@ class Database {
         });
       });
     }));
+  }
+
+  // ----- Push subscriptions (Web Push) -----
+
+  // Insert or refresh a subscription. The endpoint is unique per
+  // browser/device, so a leader logging in on a new tablet creates a new
+  // row without disturbing their other devices.
+  upsertPushSubscription({ leaderId, endpoint, p256dh, auth, userAgent }) {
+    return new Promise((resolve, reject) => {
+      this.db.run(
+        `INSERT INTO push_subscriptions (leader_id, endpoint, p256dh, auth, user_agent)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(endpoint) DO UPDATE SET
+           leader_id = excluded.leader_id,
+           p256dh = excluded.p256dh,
+           auth = excluded.auth,
+           user_agent = excluded.user_agent`,
+        [leaderId ?? null, endpoint, p256dh, auth, userAgent ?? null],
+        function (err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        },
+      );
+    });
+  }
+
+  removePushSubscription(endpoint) {
+    return new Promise((resolve, reject) => {
+      this.db.run(
+        'DELETE FROM push_subscriptions WHERE endpoint = ?',
+        [endpoint],
+        function (err) {
+          if (err) reject(err);
+          else resolve(this.changes);
+        },
+      );
+    });
+  }
+
+  listPushSubscriptions() {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT id, leader_id, endpoint, p256dh, auth FROM push_subscriptions`,
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        },
+      );
+    });
+  }
+
+  // Mark a successful push so we can age out devices that haven't been
+  // heard from in a long time (future cleanup job — not used yet).
+  markPushed(endpoint, status) {
+    return new Promise((resolve, reject) => {
+      this.db.run(
+        `UPDATE push_subscriptions
+         SET last_pushed_at = CURRENT_TIMESTAMP, last_status = ?
+         WHERE endpoint = ?`,
+        [status, endpoint],
+        function (err) {
+          if (err) reject(err);
+          else resolve(this.changes);
+        },
+      );
+    });
   }
 
   // Get all absent students with optional filters (for profesor view)

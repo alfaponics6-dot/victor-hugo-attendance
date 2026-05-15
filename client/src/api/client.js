@@ -2,6 +2,7 @@ import axios from 'axios';
 import { enqueueRequest } from '../lib/syncQueue';
 import { cacheCredential, clearLiveCredential, purgeCachedAuth } from '../lib/offlineAuth';
 import { primeOfflineCache } from '../lib/offlinePrime';
+import { ensurePushSubscription, unsubscribePush } from '../lib/pushSubscribe';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -128,6 +129,10 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
     // first offline session has data ready (rosters, projects, today's
     // attendance, etc.). Background — don't block navigation.
     primeOfflineCache(response.data.leader).catch(() => {});
+    // If notifications are already granted (e.g. from a previous session),
+    // make sure the push subscription is current with the server. The
+    // request-permission step happens elsewhere — needs a user gesture.
+    ensurePushSubscription().catch(() => {});
   }
 
   return response.data;
@@ -145,6 +150,9 @@ export const logout = async () => {
   clearLiveCredential();
   await purgeCachedAuth().catch(() => {});
   await purgeServiceWorkerCaches().catch(() => {});
+  // Drop the push subscription so the cron stops poking this device for
+  // a leader who may never log back in here.
+  await unsubscribePush().catch(() => {});
 };
 
 // Ask the active service worker to drop user-scoped runtime caches
