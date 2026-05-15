@@ -210,6 +210,17 @@ async function drainQueueInSW() {
   try {
     const remaining = await db.count(STORE_PENDING).catch(() => null);
     if (remaining !== null) {
+      // Update the home-screen app badge so the leader sees the new
+      // pending count next time they look at their iPad. This is the
+      // primary "you have offline work waiting" signal on iOS — push
+      // can be throttled, badge can't.
+      try {
+        if (remaining === 0 && self.navigator?.clearAppBadge) {
+          await self.navigator.clearAppBadge();
+        } else if (remaining > 0 && self.navigator?.setAppBadge) {
+          await self.navigator.setAppBadge(remaining);
+        }
+      } catch { /* unsupported */ }
       await fetch('/api/push/heartbeat', {
         method: 'POST',
         credentials: 'include',

@@ -8,6 +8,7 @@ import {
   conflictCount,
 } from './offlineQueue';
 import { getLiveCredential } from './offlineAuth';
+import { setAppBadge } from './appBadge';
 
 const MAX_RETRIES = 5;
 // Subscribers get notified whenever the queue size, conflict count, or
@@ -22,6 +23,10 @@ async function snapshot() {
 
 async function notify() {
   const snap = await snapshot();
+  // Mirror the pending count onto the app icon badge — leaders see a
+  // red number on the PWA icon when they unlock their iPad even if no
+  // notification fired. Best-effort, silently no-ops where unsupported.
+  setAppBadge(snap.pending).catch(() => {});
   for (const l of listeners) {
     try { l(snap); } catch { /* never let one listener kill another */ }
   }
