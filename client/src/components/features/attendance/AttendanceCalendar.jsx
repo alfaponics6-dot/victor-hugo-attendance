@@ -299,16 +299,22 @@ function DayCell({ date, isValid, rate, today, data, onClick }) {
       <span className={cn('tabular', today && 'text-[color:var(--color-accent)]')}>
         {date.getDate()}
       </span>
-      {tone && data?.total > 0 && (
-        <span
-          aria-hidden
-          className="size-1 sm:size-1.5 rounded-full"
-          style={{ background: accent, boxShadow: `0 0 8px ${accent}` }}
-        />
-      )}
+      {/* Density dot + count are now on a single inline row below the
+          day number. Previously the dot was a flex child centered
+          beneath the number AND the count was absolute-positioned
+          bottom-right — on small cells the two visually overlapped
+          (the dot sat right under the count and looked like it was
+          blocking the "5/5"). */}
       {data?.total > 0 && (
-        <span className="absolute bottom-0.5 right-1 sm:bottom-1 sm:right-1.5 text-[8px] sm:text-[9px] tabular text-[color:var(--color-fg-subtle)]">
-          {data.present}/{data.total}
+        <span className="flex items-center gap-1 text-[8px] sm:text-[9px] tabular text-[color:var(--color-fg-subtle)] leading-none">
+          {tone && (
+            <span
+              aria-hidden
+              className="size-1 sm:size-1.5 rounded-full shrink-0"
+              style={{ background: accent, boxShadow: `0 0 6px ${accent}` }}
+            />
+          )}
+          <span>{data.present}/{data.total}</span>
         </span>
       )}
     </motion.button>
