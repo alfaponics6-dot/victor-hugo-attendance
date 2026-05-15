@@ -57,14 +57,25 @@
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; }
-/* `height: 100%` on #root made it EXACTLY one viewport tall, capping
-   any descendant's `min-h-screen` (Tailwind's `min-height: 100vh`)
-   when the parent constraint conflicted. Switching to min-height lets
-   the document grow with its content while still filling the viewport
-   when content is short — sticky-footer patterns now work reliably. */
+/* Sticky-footer pattern that survives every viewport quirk we've hit:
+   - `min-height: 100%` on html/body USED to resolve to `auto` here
+     (body's 100% depends on html's height which depends on body —
+     the classic % cycle), leaving the footer floating above viewport
+     bottom on short pages and below it on tall ones.
+   - Anchoring both to `100dvh` (dynamic viewport, mobile-bar aware)
+     gives a concrete reference height that doesn't depend on content.
+   - Making #root a flex column with `flex: 1 0 auto` on its child
+     forces the AuthedShell to grow into available space, so the
+     footer pins to viewport bottom when content is short and
+     scrolls into view normally when content is tall. */
 html, body, #root { margin: 0; padding: 0; }
-html, body { min-height: 100%; }
-#root { min-height: 100dvh; display: flex; flex-direction: column; }
+html, body { min-height: 100dvh; }
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+#root > * { flex: 1 0 auto; display: flex; flex-direction: column; }
 html { color-scheme: dark; background-color: var(--color-bg); }
 :root.light { color-scheme: light; }
 

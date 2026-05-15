@@ -117,7 +117,7 @@ function Dashboard() {
           transition={{ duration: 0.25, ease: [0.25, 1, 0.5, 1] }}
         >
           <Suspense fallback={<Loading />}>
-            {activeTab === 'home' && <HomeTab leader={leader} onSwitchToAttendance={() => setActiveTab('attendance')} />}
+            {activeTab === 'home' && <HomeTab leader={leader} />}
             {activeTab === 'attendance' && <Attendance />}
             {activeTab === 'students' && <StudentManagement />}
             {activeTab === 'mail' && <MailRotation />}
@@ -129,7 +129,7 @@ function Dashboard() {
   );
 }
 
-function HomeTab({ leader, onSwitchToAttendance }) {
+function HomeTab({ leader }) {
   const { t } = useTranslation(['leader', 'common']);
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -144,7 +144,7 @@ function HomeTab({ leader, onSwitchToAttendance }) {
           <AlertsWidget projectId={leader.projectId} />
         </div>
         <div className="lg:col-span-1 min-w-0">
-          <AttendanceCalendar projectId={leader.projectId} onDateSelect={onSwitchToAttendance} />
+          <AttendanceCalendar projectId={leader.projectId} />
         </div>
       </section>
     </div>

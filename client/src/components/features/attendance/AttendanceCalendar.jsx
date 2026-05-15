@@ -16,7 +16,7 @@ import { cn } from '../../../lib/cn';
  * tappable (the project's session days); other days are visually receded.
  * Clicking a tracked day opens a glass modal with the per-student breakdown.
  */
-function AttendanceCalendar({ projectId, onDateSelect }) {
+function AttendanceCalendar({ projectId }) {
   const { t, i18n } = useTranslation(['leader', 'common']);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [attendanceData, setAttendanceData] = useState({});
@@ -116,6 +116,10 @@ function AttendanceCalendar({ projectId, onDateSelect }) {
     return (data.present / Math.max(students.length || data.total, 1)) * 100;
   };
 
+  // Click opens the day-summary modal. We deliberately do NOT call
+  // onDateSelect here — previously the modal opened AND the parent
+  // switched to the Attendance tab in the same gesture, so the
+  // summary was invisible (mounted under a swapped-out tab).
   const handleDateClick = async (date) => {
     if (!date || !isAttendanceDay(date)) return;
     const dateStr = formatDateToYYYYMMDD(date);
@@ -130,7 +134,6 @@ function AttendanceCalendar({ projectId, onDateSelect }) {
     } finally {
       setModalLoading(false);
     }
-    onDateSelect?.(dateStr);
   };
 
   const closeModal = () => {
