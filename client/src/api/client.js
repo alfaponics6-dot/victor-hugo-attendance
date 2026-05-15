@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { enqueueRequest } from '../lib/syncQueue';
 import { cacheCredential } from '../lib/offlineAuth';
+import { primeOfflineCache } from '../lib/offlinePrime';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -123,6 +124,10 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
       credential: password || accessCode,
       profile: response.data.leader,
     }).catch(() => {});
+    // Warm the SW runtime cache with role-appropriate GETs so the user's
+    // first offline session has data ready (rosters, projects, today's
+    // attendance, etc.). Background — don't block navigation.
+    primeOfflineCache(response.data.leader).catch(() => {});
   }
 
   return response.data;
