@@ -48,7 +48,30 @@ export async function enqueueRequest(payload) {
   const id = await enqueueToStore(payload);
   await notify();
   registerBackgroundSync().catch(() => {});
+  // Best-effort: tell the server "I have N items pending". When the
+  // device is offline (typical for an enqueue), this fetch fails — that
+  // lines up with the next online drain or boot heartbeat. When the
+  // network is just transiently flaky, this lets the server flag us
+  // before the next cron tick so wake-up pushes can fire.
+  pushHeartbeat().catch(() => {});
   return id;
+}
+
+// Tell the server how many writes are currently pending in our IndexedDB
+// queue. The server's syncStateTracker middleware (and the explicit
+// /push/heartbeat endpoint) use this to set/clear the per-leader
+// sync_needed_at flag that gates the wake-up push cron.
+async function pushHeartbeat() {
+  if (typeof navigator === 'undefined' || !navigator.onLine) return;
+  try {
+    const queueSize = await queueCount();
+    await fetch('/api/push/heartbeat', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ queueSize }),
+    });
+  } catch { /* best-effort */ }
 }
 
 async function registerBackgroundSync() {
@@ -96,6 +119,12 @@ let lastAlignedLeaderId = null;
 async function doDrainQueue() {
   isSyncing = true;
   await notify();
+
+  // Tell the server about our queue state right NOW so the wake-up cron
+  // knows there's work to push for. Without this the queue can drain
+  // here without ever flagging the server, and the cron stays silent
+  // even when subsequent enqueues happen offline.
+  pushHeartbeat().catch(() => {});
 
   let processed = 0;
   let conflicts = 0;
@@ -186,6 +215,10 @@ async function doDrainQueue() {
   } else {
     resetBackoff();
   }
+
+  // Final heartbeat so the server's sync_needed_at reflects reality
+  // (clears it when queue is empty; keeps it set when items remain).
+  pushHeartbeat().catch(() => {});
 
   return { processed, conflicts, failed };
 }
@@ -318,8 +351,12 @@ export function initSyncQueue() {
     resetBackoff();
     drainQueue().catch(() => {});
   });
-  // Drain on boot if we're already online and have items waiting.
+  // Drain on boot if we're already online and have items waiting. Also
+  // heartbeat unconditionally so the server's sync flag reflects what's
+  // really sitting in this device's queue right now — fixes the case
+  // where the PWA was force-closed before the queue was ever reported.
   if (navigator.onLine) {
+    pushHeartbeat().catch(() => {});
     drainQueue().catch(() => {});
   }
 }
