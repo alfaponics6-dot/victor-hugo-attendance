@@ -18,14 +18,21 @@ import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { openDB } from 'idb';
 
-// skipWaiting + clients.claim so a new SW takes over immediately on
-// activation. Without claim(), the old SW keeps controlling open tabs
-// until they reload — sync tags registered to the new tag name end up
-// being swallowed by the old SW that has no handler for them.
-self.skipWaiting();
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
-});
+// We used to call self.skipWaiting() at top level and self.clients.claim()
+// in the activate handler so a new SW would take over immediately. That
+// combination — even with no page-side `controllerchange` listener — was
+// observed (via Playwright instrumentation) to cause a one-off browser-
+// level reload on first SW activation: the page navigated twice with no
+// JavaScript navigation API call (reload/assign/replace/href setter/
+// history.go/form submit were all patched and recorded zero calls). The
+// reload landed within ~10ms of the controllerchange event, strongly
+// implicating the SW takeover itself.
+//
+// Standard SW lifecycle now: new SW installs, waits in the background,
+// activates only after all controlled tabs are closed (or after an
+// explicit user gesture). No surprise reloads. Cost: new bundles take
+// effect on next fresh tab instead of mid-session — acceptable for an
+// attendance app where leaders typically open/close per use anyway.
 
 // Allow the page to ask the SW to purge user-scoped runtime caches
 // (called from logout(); see api/client.js). The api-get cache is shared
