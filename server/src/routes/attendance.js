@@ -48,6 +48,30 @@ const safeUnlink = async (filePath) => {
   }
 };
 
+// Return null if the submitted date is sane (YYYY-MM-DD, within a
+// generous window around the server clock), otherwise an error message
+// the route can surface. The bounds are deliberately wide: leaders may
+// legitimately back-date a missed day or sync after a long offline
+// stretch, but a clock skew of weeks/years is always wrong.
+const sanityCheckAttendanceDate = (date) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) {
+    return 'Invalid date format (expected YYYY-MM-DD)';
+  }
+  const submitted = new Date(date + 'T00:00:00Z').getTime();
+  if (!Number.isFinite(submitted)) return 'Invalid date';
+  const now = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const pastWindowDays = Number(process.env.ATTENDANCE_PAST_DAYS) || 60;
+  const futureWindowDays = Number(process.env.ATTENDANCE_FUTURE_DAYS) || 2;
+  if (submitted < now - pastWindowDays * oneDayMs) {
+    return `Date is more than ${pastWindowDays} days in the past`;
+  }
+  if (submitted > now + futureWindowDays * oneDayMs) {
+    return `Date is more than ${futureWindowDays} days in the future`;
+  }
+  return null;
+};
+
 // ----------------------------------------------------------------------------
 
 // Bulk mark attendance for multiple students (preferred method)
@@ -78,6 +102,13 @@ router.post('/bulk', express.json(), async (req, res) => {
     if (records.length > 200) {
       return res.status(413).json({ error: 'Too many records in a single submission (max 200)' });
     }
+
+    // Sanity-check the client-supplied date against the server clock. A
+    // device with a wildly wrong time can otherwise insert "attendance"
+    // dated weeks in the future or years in the past, which corrupts the
+    // (student_id, date) unique constraint logic and statistics.
+    const dateErr = sanityCheckAttendanceDate(date);
+    if (dateErr) return res.status(400).json({ error: dateErr });
 
     // NOTE: the project+date duplicate check now runs INSIDE the transaction
     // in insertBulkAttendance so the check+insert pair is atomic. We don't
@@ -165,6 +196,8 @@ router.post('/bulk/resolve', resolveLimiter, express.json(), async (req, res) =>
     if (records.length > 200) {
       return res.status(413).json({ error: 'Too many records in a single submission (max 200)' });
     }
+    const dateErr = sanityCheckAttendanceDate(date);
+    if (dateErr) return res.status(400).json({ error: dateErr });
     if (resolution !== 'overwrite' && resolution !== 'merge') {
       return res.status(400).json({ error: 'resolution must be "overwrite" or "merge"' });
     }

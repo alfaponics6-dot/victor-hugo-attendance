@@ -120,15 +120,25 @@ self.addEventListener('sync', (event) => {
 
 // Acquire the cross-context Web Lock before touching the IDB store so we
 // can't race a page-side drainQueue running concurrently.
+//
+// Returns true if we actually ran the drain, false if the lock was held
+// elsewhere and we skipped. Callers use this to decide whether they
+// need to fire a fallback notification (we shouldn't fire one when the
+// other context is already mid-drain — it'll show its own).
 async function drainWithLock() {
   if (self.navigator?.locks?.request) {
     return self.navigator.locks.request(
       DRAIN_LOCK_NAME,
       { ifAvailable: true },
-      (lock) => (lock ? drainQueueInSW() : Promise.resolve()),
+      async (lock) => {
+        if (!lock) return false;
+        await drainQueueInSW();
+        return true;
+      },
     );
   }
-  return drainQueueInSW();
+  await drainQueueInSW();
+  return true;
 }
 
 // Drain logic that runs INSIDE the service worker context. Mirrors the
@@ -167,10 +177,30 @@ async function drainQueueInSW() {
       // The page-side drain handles silent re-login (it has the live
       // plaintext credential). From SW we can't. Stop the drain so the
       // next online tab session can finish the job. Re-register the sync
-      // tag so we get another shot if the cookie gets refreshed elsewhere.
-      try {
-        if (self.registration?.sync) await self.registration.sync.register(SYNC_TAG);
-      } catch { /* ignore */ }
+      // tag so we get another shot if the cookie gets refreshed
+      // elsewhere — BUT only if SyncManager actually exists. On iOS
+      // Safari `self.registration.sync` is undefined; the previous code
+      // silently no-op'd, leading to an infinite "Conectado" loop where
+      // every cron push triggered a SW wake → auth-fail → fake stub →
+      // server still flagged → next push, forever. Now we explicitly
+      // tell the server queueSize=0 so the cron stops bothering us
+      // until the user reopens the app and the page-side drain runs.
+      if (self.registration?.sync) {
+        try { await self.registration.sync.register(SYNC_TAG); } catch { /* ignore */ }
+      } else {
+        // No SyncManager → no escape from this state via SW. Tell the
+        // server we have nothing to drain (a deliberate lie scoped to
+        // this push); the page-side drain will heartbeat the truth on
+        // next tab open.
+        try {
+          await fetch('/api/push/heartbeat', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queueSize: 0 }),
+          });
+        } catch { /* ignore */ }
+      }
       break;
     } else if (result === 'skipped') {
       // FormData items: we can't reliably reconstruct the multipart body
@@ -332,14 +362,17 @@ async function handlePush(event) {
   } catch { /* opaque or empty push */ }
 
   // Run the drain inside the lock so a concurrent page-side drain can't
-  // race us. drainQueueInSW() handles the notification + client postMessage
-  // when items get processed.
-  await drainWithLock();
+  // race us. ranDrain=false means the page-side has the lock and is
+  // already handling everything (including its own notification) — we
+  // skip the fallback to avoid a duplicate "Conectado" stub on top of
+  // the real "Asistencia sincronizada" notification the page will show.
+  const ranDrain = await drainWithLock();
+  if (!ranDrain) return;
 
-  // If drainWithLock emitted a notification (processed > 0), we're done.
-  // Otherwise iOS will penalize us for "silent push" — fall back to a
-  // quiet status notification with a short auto-dismiss so we satisfy
-  // the visible-notification requirement without spamming the user.
+  // If drainQueueInSW emitted a real notification (processed > 0), we're
+  // done. Otherwise iOS will penalize us for "silent push" — fall back
+  // to a quiet status notification with a short auto-dismiss so we
+  // satisfy the visible-notification requirement without spamming.
   if (Notification.permission === 'granted') {
     const recent = await self.registration.getNotifications({ tag: 'attendance-sync' });
     if (recent.length === 0) {

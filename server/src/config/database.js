@@ -1387,7 +1387,11 @@ class Database {
   // browser/device, so a leader logging in on a new tablet creates a new
   // row without disturbing their other devices.
   upsertPushSubscription({ leaderId, endpoint, p256dh, auth, userAgent }) {
-    return new Promise((resolve, reject) => {
+    // Under writeMutex so it can't race the cron's removePushSubscription
+    // for a 410'd endpoint — without serialization, a fresh subscribe
+    // could be issued and then immediately deleted by a stale cron
+    // iteration, silently unsubscribing the device.
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
       this.db.run(
         `INSERT INTO push_subscriptions (leader_id, endpoint, p256dh, auth, user_agent)
          VALUES (?, ?, ?, ?, ?)
@@ -1402,11 +1406,11 @@ class Database {
           else resolve(this.lastID);
         },
       );
-    });
+    }));
   }
 
   removePushSubscription(endpoint) {
-    return new Promise((resolve, reject) => {
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
       this.db.run(
         'DELETE FROM push_subscriptions WHERE endpoint = ?',
         [endpoint],
@@ -1415,7 +1419,7 @@ class Database {
           else resolve(this.changes);
         },
       );
-    });
+    }));
   }
 
   listPushSubscriptions() {
@@ -1533,7 +1537,10 @@ class Database {
   // Mark a successful push so we can age out devices that haven't been
   // heard from in a long time (future cleanup job — not used yet).
   markPushed(endpoint, status) {
-    return new Promise((resolve, reject) => {
+    // Under writeMutex for the same reason as upsert/remove — see the
+    // comment on upsertPushSubscription. A markPushed UPDATE racing a
+    // concurrent DELETE for the same endpoint would silently no-op.
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
       this.db.run(
         `UPDATE push_subscriptions
          SET last_pushed_at = CURRENT_TIMESTAMP, last_status = ?
@@ -1544,7 +1551,7 @@ class Database {
           else resolve(this.changes);
         },
       );
-    });
+    }));
   }
 
   // Get all absent students with optional filters (for profesor view)

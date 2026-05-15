@@ -12,11 +12,22 @@ export default function GenericConflictResolver({ conflict, onResolved }) {
   const { t } = useTranslation('common');
   const [discarding, setDiscarding] = useState(false);
 
-  const bodyPreview = JSON.stringify(
-    conflict?.body?.body ?? conflict?.body?.fields ?? conflict?.body ?? null,
-    null,
-    2,
-  );
+  // JSON.stringify can throw on circular refs / bigints. IDB's
+  // structured-clone normally rejects those before storage, but a
+  // DevTools-injected record or a future code path that bypasses
+  // structuredClone could land one. Guard so the resolver remains
+  // usable (with a degraded preview) rather than crashing into the
+  // ErrorBoundary and losing the Discard button.
+  let bodyPreview;
+  try {
+    bodyPreview = JSON.stringify(
+      conflict?.body?.body ?? conflict?.body?.fields ?? conflict?.body ?? null,
+      null,
+      2,
+    );
+  } catch (e) {
+    bodyPreview = `(preview unavailable: ${e.message})`;
+  }
 
   const handleDiscard = async () => {
     setDiscarding(true);

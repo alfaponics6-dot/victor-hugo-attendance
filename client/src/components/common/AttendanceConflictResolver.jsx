@@ -80,12 +80,21 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
   }, [serverRows]);
 
   // Union of student IDs across both sets so we don't drop anyone.
+  // Hard cap to keep React render manageable — server already enforces
+  // 200 records per bulk submission so a legitimately-queued conflict
+  // can't exceed that, but a corrupted IDB import or a buggy client
+  // could. Render only the first 200; surface a warning if more exist.
+  const MAX_ROWS = 200;
   const allStudentIds = useMemo(() => {
     const s = new Set();
     for (const r of myRecords) s.add(String(r.studentId));
     for (const r of serverRows || []) s.add(String(r.student_id));
     return [...s];
   }, [myRecords, serverRows]);
+  const visibleStudentIds = allStudentIds.length > MAX_ROWS
+    ? allStudentIds.slice(0, MAX_ROWS)
+    : allStudentIds;
+  const truncatedCount = allStudentIds.length - visibleStudentIds.length;
 
   const setAll = (choice) => {
     const next = {};
@@ -111,7 +120,11 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
       for (const r of myRecords) myByStudent[String(r.studentId)] = r;
 
       const merged = [];
-      for (const id of allStudentIds) {
+      // Use visibleStudentIds (capped at MAX_ROWS) so a corrupted/giant
+      // conflict can't generate a 10000-record bulk POST that the server
+      // would 413-reject anyway. The truncation warning above tells the
+      // user what's getting dropped.
+      for (const id of visibleStudentIds) {
         const choice = pickFor(id);
         const m = myByStudent[id];
         const s = serverByStudent[id];
@@ -146,7 +159,17 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
         records: merged,
         resolution: 'merge',
       });
-      await removeConflict(conflict.id);
+      // Server commit succeeded. If removing the local conflict record
+      // fails (IDB quota / lock / browser shutdown), we MUST not let the
+      // user re-submit — that would write a duplicate audit row + redo
+      // the destructive overwrite. Swallow + close the resolver so the
+      // user can't tap Confirm again; the stale conflict row will be
+      // cleaned up on next ConflictsModal refresh (which re-reads IDB).
+      try {
+        await removeConflict(conflict.id);
+      } catch (e) {
+        console.warn('Conflict resolved server-side but local conflict row could not be removed:', e);
+      }
       onResolved?.();
     } catch (e) {
       const msg = e?.response?.data?.error || e?.response?.data?.message || e.message;
@@ -188,8 +211,16 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
         </Button>
       </div>
 
+      {truncatedCount > 0 && (
+        <div className="rounded-md bg-amber-100 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          {/* No i18n: this only fires for corrupted/oversized conflicts.
+              The server enforces 200/submission so legitimate cases never hit this. */}
+          Showing first {visibleStudentIds.length} of {allStudentIds.length} student records.
+          The remaining {truncatedCount} will be discarded on confirm.
+        </div>
+      )}
       <div className="space-y-2">
-        {allStudentIds.map((id) => {
+        {visibleStudentIds.map((id) => {
           const m = myRecords.find((r) => String(r.studentId) === id);
           const s = serverByStudent[id];
           const pick = pickFor(id);

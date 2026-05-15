@@ -81,7 +81,13 @@ api.interceptors.response.use(
     // keeps callers happy without touching every page's success path.
     if (!error.response && shouldQueue(error.config)) {
       const cfg = error.config;
-      const fullUrl = (cfg.baseURL || '') + (cfg.url || '');
+      // axios.getUri serializes baseURL + url + params correctly. Hand-
+      // concatenating dropped any params (?foo=bar) — currently no
+      // mutating call uses them, but a future api.post(url, body,
+      // {params}) would silently lose its query string on replay.
+      const fullUrl = (typeof api.getUri === 'function')
+        ? api.getUri(cfg)
+        : (cfg.baseURL || '') + (cfg.url || '');
       const isFormData = typeof FormData !== 'undefined' && cfg.data instanceof FormData;
       let userId = null;
       try {

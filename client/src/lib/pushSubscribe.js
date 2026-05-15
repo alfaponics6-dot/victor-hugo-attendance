@@ -51,6 +51,15 @@ export async function ensurePushSubscription() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subscription: subscription.toJSON() }),
     }).catch(() => null);
+    // Ask iOS / browser not to evict our IDB + localStorage. Without
+    // this, iOS Safari purges site storage after ~7 days of non-use
+    // even in installed PWAs — losing cached_auth, pending_requests
+    // queue, and the persisted leader credential. Web Push permission
+    // typically grants this automatically; calling it explicitly is a
+    // no-op when not supported.
+    try {
+      if (navigator.storage?.persist) await navigator.storage.persist();
+    } catch { /* unsupported */ }
   } catch {
     // Push is best-effort. A failure here doesn't block anything.
   } finally {

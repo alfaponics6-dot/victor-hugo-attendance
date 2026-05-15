@@ -7,7 +7,11 @@
 // is always safe.
 
 export async function setAppBadge(count) {
-  const n = Math.max(0, Math.floor(Number(count) || 0));
+  // Math.floor(Infinity) = Infinity, which some browsers reject.
+  // Number.isFinite guards both Infinity and NaN; the `|| 0` fallback
+  // already handles NaN but is explicit-double-defense.
+  const raw = Number(count);
+  const n = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
   try {
     if (typeof navigator === 'undefined') return;
     if (n === 0) {

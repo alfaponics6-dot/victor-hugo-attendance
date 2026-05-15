@@ -14,6 +14,11 @@ let dbPromise;
 
 // Single shared DB across queue + offline-auth so we don't fight over the
 // version number. New stores get added inside this upgrade callback.
+//
+// `blocked` and `terminated` callbacks defend against multi-tab edge
+// cases: a tab on an older DB_VERSION blocks a newer tab's upgrade
+// indefinitely (`blocked`), and a tab whose IDB was force-closed by the
+// browser (`terminated`) needs to reopen on next call.
 export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
@@ -35,6 +40,19 @@ export function getDB() {
           // identities (e.g. an admin who occasionally logs in as a leader).
           db.createObjectStore(STORE_AUTH, { keyPath: 'leaderId' });
         }
+      },
+      blocked() {
+        // Another tab is holding the old schema open. Without an escape
+        // path our enqueue/replay hangs forever. Reload this tab so it
+        // can pick up the new schema cleanly.
+        if (typeof window !== 'undefined' && window.location?.reload) {
+          window.location.reload();
+        }
+      },
+      terminated() {
+        // Browser closed our connection (e.g. iOS aggressive eviction).
+        // Drop the cached promise so the next call reopens.
+        dbPromise = null;
       },
     });
   }
@@ -120,10 +138,13 @@ export async function removeById(id) {
   return db.delete(STORE_PENDING, id);
 }
 
+// Returns the new retry count, or null if the record is gone (deleted
+// by a concurrent drain in another tab / by Safari's storage eviction).
+// Callers MUST treat null as "skip this item — already handled".
 export async function bumpRetries(id) {
   const db = await getDB();
   const record = await db.get(STORE_PENDING, id);
-  if (!record) return;
+  if (!record) return null;
   record.retries = (record.retries || 0) + 1;
   await db.put(STORE_PENDING, record);
   return record.retries;

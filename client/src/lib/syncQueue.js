@@ -16,12 +16,38 @@ const MAX_RETRIES = 5;
 const listeners = new Set();
 let isSyncing = false;
 
+// BroadcastChannel cross-tab fanout. Without this, Tab A enqueuing an
+// offline write doesn't update Tab B's banner / badge until Tab B
+// happens to call snapshot() itself (which it won't, unless something
+// triggers notify there). Every notify() in any tab broadcasts a
+// "re-snapshot now" ping; every tab's receiver runs a local snapshot()
+// + listener notify so React state catches up.
+const channel = typeof BroadcastChannel !== 'undefined'
+  ? new BroadcastChannel('vh-sync')
+  : null;
+if (channel) {
+  channel.addEventListener('message', (e) => {
+    if (e.data?.type !== 'queue-changed') return;
+    // Avoid re-broadcasting (would ping-pong forever): use the silent
+    // local-only notify path.
+    notifyLocalOnly().catch(() => {});
+  });
+}
+
 async function snapshot() {
   const [pending, conflicts] = await Promise.all([queueCount(), conflictCount()]);
   return { pending, conflicts, isSyncing };
 }
 
 async function notify() {
+  await notifyLocalOnly();
+  // Fan out to other tabs so their useSyncStatus subscribers re-render.
+  // Wrapped in try because some browsers throw if the channel was closed
+  // (e.g., after pagehide on iOS Safari).
+  try { channel?.postMessage({ type: 'queue-changed' }); } catch { /* ignore */ }
+}
+
+async function notifyLocalOnly() {
   const snap = await snapshot();
   // Mirror the pending count onto the app icon badge — leaders see a
   // red number on the PWA icon when they unlock their iPad even if no
@@ -33,10 +59,19 @@ async function notify() {
 }
 
 export function subscribe(listener) {
+  let cancelled = false;
   listeners.add(listener);
-  // Push current state to the new subscriber so React doesn't render stale.
-  snapshot().then(listener).catch(() => {});
-  return () => listeners.delete(listener);
+  // Push current state to the new subscriber so React doesn't render
+  // stale. Guard the .then() callback so a React StrictMode mount →
+  // unmount cycle (or any fast unsubscribe) doesn't invoke `listener`
+  // (often setState) after the component is gone.
+  snapshot()
+    .then((snap) => { if (!cancelled) listener(snap); })
+    .catch(() => {});
+  return () => {
+    cancelled = true;
+    listeners.delete(listener);
+  };
 }
 
 export async function getSnapshot() {
@@ -125,11 +160,14 @@ async function doDrainQueue() {
   isSyncing = true;
   await notify();
 
-  // Tell the server about our queue state right NOW so the wake-up cron
-  // knows there's work to push for. Without this the queue can drain
-  // here without ever flagging the server, and the cron stays silent
-  // even when subsequent enqueues happen offline.
-  pushHeartbeat().catch(() => {});
+  // NOTE: we deliberately do NOT fire a start-of-drain heartbeat. Two
+  // concurrent heartbeats (one at start with size N, one at end with
+  // size 0 or remaining) race through the network — HTTP/2 multiplexing
+  // can deliver them out of order, so a late "N>0" overwrites the
+  // authoritative final "0" and the server keeps pushing forever.
+  // The boot-time heartbeat + enqueue heartbeat + axios X-Queue-Size
+  // headers already keep the server informed about queue growth; the
+  // end-of-drain heartbeat is the authoritative final state.
 
   let processed = 0;
   let conflicts = 0;
@@ -180,6 +218,13 @@ async function doDrainQueue() {
         } else {
           // network / 5xx → keep the item, bump retries
           const retries = await bumpRetries(item.id);
+          // null = record disappeared (concurrent drain, storage
+          // eviction). Treat as already handled — don't try to remove
+          // or conflict-record it.
+          if (retries === null) {
+            madeProgress = true;
+            continue;
+          }
           if (retries >= MAX_RETRIES) {
             await recordConflict({
               url: item.url,
@@ -238,11 +283,20 @@ const BACKOFF_MAX = 30 * 60_000;    // 30 min
 
 function scheduleBackoffRetry() {
   if (backoffTimer) return; // already scheduled
-  backoffMs = backoffMs === 0 ? BACKOFF_INITIAL : Math.min(backoffMs * 2, BACKOFF_MAX);
-  backoffTimer = setTimeout(() => {
+  // Compute the delay locally; don't commit it to `backoffMs` until the
+  // timer actually fires AND attempts a real drain. If we double
+  // pre-emptively, repeated already-syncing skips will push the backoff
+  // to the cap in seconds without any real retries having occurred.
+  const delay = backoffMs === 0 ? BACKOFF_INITIAL : Math.min(backoffMs * 2, BACKOFF_MAX);
+  backoffTimer = setTimeout(async () => {
     backoffTimer = null;
-    drainQueue().catch(() => {});
-  }, backoffMs);
+    let result = null;
+    try { result = await drainQueue(); } catch { /* ignore */ }
+    // Only commit to the longer backoff if the drain actually ran. A
+    // skipped result means another drain is already in-flight (it'll
+    // handle backoff in its own finally), so leave our state alone.
+    if (result && !result.skipped) backoffMs = delay;
+  }, delay);
 }
 
 function resetBackoff() {
@@ -259,6 +313,13 @@ function resetBackoff() {
 let silentReloginPermanentlyFailed = false;
 onLiveCredentialChange(() => {
   silentReloginPermanentlyFailed = false;
+  // Force the next drain to re-align the cookie — the previous
+  // alignment was for a (possibly different) leader. Without this
+  // reset, logout-then-login as a different leader would skip the
+  // alignment if the new leader's id happens to differ, AND
+  // logout-then-login-offline as same leader would skip alignment
+  // even though the server-side cookie may have been cleared.
+  lastAlignedLeaderId = null;
 });
 
 async function silentRelogin() {

@@ -117,9 +117,13 @@ export async function tryOfflineLogin({ leaderId, credential, leader }) {
         if (await verifyAgainst(credential, shared)) {
           return buildProfileFromLeader(leader);
         }
-      } else if (shared && Date.now() > shared.expiresAt) {
-        await db.delete(STORE_AUTH, SHARED_LEADER_KEY).catch(() => {});
       }
+      // NOTE: deliberately do NOT delete expired shared records here.
+      // If the user's device clock jumped forward (manual time change,
+      // DST glitch, dead battery), a still-valid cached cred would
+      // look "expired" and a delete would lock them out irreversibly.
+      // The record gets overwritten naturally by the next online
+      // cacheCredential.
     }
 
     // Path 2: per-user cache. Used for admin/profesor + legacy leader
@@ -127,7 +131,8 @@ export async function tryOfflineLogin({ leaderId, credential, leader }) {
     const record = await db.get(STORE_AUTH, Number(leaderId));
     if (!record) return null;
     if (Date.now() > record.expiresAt) {
-      await db.delete(STORE_AUTH, Number(leaderId)).catch(() => {});
+      // Same rationale as above — don't delete on apparent expiry. The
+      // record gets overwritten on the next successful online login.
       return null;
     }
     if (await verifyAgainst(credential, record)) {

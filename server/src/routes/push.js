@@ -40,7 +40,13 @@ router.post('/subscribe', authenticateToken, express.json(), async (req, res) =>
 router.post('/heartbeat', authenticateToken, express.json(), async (req, res) => {
   try {
     const { queueSize } = req.body || {};
-    const n = Number.isFinite(queueSize) ? Number(queueSize) : 0;
+    // Clamp to a sane range. Same bound as syncStateTracker so a hostile
+    // (or buggy) client can't drive last_known_queue_size to insane
+    // values that then surface in email templates ("999999999
+    // registros sin enviar").
+    let n = Number.isFinite(queueSize) ? Number(queueSize) : 0;
+    if (n < 0) n = 0;
+    if (n > 100000) n = 100000;
     if (req.user?.id) {
       await db.upsertLeaderSyncState(req.user.id, n);
     }
