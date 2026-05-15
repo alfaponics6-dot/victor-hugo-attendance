@@ -60,16 +60,33 @@ async function registerBackgroundSync() {
 }
 
 // Drain the queue once. Safe to call repeatedly — concurrent invocations
-// short-circuit on the isSyncing flag. Caller decides when (online event,
-// app boot, manual retry button).
+// short-circuit on the isSyncing flag AND on the Web Locks API so the
+// service worker's background-sync drain can't race the page-side drain
+// across contexts on the same browser profile.
 //
 // On 401 we attempt a single silent re-login using the in-memory credential
 // (set by Login.jsx after either online or offline login). The cookie this
 // produces lets us drain queued writes that were made during a long offline
 // session, where the server's JWT cookie expired before sync.
+const DRAIN_LOCK_NAME = 'vh-drain-queue';
+
 export async function drainQueue() {
   if (isSyncing) return { skipped: 'already-syncing' };
   if (!navigator.onLine) return { skipped: 'offline' };
+
+  // Web Locks coordinate page + SW contexts. ifAvailable returns null
+  // immediately if the lock is held elsewhere instead of queueing.
+  if (typeof navigator !== 'undefined' && navigator.locks?.request) {
+    return navigator.locks.request(
+      DRAIN_LOCK_NAME,
+      { ifAvailable: true },
+      (lock) => (lock ? doDrainQueue() : Promise.resolve({ skipped: 'lock-busy' })),
+    );
+  }
+  return doDrainQueue();
+}
+
+async function doDrainQueue() {
   isSyncing = true;
   await notify();
 
@@ -143,30 +160,67 @@ export async function drainQueue() {
     isSyncing = false;
     await notify();
   }
+
+  // If items remain and we're still online but made no progress, schedule
+  // an exponential-backoff retry. Flaky cellular shouldn't leave the queue
+  // stuck waiting for the next `online` event that may not come.
+  const { pending } = await snapshot();
+  if (pending > 0 && navigator.onLine && processed === 0 && conflicts === 0 && failed === 0) {
+    scheduleBackoffRetry();
+  } else {
+    resetBackoff();
+  }
+
   return { processed, conflicts, failed };
+}
+
+let backoffMs = 0;
+let backoffTimer = null;
+const BACKOFF_INITIAL = 60_000;     // 1 min
+const BACKOFF_MAX = 30 * 60_000;    // 30 min
+
+function scheduleBackoffRetry() {
+  if (backoffTimer) return; // already scheduled
+  backoffMs = backoffMs === 0 ? BACKOFF_INITIAL : Math.min(backoffMs * 2, BACKOFF_MAX);
+  backoffTimer = setTimeout(() => {
+    backoffTimer = null;
+    drainQueue().catch(() => {});
+  }, backoffMs);
+}
+
+function resetBackoff() {
+  backoffMs = 0;
+  if (backoffTimer) { clearTimeout(backoffTimer); backoffTimer = null; }
 }
 
 // Silent re-login using the in-memory plaintext credential captured at
 // the last successful login. Returns true if the server accepted it (and
-// therefore the auth cookie is now fresh).
+// therefore the auth cookie is now fresh). Only retried once per process
+// — a stable 401 with this credential is a dead account, not transient.
+let silentReloginPermanentlyFailed = false;
+
 async function silentRelogin() {
+  if (silentReloginPermanentlyFailed) return false;
   const live = getLiveCredential();
   if (!live || !navigator.onLine) return false;
   try {
+    const payload = { leaderId: live.leaderId };
+    // Send only the appropriate field for the user's role to avoid
+    // broadening the credential's blast radius (a leader code attempted
+    // as an admin password etc.).
+    if (live.mode === 'password') payload.password = live.credential;
+    else payload.accessCode = live.credential;
     const r = await fetch('/api/auth/login', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        leaderId: live.leaderId,
-        // We don't know whether the credential was an access code or a
-        // password (leader vs admin/profesor). Send as both — server uses
-        // whichever matches the leader's auth mode.
-        accessCode: live.credential,
-        password: live.credential,
-      }),
+      body: JSON.stringify(payload),
     });
-    return r.ok;
+    if (r.ok) return true;
+    if (r.status === 401 || r.status === 403) {
+      silentReloginPermanentlyFailed = true;
+    }
+    return false;
   } catch {
     return false;
   }
@@ -242,8 +296,10 @@ let initialized = false;
 export function initSyncQueue() {
   if (initialized) return;
   initialized = true;
-  // Drain on reconnect.
+  // Drain on reconnect. Clear any pending backoff timer first — we're
+  // about to drain anyway, no need to also fire later.
   window.addEventListener('online', () => {
+    resetBackoff();
     drainQueue().catch(() => {});
   });
   // Drain on boot if we're already online and have items waiting.

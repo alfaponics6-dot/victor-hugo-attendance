@@ -150,11 +150,18 @@ class Database {
           records_count INTEGER NOT NULL,
           replaced_count INTEGER NOT NULL,
           payload_json TEXT NOT NULL,
+          source_ip TEXT,
+          user_agent TEXT,
           resolved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
           FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE SET NULL
         )
       `);
+      // Backfill columns for existing DBs created before source_ip/user_agent
+      // were added. SQLite has no IF NOT EXISTS on ALTER COLUMN; swallow the
+      // duplicate-column errors silently.
+      this.db.run(`ALTER TABLE attendance_resolutions ADD COLUMN source_ip TEXT`, () => {});
+      this.db.run(`ALTER TABLE attendance_resolutions ADD COLUMN user_agent TEXT`, () => {});
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_resolutions_project_date ON attendance_resolutions(project_id, date)`);
 
       // Rotations table - track student rotation assignments
@@ -1263,13 +1270,15 @@ class Database {
   //
   // Records is the SAME shape as insertBulkAttendance expects.
   // resolutionMode is just metadata (overwrite vs merge) for the audit log.
-  resolveBulkAttendance(records, resolutionMode, payloadJson) {
+  resolveBulkAttendance(records, resolutionMode, payloadJson, identity = {}) {
     if (!records || records.length === 0) {
       return Promise.reject(new Error('No records to insert'));
     }
     const projectId = records[0].projectId;
     const leaderId = records[0].leaderId;
     const date = records[0].date;
+    const sourceIp = identity.sourceIp ?? null;
+    const userAgent = identity.userAgent ?? null;
 
     return this.writeMutex.run(() => new Promise((resolve, reject) => {
       this.db.serialize(() => {
@@ -1309,9 +1318,9 @@ class Database {
 
                     this.db.run(
                       `INSERT INTO attendance_resolutions
-                       (project_id, leader_id, date, resolution_mode, records_count, replaced_count, payload_json)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                      [projectId, leaderId, date, resolutionMode, records.length, replaced, payloadJson],
+                       (project_id, leader_id, date, resolution_mode, records_count, replaced_count, payload_json, source_ip, user_agent)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                      [projectId, leaderId, date, resolutionMode, records.length, replaced, payloadJson, sourceIp, userAgent],
                       (auditErr) => {
                         if (auditErr) return fail(auditErr);
                         this.db.run('COMMIT', (commitErr) => {

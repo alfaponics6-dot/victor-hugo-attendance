@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const {
@@ -14,6 +15,18 @@ const path = require('path');
 
 // Apply authentication to all routes in this file
 router.use(authenticateToken);
+
+// Tighter limit for the resolve endpoint: it's destructive (deletes and
+// re-inserts the day's rows), so a runaway client or compromised leader
+// shouldn't be able to spam it. 10/min is well above any legitimate
+// resolution flow but well below abuse rates.
+const resolveLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number(process.env.RESOLVE_RATE_LIMIT) || 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many resolution attempts, please try again in a moment.' },
+});
 
 // Helpers --------------------------------------------------------------------
 
@@ -132,7 +145,7 @@ router.post('/bulk', express.json(), async (req, res) => {
 // "all mine" / "all theirs"), then POSTs the merged result here. We
 // REPLACE the existing rows for (projectId, date) atomically and write
 // an audit row so the resolution is reviewable later.
-router.post('/bulk/resolve', express.json(), async (req, res) => {
+router.post('/bulk/resolve', resolveLimiter, express.json(), async (req, res) => {
   try {
     const { date, time, records, resolution } = req.body;
 
@@ -170,6 +183,24 @@ router.post('/bulk/resolve', express.json(), async (req, res) => {
       }
     }
 
+    // Ownership check: every studentId must belong to this leader's project
+    // (either as base assignment or via a rotation row covering `date`).
+    // Without this a leader could resolve attendance for students they have
+    // no relationship to.
+    for (const record of records) {
+      const ok = await db.validateStudentBelongsToProject(
+        parseInt(record.studentId),
+        projectId,
+        date,
+      );
+      if (!ok) {
+        return res.status(403).json({
+          error: 'Student does not belong to this project for the given date',
+          studentId: record.studentId,
+        });
+      }
+    }
+
     const bulkRecords = records.map((record) => ({
       studentId: parseInt(record.studentId),
       projectId: Number(projectId),
@@ -186,8 +217,14 @@ router.post('/bulk/resolve', express.json(), async (req, res) => {
     // Persist the original payload (not the sanitized server-side version)
     // so reviewers see what the client actually sent.
     const payloadJson = JSON.stringify({ date, time, records, resolution });
+    // Best-effort identity tags for the audit row.
+    const sourceIp = req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || null;
+    const userAgent = (req.headers['user-agent'] || '').slice(0, 500) || null;
 
-    const result = await db.resolveBulkAttendance(bulkRecords, resolution, payloadJson);
+    const result = await db.resolveBulkAttendance(bulkRecords, resolution, payloadJson, {
+      sourceIp,
+      userAgent,
+    });
     res.json({
       success: true,
       message: 'Attendance resolved successfully',

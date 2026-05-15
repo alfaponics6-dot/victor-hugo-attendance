@@ -85,7 +85,14 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
     setPicks(next);
   };
 
-  const pickFor = (id) => picks[id] ?? 'mine';
+  // Default to 'mine' only if mine actually has a record for this student.
+  // Otherwise default to 'theirs' so the server's record isn't silently
+  // dropped on submit just because the leader didn't notice the toggle.
+  const pickFor = (id) => {
+    if (picks[id]) return picks[id];
+    const hasMine = myRecords.some((r) => String(r.studentId) === id);
+    return hasMine ? 'mine' : 'theirs';
+  };
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -98,19 +105,25 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
       const merged = [];
       for (const id of allStudentIds) {
         const choice = pickFor(id);
-        if (choice === 'mine') {
-          const m = myByStudent[id];
-          if (m) merged.push(m);
+        const m = myByStudent[id];
+        const s = serverByStudent[id];
+        // If the user picked a side that has no record, fall back to the
+        // OTHER side rather than silently dropping the student — losing
+        // an attendance record because of a UI toggle is much worse than
+        // keeping the wrong-but-real one.
+        const primary = choice === 'mine' ? m : s;
+        const fallback = choice === 'mine' ? s : m;
+        const chosen = primary || fallback;
+        if (!chosen) continue; // genuinely no record on either side
+        if (chosen === m) {
+          merged.push(m);
         } else {
-          const s = serverByStudent[id];
-          if (s) {
-            merged.push({
-              studentId: s.student_id,
-              status: s.status,
-              justification: s.justification ?? null,
-              observation: s.observation ?? null,
-            });
-          }
+          merged.push({
+            studentId: s.student_id,
+            status: s.status,
+            justification: s.justification ?? null,
+            observation: s.observation ?? null,
+          });
         }
       }
 
@@ -179,11 +192,12 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
             >
               <button
                 type="button"
+                disabled={!m}
                 onClick={() => setPicks((p) => ({ ...p, [id]: 'mine' }))}
-                className={`text-left rounded-md p-2 transition-colors ${
+                className={`text-left rounded-md p-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   pick === 'mine'
                     ? 'bg-sky-100 dark:bg-sky-950 ring-2 ring-sky-400'
-                    : 'hover:bg-[color:var(--color-surface-hover)]'
+                    : m ? 'hover:bg-[color:var(--color-surface-hover)]' : ''
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[color:var(--color-fg-subtle)]">
@@ -194,11 +208,12 @@ export default function AttendanceConflictResolver({ conflict, leader, onResolve
               <ArrowRight className="size-4 self-center text-[color:var(--color-fg-subtle)] hidden sm:block" />
               <button
                 type="button"
+                disabled={!s}
                 onClick={() => setPicks((p) => ({ ...p, [id]: 'theirs' }))}
-                className={`text-left rounded-md p-2 transition-colors ${
+                className={`text-left rounded-md p-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   pick === 'theirs'
                     ? 'bg-sky-100 dark:bg-sky-950 ring-2 ring-sky-400'
-                    : 'hover:bg-[color:var(--color-surface-hover)]'
+                    : s ? 'hover:bg-[color:var(--color-surface-hover)]' : ''
                 }`}
               >
                 <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[color:var(--color-fg-subtle)]">

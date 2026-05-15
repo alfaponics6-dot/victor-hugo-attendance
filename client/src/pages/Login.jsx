@@ -190,6 +190,7 @@ function Login() {
       rememberLiveCredential({
         leaderId: selectedLeaderId,
         credential: password || accessCode,
+        mode: password ? 'password' : 'accessCode',
       });
 
       if (response.leader.role === 'admin') {
@@ -218,6 +219,7 @@ function Login() {
           rememberLiveCredential({
             leaderId: selectedLeaderId,
             credential: password || accessCode,
+            mode: password ? 'password' : 'accessCode',
           });
           if (profile.role === 'admin') navigate('/admin');
           else if (profile.role === 'profesor') navigate('/profesor');

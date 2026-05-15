@@ -18,7 +18,29 @@ import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { openDB } from 'idb';
 
+// skipWaiting + clients.claim so a new SW takes over immediately on
+// activation. Without claim(), the old SW keeps controlling open tabs
+// until they reload — sync tags registered to the new tag name end up
+// being swallowed by the old SW that has no handler for them.
 self.skipWaiting();
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Allow the page to ask the SW to purge user-scoped runtime caches
+// (called from logout(); see api/client.js). The api-get cache is shared
+// across whoever uses this browser, so we have to drop it explicitly to
+// avoid leaking one user's cached responses to the next.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'purge-caches') {
+    event.waitUntil((async () => {
+      try {
+        await caches.delete('api-get');
+      } catch { /* ignore */ }
+      event.ports?.[0]?.postMessage?.({ ok: true });
+    })());
+  }
+});
 
 const DB_NAME = 'victorhugo-offline';
 const DB_VERSION = 2;
@@ -88,11 +110,26 @@ function getDB() {
 }
 
 // ----- Background Sync handler -----
+const DRAIN_LOCK_NAME = 'vh-drain-queue';
+
 self.addEventListener('sync', (event) => {
   if (event.tag === SYNC_TAG) {
-    event.waitUntil(drainQueueInSW());
+    event.waitUntil(drainWithLock());
   }
 });
+
+// Acquire the cross-context Web Lock before touching the IDB store so we
+// can't race a page-side drainQueue running concurrently.
+async function drainWithLock() {
+  if (self.navigator?.locks?.request) {
+    return self.navigator.locks.request(
+      DRAIN_LOCK_NAME,
+      { ifAvailable: true },
+      (lock) => (lock ? drainQueueInSW() : Promise.resolve()),
+    );
+  }
+  return drainQueueInSW();
+}
 
 // Drain logic that runs INSIDE the service worker context. Mirrors the
 // page-side drainQueue but uses raw fetch (no axios) and can't do silent
@@ -132,6 +169,12 @@ async function drainQueueInSW() {
         if (self.registration?.sync) await self.registration.sync.register(SYNC_TAG);
       } catch { /* ignore */ }
       break;
+    } else if (result === 'skipped') {
+      // FormData items: we can't reliably reconstruct the multipart body
+      // with stored Blobs from inside the SW context, so the page-side
+      // drain has to handle them. Leave the item alone — no retry-bump,
+      // no conflict-record. It'll be processed next tab open.
+      continue;
     } else {
       // network / 5xx: bump retries, give up at MAX
       const retries = (item.retries || 0) + 1;

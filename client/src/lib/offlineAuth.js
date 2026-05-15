@@ -12,10 +12,12 @@ import { getDB } from './offlineQueue';
 // the exposure we expire cached creds after 24h.
 const STORE_AUTH = 'cached_auth';
 const TTL_MS = 24 * 60 * 60 * 1000;
-// Mobile devices are slow on PBKDF2 — 100k iterations on a low-end Android
-// is about 100-200ms, which is fine at login time but would be painful in
-// a hot loop. SubtleCrypto is hardware-accelerated where available.
-const ITERATIONS = 100_000;
+// PBKDF2-SHA256 iterations. OWASP 2023 recommendation for SHA-256 is
+// 600k; we honor that for new records. Old records store their own
+// iteration count so they keep verifying after upgrades. SubtleCrypto
+// is hardware-accelerated; 600k on a low-end Android takes ~600ms which
+// is acceptable at the once-per-login frequency we use it.
+const ITERATIONS = 600_000;
 
 function buf2hex(buf) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -27,7 +29,7 @@ function hex2buf(hex) {
   return bytes;
 }
 
-async function hashCredential(credential, salt) {
+async function hashCredential(credential, salt, iterations = ITERATIONS) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -37,7 +39,7 @@ async function hashCredential(credential, salt) {
     ['deriveBits'],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: ITERATIONS, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
     keyMaterial,
     256,
   );
@@ -60,12 +62,13 @@ export async function cacheCredential({ leaderId, credential, profile }) {
   if (!crypto?.subtle || !leaderId || !credential) return;
   try {
     const salt = crypto.getRandomValues(new Uint8Array(16));
-    const hashed = await hashCredential(credential, salt);
+    const hashed = await hashCredential(credential, salt, ITERATIONS);
     const db = await getDB();
     await db.put(STORE_AUTH, {
       leaderId: Number(leaderId),
       salt: buf2hex(salt),
       hashed: buf2hex(hashed),
+      iterations: ITERATIONS,
       profile,
       createdAt: Date.now(),
       expiresAt: Date.now() + TTL_MS,
@@ -90,7 +93,10 @@ export async function tryOfflineLogin({ leaderId, credential }) {
       return null;
     }
     const salt = hex2buf(record.salt);
-    const hashed = await hashCredential(credential, salt);
+    // Old records may not have an iterations field — fall back to 100k
+    // (the original setting) so existing cached creds keep verifying.
+    const iterations = record.iterations || 100_000;
+    const hashed = await hashCredential(credential, salt, iterations);
     const expected = hex2buf(record.hashed);
     return constantTimeEqual(hashed, expected) ? record.profile : null;
   } catch {
@@ -126,11 +132,15 @@ export async function purgeCachedAuth(leaderId) {
 // would 401 forever until the leader manually logs in again.
 //
 // Not persisted (no localStorage / IDB) so closing the tab evicts it.
+// We track which credential field (accessCode vs password) it represents
+// so silent relogin only sends the right one, not both.
 let liveCredential = null;
 
-export function rememberLiveCredential({ leaderId, credential }) {
+export function rememberLiveCredential({ leaderId, credential, mode }) {
   if (!leaderId || !credential) return;
-  liveCredential = { leaderId: Number(leaderId), credential };
+  // Default to accessCode (leader role); explicit 'password' for admin/profesor.
+  const safeMode = mode === 'password' ? 'password' : 'accessCode';
+  liveCredential = { leaderId: Number(leaderId), credential, mode: safeMode };
 }
 
 export function getLiveCredential() {

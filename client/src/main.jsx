@@ -15,6 +15,20 @@ import ErrorBoundary from './components/common/ErrorBoundary'
 // won't kick in until the axios interceptor enqueues something.
 initSyncQueue()
 
+// When a new service worker takes control (e.g. immediately after a
+// deploy, via skipWaiting + clients.claim), reload the page so the tab
+// runs against the new bundle's contract. Without this, the page can
+// register a sync tag with handlers the new SW knows but the old SW —
+// still controlling this tab — does not.
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+  let reloading = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return
+    reloading = true
+    window.location.reload()
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

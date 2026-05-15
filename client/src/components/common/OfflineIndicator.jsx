@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from '../../lib/useOnlineStatus';
@@ -24,17 +24,11 @@ export default function OfflineIndicator() {
   const { t } = useTranslation('common');
   const [modalOpen, setModalOpen] = useState(false);
 
-  // First time the user goes offline, ask for notification permission so the
-  // SW can tell them when their queued writes finally sync. One-shot — we
-  // remember in localStorage even if they dismiss, to avoid re-prompting.
-  useEffect(() => {
-    if (isOnline) return;
-    if (typeof Notification === 'undefined') return;
-    if (Notification.permission !== 'default') return;
-    if (localStorage.getItem('notif_permission_asked') === '1') return;
-    localStorage.setItem('notif_permission_asked', '1');
-    Notification.requestPermission().catch(() => {});
-  }, [isOnline]);
+  // We don't auto-prompt Notification.requestPermission() — passive prompts
+  // at the offline transition are jarring and on iOS Safari they're denied
+  // outright because there's no user gesture. The SW still fires
+  // showNotification() if the user has previously granted permission via
+  // browser settings or via installing the PWA.
 
   if (isOnline && pending === 0 && conflicts === 0) return null;
 

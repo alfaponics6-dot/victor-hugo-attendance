@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { enqueueRequest } from '../lib/syncQueue';
-import { cacheCredential } from '../lib/offlineAuth';
+import { cacheCredential, clearLiveCredential, purgeCachedAuth } from '../lib/offlineAuth';
 import { primeOfflineCache } from '../lib/offlinePrime';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -140,7 +140,34 @@ export const logout = async () => {
     // Even if the server call fails, drop local state.
   }
   clearStoredUser();
+  // Defense-in-depth: tear down everything that could leak the previous
+  // user's data to whoever logs in next on this device.
+  clearLiveCredential();
+  await purgeCachedAuth().catch(() => {});
+  await purgeServiceWorkerCaches().catch(() => {});
 };
+
+// Ask the active service worker to drop user-scoped runtime caches
+// (api-get). The SW's message handler does the actual work; this just
+// forwards the request and waits up to a second for it to complete.
+async function purgeServiceWorkerCaches() {
+  if (typeof navigator === 'undefined' || !navigator.serviceWorker) return;
+  const reg = navigator.serviceWorker.controller
+    ? { active: navigator.serviceWorker.controller }
+    : await navigator.serviceWorker.ready;
+  if (!reg.active) return;
+  await new Promise((resolve) => {
+    const channel = new MessageChannel();
+    const timer = setTimeout(resolve, 1000);
+    channel.port1.onmessage = () => { clearTimeout(timer); resolve(); };
+    try {
+      reg.active.postMessage({ type: 'purge-caches' }, [channel.port2]);
+    } catch {
+      clearTimeout(timer);
+      resolve();
+    }
+  });
+}
 
 export const changePassword = async (currentPassword, newPassword, confirmPassword) => {
   const response = await api.post('/auth/change-password', {
