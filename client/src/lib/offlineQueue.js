@@ -42,12 +42,15 @@ export function getDB() {
         }
       },
       blocked() {
-        // Another tab is holding the old schema open. Without an escape
-        // path our enqueue/replay hangs forever. Reload this tab so it
-        // can pick up the new schema cleanly.
-        if (typeof window !== 'undefined' && window.location?.reload) {
-          window.location.reload();
-        }
+        // Another tab is holding the old schema open. We used to call
+        // location.reload() here, but that introduces an automatic
+        // reload trigger that's easy to mistake for the SW-update
+        // glitch we just removed. Log loudly and let the user resolve
+        // by closing the other tab; enqueue/replay will retry on the
+        // next user action.
+        console.warn(
+          '[offlineQueue] IDB upgrade blocked — another tab is holding the old schema. Close other tabs and reload to pick up the new version.',
+        );
       },
       terminated() {
         // Browser closed our connection (e.g. iOS aggressive eviction).

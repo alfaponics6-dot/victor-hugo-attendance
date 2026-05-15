@@ -22,28 +22,23 @@ initSyncQueue()
 // idempotent — silently no-ops when permission is default/denied.
 ensurePushSubscription().catch(() => {})
 
-// When a new service worker takes control mid-session (e.g. immediately
-// after a deploy, via skipWaiting + clients.claim), reload the page so
-// the tab runs against the new bundle's contract. Without this, the
-// page can register a sync tag with handlers the new SW knows but the
-// old SW — still controlling this tab — does not.
+// We used to call window.location.reload() inside a `controllerchange`
+// listener so a new SW's bundle would take effect mid-session. That
+// caused a visible "page renders, blanks, renders" glitch on first
+// loads — the `hadInitialController` gate we added didn't fully
+// suppress it (multiple users still reported the flash on hard
+// refresh / incognito, after the gate was deployed and minified to
+// the equivalent `if (!n && t)` form).
 //
-// IMPORTANT: only reload when there was ALREADY a controller. On a
-// first-ever visit, the page renders → SW installs → SW activates and
-// claims → controllerchange fires for the first time. Reloading there
-// is wasteful and looks like a glitch (page renders, blanks, renders).
-// We only care about controllerchange when an OLD controller is being
-// swapped for a new one.
-if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-  const hadInitialController = !!navigator.serviceWorker.controller
-  let reloading = false
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading) return
-    if (!hadInitialController) return  // first-install case, page is already fresh
-    reloading = true
-    window.location.reload()
-  })
-}
+// New approach: do NOT auto-reload. New SW bundles will be picked up
+// on the user's next manual navigation. The cost is that an existing
+// tab won't see a freshly deployed bundle until the user reloads, but
+// that's acceptable for an attendance app (no second-by-second update
+// requirements) and worth eliminating the glitch entirely.
+//
+// If we ever want to surface "new version available" again, do it
+// passively (e.g. a dismissable banner that calls reload on click),
+// never via an automatic reload triggered by a SW lifecycle event.
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
