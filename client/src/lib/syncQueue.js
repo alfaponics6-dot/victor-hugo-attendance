@@ -40,10 +40,23 @@ export async function getSnapshot() {
 
 // Single facade used by the axios interceptor: enqueue + notify subscribers
 // in one call so the UI's pending-count chip updates immediately.
+//
+// Also registers a Background Sync tag so the SW can drain even if the
+// tab gets closed before connectivity returns. SyncManager isn't supported
+// on iOS Safari — that's a no-op there (we'll still drain on next page open).
 export async function enqueueRequest(payload) {
   const id = await enqueueToStore(payload);
   await notify();
+  registerBackgroundSync().catch(() => {});
   return id;
+}
+
+async function registerBackgroundSync() {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  if (!('SyncManager' in window)) return;
+  const reg = await navigator.serviceWorker.ready;
+  if (!reg.sync) return;
+  await reg.sync.register('drain-attendance-queue');
 }
 
 // Drain the queue once. Safe to call repeatedly — concurrent invocations

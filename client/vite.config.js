@@ -9,6 +9,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      // injectManifest mode: we ship our own SW source (src/sw.js) so we
+      // can add a `sync` event handler for true Background Sync (drains
+      // queued writes even when the tab is closed, on browsers that
+      // support SyncManager — Android Chrome/Edge; iOS Safari does not).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: [
@@ -37,46 +44,11 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2,ico}'],
-        navigateFallback: '/index.html',
-        // Never SPA-fallback API requests — they must reach the network
-        // (or fail cleanly so the runtime cache can serve a stale copy).
-        navigateFallbackDenylist: [/^\/api\//],
-        cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            // Cached responses are scoped to whoever was logged in when they
-            // were stored. Acceptable while the device is single-user (one
-            // leader = one tablet); revisit if device-sharing becomes common.
-            urlPattern: ({ url, request }) =>
-              url.pathname.startsWith('/api/') && request.method === 'GET',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-get',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'google-fonts-stylesheets' },
-          },
-          {
-            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
-      // SW in dev disrupts HMR; we'll exercise it via `npm run build && preview`.
-      devOptions: { enabled: false },
+      // SW in dev disrupts HMR; exercise via `npm run build && preview`.
+      devOptions: { enabled: false, type: 'module' },
     }),
   ],
   server: {

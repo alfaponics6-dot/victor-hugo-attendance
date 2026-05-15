@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from '../../lib/useOnlineStatus';
@@ -23,6 +23,18 @@ export default function OfflineIndicator() {
   const { pending, conflicts, isSyncing } = useSyncStatus();
   const { t } = useTranslation('common');
   const [modalOpen, setModalOpen] = useState(false);
+
+  // First time the user goes offline, ask for notification permission so the
+  // SW can tell them when their queued writes finally sync. One-shot — we
+  // remember in localStorage even if they dismiss, to avoid re-prompting.
+  useEffect(() => {
+    if (isOnline) return;
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'default') return;
+    if (localStorage.getItem('notif_permission_asked') === '1') return;
+    localStorage.setItem('notif_permission_asked', '1');
+    Notification.requestPermission().catch(() => {});
+  }, [isOnline]);
 
   if (isOnline && pending === 0 && conflicts === 0) return null;
 
