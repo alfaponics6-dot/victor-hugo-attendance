@@ -138,6 +138,21 @@
       "loadError": "Error al cargar estudiantes"
     }
   },
+  "recentSessions": {
+    "title": "Sesiones recientes",
+    "subtitle": "Detalle por día de las últimas sesiones registradas",
+    "emptyTitle": "Aún no hay sesiones registradas",
+    "emptySubtitle": "Las sesiones aparecerán aquí en cuanto se marque la primera asistencia.",
+    "ofLabel": "presentes",
+    "col": {
+      "date": "Fecha",
+      "present": "Pres.",
+      "justified": "Just.",
+      "unjustified": "Injust.",
+      "total": "Total",
+      "rate": "Tasa"
+    }
+  },
   "alerts": {
     "title": "Alertas de asistencia",
     "subtitle": "Señales de riesgo en la rotación actual",

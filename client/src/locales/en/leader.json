@@ -138,6 +138,21 @@
       "loadError": "Error loading students"
     }
   },
+  "recentSessions": {
+    "title": "Recent sessions",
+    "subtitle": "Day-by-day breakdown of the latest recorded sessions",
+    "emptyTitle": "No sessions recorded yet",
+    "emptySubtitle": "Sessions will appear here as soon as the first attendance is marked.",
+    "ofLabel": "present",
+    "col": {
+      "date": "Date",
+      "present": "Pres.",
+      "justified": "Just.",
+      "unjustified": "Unjust.",
+      "total": "Total",
+      "rate": "Rate"
+    }
+  },
   "alerts": {
     "title": "Attendance alerts",
     "subtitle": "Risk signals in the current rotation",

@@ -138,6 +138,21 @@
       "loadError": "Erreur lors du chargement des étudiants"
     }
   },
+  "recentSessions": {
+    "title": "Sessions récentes",
+    "subtitle": "Détail par jour des dernières sessions enregistrées",
+    "emptyTitle": "Aucune session enregistrée pour l'instant",
+    "emptySubtitle": "Les sessions apparaîtront ici dès que la première présence sera saisie.",
+    "ofLabel": "présents",
+    "col": {
+      "date": "Date",
+      "present": "Prés.",
+      "justified": "Just.",
+      "unjustified": "Injust.",
+      "total": "Total",
+      "rate": "Taux"
+    }
+  },
   "alerts": {
     "title": "Alertes de présence",
     "subtitle": "Signaux de risque dans la rotation actuelle",

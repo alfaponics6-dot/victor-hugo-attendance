@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/useAuth.js';
 import Loading from '../components/common/Loading';
 import AlertsWidget from '../components/features/admin/AlertsWidget';
+import RecentSessionsWidget from '../components/features/admin/RecentSessionsWidget';
 import { getProjectLabel } from '../lib/projectI18n';
 
 const StudentManagement = lazy(() => import('./StudentManagement'));
@@ -162,6 +163,10 @@ function HomeTab({ leader }) {
         <div className="lg:col-span-1 min-w-0 lg:flex">
           <AttendanceCalendar projectId={leader.projectId} />
         </div>
+      </section>
+
+      <section>
+        <RecentSessionsWidget projectId={leader.projectId} />
       </section>
     </div>
   );
