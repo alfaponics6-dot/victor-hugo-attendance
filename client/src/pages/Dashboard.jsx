@@ -138,19 +138,28 @@ function HomeTab({ leader }) {
         <QuickStatsWidget projectId={leader.projectId} />
       </section>
 
-      {/* Left column keeps natural block layout so TrendCard renders at
-          its full chart height (we previously made it `flex flex-col`,
-          which let the chart shrink past its 11rem chart area and clip
-          the bottom y-axis). The right column uses `display: grid` so
-          its single Calendar child auto-stretches to the row height set
-          by the taller left column — that's what aligns the bottom
-          edges without giving the wrapper a `flex` context. */}
+      {/* Bottom-alignment trick: on lg+ the left wrapper uses
+          `h-0 min-h-full` so it contributes ZERO to the grid row's
+          auto-sizing. The row therefore tracks the right column's
+          natural height (the calendar, ~370px on a typical month),
+          and `min-h-full` then re-stretches the left wrapper to fill
+          that row under `items-stretch`. Inside, `flex flex-col` plus
+          `shrink-0` on TrendCard keeps the chart at its full h-44
+          (no y-axis clipping); AlertsWidget gets `flex-1 min-h-0` so
+          it absorbs the leftover height and scrolls its list
+          internally instead of forcing the row taller.
+          Below the lg breakpoint everything falls back to single-column
+          block flow, which is what we want on phones. */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-        <div className="lg:col-span-2 space-y-4 sm:space-y-5 min-w-0">
-          <TrendCard projectId={leader.projectId} />
-          <AlertsWidget projectId={leader.projectId} />
+        <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-5 lg:space-y-0 lg:flex lg:flex-col lg:gap-5 lg:h-0 lg:min-h-full">
+          <div className="lg:shrink-0">
+            <TrendCard projectId={leader.projectId} />
+          </div>
+          <div className="lg:flex-1 lg:min-h-0 lg:flex">
+            <AlertsWidget projectId={leader.projectId} />
+          </div>
         </div>
-        <div className="lg:col-span-1 min-w-0 grid">
+        <div className="lg:col-span-1 min-w-0 lg:flex">
           <AttendanceCalendar projectId={leader.projectId} />
         </div>
       </section>
