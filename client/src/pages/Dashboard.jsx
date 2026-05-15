@@ -138,18 +138,19 @@ function HomeTab({ leader }) {
         <QuickStatsWidget projectId={leader.projectId} />
       </section>
 
-      {/* `items-stretch` plus `h-full` on the column wrappers gives both
-          sides the same row height even when one side has more content.
-          Without that chain, the right column's `h-full` Card was
-          resolving against an auto-sized wrapper and falling back to
-          content height — so the calendar ended ~90px shorter than the
-          chart + alerts stack on its left, which read as visual imbalance. */}
+      {/* Left column keeps natural block layout so TrendCard renders at
+          its full chart height (we previously made it `flex flex-col`,
+          which let the chart shrink past its 11rem chart area and clip
+          the bottom y-axis). The right column uses `display: grid` so
+          its single Calendar child auto-stretches to the row height set
+          by the taller left column — that's what aligns the bottom
+          edges without giving the wrapper a `flex` context. */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-        <div className="lg:col-span-2 space-y-4 sm:space-y-5 min-w-0 h-full flex flex-col">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-5 min-w-0">
           <TrendCard projectId={leader.projectId} />
           <AlertsWidget projectId={leader.projectId} />
         </div>
-        <div className="lg:col-span-1 min-w-0 h-full flex flex-col">
+        <div className="lg:col-span-1 min-w-0 grid">
           <AttendanceCalendar projectId={leader.projectId} />
         </div>
       </section>
