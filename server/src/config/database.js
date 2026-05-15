@@ -196,9 +196,14 @@ class Database {
           last_known_queue_size INTEGER NOT NULL DEFAULT 0,
           sync_needed_at DATETIME,
           last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_email_sent_at DATETIME,
           FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE CASCADE
         )
       `);
+      // Backfill column for existing DBs created before email-notify
+      // escalation was added. SQLite has no ADD COLUMN IF NOT EXISTS, so
+      // we swallow the duplicate-column error.
+      this.db.run(`ALTER TABLE leader_sync_state ADD COLUMN last_email_sent_at DATETIME`, () => {});
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_sync_state_needed ON leader_sync_state(sync_needed_at)`);
 
       // Rotations table - track student rotation assignments
@@ -1445,6 +1450,50 @@ class Database {
     });
   }
 
+  // Leaders whose sync has been flagged for more than the given number
+  // of minutes AND who haven't been emailed in the last 24 hours. Used
+  // by the email-escalation job — push notifications missed them so we
+  // fall back to email. Joins to leaders for the email address.
+  listLeadersForEmailEscalation(staleMinutes = 60) {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT
+           st.leader_id,
+           st.last_known_queue_size,
+           st.sync_needed_at,
+           l.name AS leader_name,
+           l.email AS leader_email
+         FROM leader_sync_state st
+         JOIN leaders l ON l.id = st.leader_id
+         WHERE st.sync_needed_at IS NOT NULL
+           AND st.sync_needed_at <= datetime('now', '-' || ? || ' minutes')
+           AND (st.last_email_sent_at IS NULL
+                OR st.last_email_sent_at <= datetime('now', '-24 hours'))
+           AND l.email IS NOT NULL
+           AND l.email != ''`,
+        [staleMinutes],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        },
+      );
+    });
+  }
+
+  markLeaderEmailed(leaderId) {
+    return new Promise((resolve, reject) => {
+      this.db.run(
+        `UPDATE leader_sync_state SET last_email_sent_at = CURRENT_TIMESTAMP
+         WHERE leader_id = ?`,
+        [leaderId],
+        function (err) {
+          if (err) reject(err);
+          else resolve(this.changes);
+        },
+      );
+    });
+  }
+
   // Update the per-leader sync hint. queueSize is what the client
   // claims is currently pending in IndexedDB. > 0 sets sync_needed_at;
   // 0 clears it. Always updates last_seen_at so we have a "last
@@ -1453,14 +1502,19 @@ class Database {
     if (!leaderId) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const sizeNum = Number.isFinite(queueSize) ? queueSize : 0;
-      const needed = sizeNum > 0 ? "CURRENT_TIMESTAMP" : 'NULL';
+      const needed = sizeNum > 0 ? 'CURRENT_TIMESTAMP' : 'NULL';
+      // When queue clears (sizeNum===0), also reset last_email_sent_at so
+      // a future pending session can trigger a fresh email after the
+      // staleness threshold — the 24h debounce was meant to prevent
+      // duplicate emails inside one session, not across sessions.
+      const emailReset = sizeNum === 0 ? ', last_email_sent_at = NULL' : '';
       this.db.run(
         `INSERT INTO leader_sync_state (leader_id, last_known_queue_size, sync_needed_at, last_seen_at)
          VALUES (?, ?, ${needed}, CURRENT_TIMESTAMP)
          ON CONFLICT(leader_id) DO UPDATE SET
            last_known_queue_size = excluded.last_known_queue_size,
            sync_needed_at = ${needed},
-           last_seen_at = CURRENT_TIMESTAMP`,
+           last_seen_at = CURRENT_TIMESTAMP${emailReset}`,
         [leaderId, sizeNum],
         function (err) {
           if (err) reject(err);

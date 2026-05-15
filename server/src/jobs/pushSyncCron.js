@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const db = require('../config/database');
 const { webpush } = require('../config/vapid');
+const emailNotifier = require('./syncEmailNotifier');
 
 // Periodic wake-up push to every subscribed device. The receiving service
 // worker uses this as a trigger to drain its offline write queue — iOS
@@ -65,14 +66,26 @@ function start() {
   }
   cron.schedule(
     SCHEDULE,
-    () => {
-      runOnce()
-        .then((r) => {
-          if (r.sent || r.failed) {
-            console.log(`Push cron: sent=${r.sent} failed=${r.failed}`);
-          }
-        })
-        .catch((e) => console.error('Push cron error:', e.message));
+    async () => {
+      try {
+        const pushResult = await runOnce();
+        if (pushResult.sent || pushResult.failed) {
+          console.log(`Push cron: sent=${pushResult.sent} failed=${pushResult.failed}`);
+        }
+      } catch (e) {
+        console.error('Push cron error:', e.message);
+      }
+      // Email escalation runs on the same tick. The DB query inside
+      // checks staleness + 24h dedupe so we don't email at every cron
+      // firing — only when push has been silent long enough to matter.
+      try {
+        const emailResult = await emailNotifier.runOnce();
+        if (emailResult.sent || emailResult.failed) {
+          console.log(`Email escalation: sent=${emailResult.sent} failed=${emailResult.failed}`);
+        }
+      } catch (e) {
+        console.error('Email escalation error:', e.message);
+      }
     },
     { timezone: TIMEZONE },
   );
