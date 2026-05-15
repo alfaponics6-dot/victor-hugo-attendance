@@ -41,8 +41,13 @@ function AlertsWidget({ projectId }) {
   const totalAlerts = lowAttendance.length + consecutiveAbsences.length;
 
   return (
-    <Card className="h-full p-0 overflow-hidden">
-      <header className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3">
+    // Card uses flex-col so the header stays fixed and the body fills the
+    // remaining height. Combined with h-full, that means: when the grid
+    // sibling (the calendar) is tall, our body absorbs the extra height
+    // gracefully (empty state centers, long lists scroll internally)
+    // instead of leaving a gap above or below.
+    <Card className="h-full p-0 overflow-hidden flex flex-col">
+      <header className="flex items-center justify-between gap-3 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="size-8 grid place-items-center rounded-xl bg-[color-mix(in_oklch,var(--color-warn)_18%,transparent)] text-[color:var(--color-warn)] shrink-0">
             <AlertTriangle className="size-4" />
@@ -59,7 +64,7 @@ function AlertsWidget({ projectId }) {
         )}
       </header>
 
-      <div className="px-4 sm:px-5 pb-4 sm:pb-5">
+      <div className="flex-1 min-h-0 px-4 sm:px-5 pb-4 sm:pb-5 overflow-y-auto">
         {loading ? (
           <div className="space-y-3">
             <Skeleton className="h-4 w-32" />
@@ -67,7 +72,10 @@ function AlertsWidget({ projectId }) {
             <Skeleton className="h-12 rounded-xl" />
           </div>
         ) : totalAlerts === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center py-10 gap-2">
+          // Empty state fills the available height and centers vertically
+          // so there's no top-aligned "Sin alertas" with a tall empty
+          // band below it (which is what looked broken on the screenshot).
+          <div className="flex flex-col items-center justify-center text-center gap-2 h-full py-6 min-h-[140px]">
             <span className="size-10 grid place-items-center rounded-full bg-[color-mix(in_oklch,var(--color-success)_18%,transparent)] text-[color:var(--color-success)]">
               <CheckCircle2 className="size-5" />
             </span>
