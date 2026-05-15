@@ -27,7 +27,8 @@
     "wrongPassword": "Senha incorreta",
     "wrongAccessCode": "Código de acesso incorreto",
     "loginFailed": "Falha ao entrar. Por favor, tente novamente.",
-    "leadersLoadFailed": "Falha ao carregar líderes. Por favor, recarregue a página."
+    "leadersLoadFailed": "Falha ao carregar líderes. Por favor, recarregue a página.",
+    "offlineLogin": "Sem conexão. Faça login uma vez com internet, ou verifique suas credenciais se já entrou hoje."
   },
   "hero": {
     "liveBadge": "Edição 2026 · Ao vivo",

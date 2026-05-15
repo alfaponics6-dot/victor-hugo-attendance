@@ -27,7 +27,8 @@
     "wrongPassword": "Contraseña incorrecta",
     "wrongAccessCode": "Código de acceso incorrecto",
     "loginFailed": "Error de inicio de sesión. Por favor intente de nuevo.",
-    "leadersLoadFailed": "Error al cargar líderes. Por favor recargue la página."
+    "leadersLoadFailed": "Error al cargar líderes. Por favor recargue la página.",
+    "offlineLogin": "Sin conexión. Conéctese una vez con internet, o si ya inició sesión hoy, verifique sus credenciales."
   },
   "hero": {
     "liveBadge": "Edición 2026 · En vivo",

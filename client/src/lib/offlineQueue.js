@@ -5,13 +5,16 @@ import { openDB } from 'idb';
 // later is OK (idb handles missing fields), but renaming would force a
 // version bump.
 const DB_NAME = 'victorhugo-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_PENDING = 'pending_requests';
 const STORE_CONFLICTS = 'conflicts';
+const STORE_AUTH = 'cached_auth';
 
 let dbPromise;
 
-function getDB() {
+// Single shared DB across queue + offline-auth so we don't fight over the
+// version number. New stores get added inside this upgrade callback.
+export function getDB() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
@@ -26,6 +29,11 @@ function getDB() {
             keyPath: 'id',
             autoIncrement: true,
           });
+        }
+        if (!db.objectStoreNames.contains(STORE_AUTH)) {
+          // Keyed by leaderId so the same device can have multiple cached
+          // identities (e.g. an admin who occasionally logs in as a leader).
+          db.createObjectStore(STORE_AUTH, { keyPath: 'leaderId' });
         }
       },
     });

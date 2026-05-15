@@ -27,7 +27,8 @@
     "wrongPassword": "Mot de passe incorrect",
     "wrongAccessCode": "Code d'accès incorrect",
     "loginFailed": "Échec de la connexion. Veuillez réessayer.",
-    "leadersLoadFailed": "Impossible de charger les responsables. Veuillez recharger la page."
+    "leadersLoadFailed": "Impossible de charger les responsables. Veuillez recharger la page.",
+    "offlineLogin": "Pas de connexion. Connectez-vous une fois avec internet, ou vérifiez vos identifiants si vous vous êtes connecté aujourd'hui."
   },
   "hero": {
     "liveBadge": "Édition 2026 · En direct",

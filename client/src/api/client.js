@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { enqueueRequest } from '../lib/syncQueue';
+import { cacheCredential } from '../lib/offlineAuth';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -115,6 +116,13 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
 
   if (response.data.leader) {
     setStoredUser(response.data.leader);
+    // Cache the credential for offline-login next time. Best-effort —
+    // failures here must not block the online login path.
+    cacheCredential({
+      leaderId,
+      credential: password || accessCode,
+      profile: response.data.leader,
+    }).catch(() => {});
   }
 
   return response.data;

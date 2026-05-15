@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth.js';
 import { getLeaders, login } from '../api/client';
+import { tryOfflineLogin, rememberLiveCredential } from '../lib/offlineAuth';
 import Footer from '../components/common/Footer';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import ThemeToggle from '../components/ui/ThemeToggle';
@@ -183,6 +184,13 @@ function Login() {
     try {
       const response = await login(selectedLeaderId, { password, accessCode });
       loginLeader(response.leader);
+      // Hold the plaintext credential in memory for the rest of this tab's
+      // lifetime so syncQueue can silently re-login if the cookie expires
+      // mid-session (long offline window).
+      rememberLiveCredential({
+        leaderId: selectedLeaderId,
+        credential: password || accessCode,
+      });
 
       if (response.leader.role === 'admin') {
         navigate('/admin');
@@ -197,6 +205,27 @@ function Login() {
         setError(t('errors.wrongPassword'));
       } else if (serverError === 'Invalid access code') {
         setError(t('errors.wrongAccessCode'));
+      } else if (!err.response) {
+        // No HTTP response = network failure. Try offline login from the
+        // cached credential. If a fresh-enough one exists and matches,
+        // we restore the client-side session without contacting the server.
+        const profile = await tryOfflineLogin({
+          leaderId: selectedLeaderId,
+          credential: password || accessCode,
+        });
+        if (profile) {
+          loginLeader(profile);
+          rememberLiveCredential({
+            leaderId: selectedLeaderId,
+            credential: password || accessCode,
+          });
+          if (profile.role === 'admin') navigate('/admin');
+          else if (profile.role === 'profesor') navigate('/profesor');
+          else navigate('/dashboard');
+          return;
+        }
+        // No cached creds, expired, or wrong code while offline.
+        setError(t('errors.offlineLogin'));
       } else {
         setError(t('errors.loginFailed'));
       }

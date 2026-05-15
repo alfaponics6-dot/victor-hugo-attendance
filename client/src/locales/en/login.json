@@ -27,7 +27,8 @@
     "wrongPassword": "Incorrect password",
     "wrongAccessCode": "Incorrect access code",
     "loginFailed": "Sign-in failed. Please try again.",
-    "leadersLoadFailed": "Failed to load leaders. Please reload the page."
+    "leadersLoadFailed": "Failed to load leaders. Please reload the page.",
+    "offlineLogin": "No connection. Log in once with internet, or check your credentials if you've signed in today."
   },
   "hero": {
     "liveBadge": "2026 Edition · Live",

@@ -7,6 +7,7 @@ import {
   count as queueCount,
   conflictCount,
 } from './offlineQueue';
+import { getLiveCredential } from './offlineAuth';
 
 const MAX_RETRIES = 5;
 // Subscribers get notified whenever the queue size, conflict count, or
@@ -48,6 +49,11 @@ export async function enqueueRequest(payload) {
 // Drain the queue once. Safe to call repeatedly — concurrent invocations
 // short-circuit on the isSyncing flag. Caller decides when (online event,
 // app boot, manual retry button).
+//
+// On 401 we attempt a single silent re-login using the in-memory credential
+// (set by Login.jsx after either online or offline login). The cookie this
+// produces lets us drain queued writes that were made during a long offline
+// session, where the server's JWT cookie expired before sync.
 export async function drainQueue() {
   if (isSyncing) return { skipped: 'already-syncing' };
   if (!navigator.onLine) return { skipped: 'offline' };
@@ -57,58 +63,100 @@ export async function drainQueue() {
   let processed = 0;
   let conflicts = 0;
   let failed = 0;
+  let attemptedRelogin = false;
 
   try {
-    const items = await peekAll();
-    // Stable FIFO order: idb returns by primary key ascending, which is the
-    // same as createdAt for autoincrement keys.
-    for (const item of items) {
-      if (!navigator.onLine) break; // bailed mid-drain — pick up next online event
-      const result = await replay(item);
-      if (result === 'success') {
-        await removeById(item.id);
-        processed += 1;
-      } else if (result === 'conflict') {
-        await recordConflict({
-          url: item.url,
-          method: item.method,
-          body: item.isFormData
-            ? { kind: 'formdata', fields: item.body ? formDataToFields(item.body) : {}, files: {} }
-            : { kind: 'json', body: item.body },
-          serverMessage: item.lastError,
-          serverStatus: 409,
-        });
-        await removeById(item.id);
-        conflicts += 1;
-      } else if (result === 'auth-fail') {
-        // 401 on replay: user is logged out or token is dead. Stop the
-        // drain to avoid blasting the rest of the queue at /login. Items
-        // stay in the queue; next successful login will retry them.
-        break;
-      } else {
-        // network / 5xx → keep the item, bump retries
-        const retries = await bumpRetries(item.id);
-        if (retries >= MAX_RETRIES) {
-          // Treat as a conflict so the UI surfaces it for manual handling
+    // Outer loop: re-fetch items + restart after a successful silent re-login.
+    while (navigator.onLine) {
+      const items = await peekAll();
+      if (items.length === 0) break;
+
+      let hitAuthFail = false;
+      let madeProgress = false;
+
+      for (const item of items) {
+        if (!navigator.onLine) break;
+        const result = await replay(item);
+        if (result === 'success') {
+          await removeById(item.id);
+          processed += 1;
+          madeProgress = true;
+        } else if (result === 'conflict') {
           await recordConflict({
             url: item.url,
             method: item.method,
             body: item.isFormData
-              ? { kind: 'formdata', fields: formDataToFields(item.body), files: {} }
+              ? { kind: 'formdata', fields: item.body ? formDataToFields(item.body) : {}, files: {} }
               : { kind: 'json', body: item.body },
-            serverMessage: `Failed after ${MAX_RETRIES} attempts: ${item.lastError ?? 'unknown'}`,
-            serverStatus: 0,
+            serverMessage: item.lastError,
+            serverStatus: 409,
           });
           await removeById(item.id);
-          failed += 1;
+          conflicts += 1;
+          madeProgress = true;
+        } else if (result === 'auth-fail') {
+          hitAuthFail = true;
+          break;
+        } else {
+          // network / 5xx → keep the item, bump retries
+          const retries = await bumpRetries(item.id);
+          if (retries >= MAX_RETRIES) {
+            await recordConflict({
+              url: item.url,
+              method: item.method,
+              body: item.isFormData
+                ? { kind: 'formdata', fields: formDataToFields(item.body), files: {} }
+                : { kind: 'json', body: item.body },
+              serverMessage: `Failed after ${MAX_RETRIES} attempts: ${item.lastError ?? 'unknown'}`,
+              serverStatus: 0,
+            });
+            await removeById(item.id);
+            failed += 1;
+            madeProgress = true;
+          }
         }
       }
+
+      if (hitAuthFail && !attemptedRelogin) {
+        attemptedRelogin = true;
+        const ok = await silentRelogin();
+        if (ok) continue; // restart drain with fresh cookie
+        break;
+      }
+      if (hitAuthFail) break;
+      if (!madeProgress) break; // avoid infinite loop on stable failures
     }
   } finally {
     isSyncing = false;
     await notify();
   }
   return { processed, conflicts, failed };
+}
+
+// Silent re-login using the in-memory plaintext credential captured at
+// the last successful login. Returns true if the server accepted it (and
+// therefore the auth cookie is now fresh).
+async function silentRelogin() {
+  const live = getLiveCredential();
+  if (!live || !navigator.onLine) return false;
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leaderId: live.leaderId,
+        // We don't know whether the credential was an access code or a
+        // password (leader vs admin/profesor). Send as both — server uses
+        // whichever matches the leader's auth mode.
+        accessCode: live.credential,
+        password: live.credential,
+      }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
 }
 
 function formDataToFields(fd) {
