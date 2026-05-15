@@ -16,7 +16,11 @@ const TIMEZONE = process.env.PUSH_CRON_TZ || 'America/Costa_Rica';
 async function runOnce() {
   let subs;
   try {
-    subs = await db.listPushSubscriptions();
+    // Only wake devices whose leader has flagged pending data — the
+    // X-Queue-Size header + /push/heartbeat keep this state honest.
+    // Without this filter we'd ping every leader every 30 min even
+    // when the queue is empty (notification spam on iOS).
+    subs = await db.listPushSubscriptionsNeedingSync();
   } catch (e) {
     console.error('Push cron: could not read subscriptions:', e.message);
     return { sent: 0, failed: 0 };

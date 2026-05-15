@@ -15,6 +15,7 @@ const path = require('path');
 
 // Apply authentication to all routes in this file
 router.use(authenticateToken);
+router.use(require('../middleware/syncStateTracker').syncStateTracker);
 
 // Tighter limit for the resolve endpoint: it's destructive (deletes and
 // re-inserts the day's rows), so a runaway client or compromised leader

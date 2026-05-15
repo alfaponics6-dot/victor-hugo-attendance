@@ -185,6 +185,22 @@ class Database {
       `);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_push_subs_leader ON push_subscriptions(leader_id)`);
 
+      // Per-leader sync hint. Updated by the X-Queue-Size header on
+      // every authenticated request; consulted by the push cron so we
+      // only wake devices that actually have queued data. Without this,
+      // every leader gets a 30-min notification even when there's
+      // nothing to sync.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS leader_sync_state (
+          leader_id INTEGER PRIMARY KEY,
+          last_known_queue_size INTEGER NOT NULL DEFAULT 0,
+          sync_needed_at DATETIME,
+          last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE CASCADE
+        )
+      `);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_sync_state_needed ON leader_sync_state(sync_needed_at)`);
+
       // Rotations table - track student rotation assignments
       this.db.run(`
         CREATE TABLE IF NOT EXISTS rotations (
@@ -1405,6 +1421,50 @@ class Database {
         (err, rows) => {
           if (err) reject(err);
           else resolve(rows);
+        },
+      );
+    });
+  }
+
+  // Push subscriptions for leaders whose sync state currently flags
+  // pending work. Used by the cron — without the join filter we'd push
+  // every device every 30 min regardless of need.
+  listPushSubscriptionsNeedingSync() {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT s.id, s.leader_id, s.endpoint, s.p256dh, s.auth
+         FROM push_subscriptions s
+         JOIN leader_sync_state st ON st.leader_id = s.leader_id
+         WHERE st.sync_needed_at IS NOT NULL`,
+        [],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        },
+      );
+    });
+  }
+
+  // Update the per-leader sync hint. queueSize is what the client
+  // claims is currently pending in IndexedDB. > 0 sets sync_needed_at;
+  // 0 clears it. Always updates last_seen_at so we have a "last
+  // contact" signal for future device-pruning logic.
+  upsertLeaderSyncState(leaderId, queueSize) {
+    if (!leaderId) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const sizeNum = Number.isFinite(queueSize) ? queueSize : 0;
+      const needed = sizeNum > 0 ? "CURRENT_TIMESTAMP" : 'NULL';
+      this.db.run(
+        `INSERT INTO leader_sync_state (leader_id, last_known_queue_size, sync_needed_at, last_seen_at)
+         VALUES (?, ?, ${needed}, CURRENT_TIMESTAMP)
+         ON CONFLICT(leader_id) DO UPDATE SET
+           last_known_queue_size = excluded.last_known_queue_size,
+           sync_needed_at = ${needed},
+           last_seen_at = CURRENT_TIMESTAMP`,
+        [leaderId, sizeNum],
+        function (err) {
+          if (err) reject(err);
+          else resolve(this.changes);
         },
       );
     });

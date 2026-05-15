@@ -14,6 +14,7 @@ const {
 
 // Apply authentication to all routes in this file
 router.use(authenticateToken);
+router.use(require('../middleware/syncStateTracker').syncStateTracker);
 
 // Helper: check that the authenticated user can view/modify the given project's data.
 // Admin/profesor can access any project; leader is restricted to their own project.

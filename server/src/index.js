@@ -55,7 +55,10 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  // X-Queue-Size: client tells us how many writes are pending in the
+  // offline queue, so the push cron can target only devices that need a
+  // wake-up (see middleware/syncStateTracker.js).
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Queue-Size']
 }));
 
 // JSON bodies are small (attendance records, login payloads). Attachments

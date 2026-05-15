@@ -33,6 +33,24 @@ router.post('/subscribe', authenticateToken, express.json(), async (req, res) =>
   }
 });
 
+// Direct heartbeat from the SW (which can't easily attach the
+// X-Queue-Size header to its raw fetches). Lets the SW tell the server
+// "queue is empty now" right after a successful background drain so
+// the cron stops pushing this leader until they queue something new.
+router.post('/heartbeat', authenticateToken, express.json(), async (req, res) => {
+  try {
+    const { queueSize } = req.body || {};
+    const n = Number.isFinite(queueSize) ? Number(queueSize) : 0;
+    if (req.user?.id) {
+      await db.upsertLeaderSyncState(req.user.id, n);
+    }
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Push heartbeat failed:', e);
+    res.status(500).json({ error: 'Heartbeat failed' });
+  }
+});
+
 // Drop the subscription. Called on logout from the device that owns it.
 router.delete('/subscribe', authenticateToken, express.json(), async (req, res) => {
   try {

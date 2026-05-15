@@ -138,7 +138,9 @@ async function drainQueueInSW() {
   const db = await getDB();
   let items;
   try { items = await db.getAll(STORE_PENDING); } catch { items = []; }
-  if (!items.length) return;
+  // NOTE: don't early-return when items is empty. We still want to fire
+  // the heartbeat at the end so the server clears any stale sync flag
+  // that's keeping the cron poking us.
 
   let processed = 0;
   let conflicts = 0;
@@ -201,6 +203,21 @@ async function drainQueueInSW() {
     await notifyClients({ type: 'sync-complete', processed, conflicts });
     if (processed > 0) await showSyncNotification(processed, conflicts);
   }
+
+  // Tell the server how many items remain so the cron can stop pushing
+  // this leader once the queue is drained. Best-effort — auth cookie
+  // must still be valid for the heartbeat to land.
+  try {
+    const remaining = await db.count(STORE_PENDING).catch(() => null);
+    if (remaining !== null) {
+      await fetch('/api/push/heartbeat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ queueSize: remaining }),
+      }).catch(() => null);
+    }
+  } catch { /* ignore */ }
 }
 
 function itemBodyForConflict(item) {

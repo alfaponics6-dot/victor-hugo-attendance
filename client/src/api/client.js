@@ -3,6 +3,7 @@ import { enqueueRequest } from '../lib/syncQueue';
 import { cacheCredential, clearLiveCredential, purgeCachedAuth } from '../lib/offlineAuth';
 import { primeOfflineCache } from '../lib/offlinePrime';
 import { ensurePushSubscription, unsubscribePush } from '../lib/pushSubscribe';
+import { count as queueCount } from '../lib/offlineQueue';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -51,6 +52,21 @@ const api = axios.create({
   },
   // Send the auth cookie with every request.
   withCredentials: true,
+});
+
+// Piggyback our offline-queue size on every authenticated request via an
+// X-Queue-Size header. The server's syncStateTracker middleware reads
+// it and updates per-leader sync state — that's what stops the push
+// cron from pinging devices whose queue is empty.
+api.interceptors.request.use(async (config) => {
+  try {
+    const n = await queueCount();
+    if (Number.isFinite(n)) {
+      config.headers = config.headers || {};
+      config.headers['X-Queue-Size'] = String(n);
+    }
+  } catch { /* IDB might not be open yet — drop silently */ }
+  return config;
 });
 
 // Handle auth errors. 401 = no/expired session → log out and redirect to

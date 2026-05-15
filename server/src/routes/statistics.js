@@ -6,6 +6,7 @@ const { validateDateQuery } = require('../middleware/validation');
 
 // Apply authentication to all routes in this file
 router.use(authenticateToken);
+router.use(require('../middleware/syncStateTracker').syncStateTracker);
 
 // Get overall statistics. Accepts either ?date=YYYY-MM-DD or
 // ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD for range mode.

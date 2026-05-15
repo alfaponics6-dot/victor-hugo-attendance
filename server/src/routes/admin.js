@@ -41,6 +41,7 @@ router.get('/attendance-summary', authenticateToken, requireProfesor, validateDa
 
 // All admin routes require authentication and admin role
 router.use(authenticateToken);
+router.use(require('../middleware/syncStateTracker').syncStateTracker);
 router.use(requireAdmin);
 
 // Admin: Get all students
