@@ -22,15 +22,24 @@ initSyncQueue()
 // idempotent — silently no-ops when permission is default/denied.
 ensurePushSubscription().catch(() => {})
 
-// When a new service worker takes control (e.g. immediately after a
-// deploy, via skipWaiting + clients.claim), reload the page so the tab
-// runs against the new bundle's contract. Without this, the page can
-// register a sync tag with handlers the new SW knows but the old SW —
-// still controlling this tab — does not.
+// When a new service worker takes control mid-session (e.g. immediately
+// after a deploy, via skipWaiting + clients.claim), reload the page so
+// the tab runs against the new bundle's contract. Without this, the
+// page can register a sync tag with handlers the new SW knows but the
+// old SW — still controlling this tab — does not.
+//
+// IMPORTANT: only reload when there was ALREADY a controller. On a
+// first-ever visit, the page renders → SW installs → SW activates and
+// claims → controllerchange fires for the first time. Reloading there
+// is wasteful and looks like a glitch (page renders, blanks, renders).
+// We only care about controllerchange when an OLD controller is being
+// swapped for a new one.
 if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+  const hadInitialController = !!navigator.serviceWorker.controller
   let reloading = false
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloading) return
+    if (!hadInitialController) return  // first-install case, page is already fresh
     reloading = true
     window.location.reload()
   })
