@@ -213,6 +213,11 @@ function Login() {
         const profile = await tryOfflineLogin({
           leaderId: selectedLeaderId,
           credential: password || accessCode,
+          // Pass the selected leader so the shared-leader cache path can
+          // reconstruct the right profile (LEADER_ACCESS_CODE is shared,
+          // so the cached cred matches everyone — but the user picked a
+          // specific identity from the dropdown and that's who they are).
+          leader: leaders.find((l) => Number(l.id) === Number(selectedLeaderId)),
         });
         if (profile) {
           loginLeader(profile);

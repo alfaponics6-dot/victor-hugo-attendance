@@ -86,6 +86,13 @@ export async function drainQueue() {
   return doDrainQueue();
 }
 
+// Track which leaderId the current cookie was last aligned to. When the
+// in-memory credential changes (user switch on a shared tablet), drain
+// re-aligns the cookie BEFORE replaying queued writes — otherwise replays
+// would be attributed to whoever last logged in online, not the user
+// who actually made the offline edits.
+let lastAlignedLeaderId = null;
+
 async function doDrainQueue() {
   isSyncing = true;
   await notify();
@@ -94,6 +101,15 @@ async function doDrainQueue() {
   let conflicts = 0;
   let failed = 0;
   let attemptedRelogin = false;
+
+  // Pre-emptive cookie alignment when the active credential identity has
+  // changed (or never aligned this session). Best-effort: if it fails the
+  // normal drain still tries, and the auth-fail path retries.
+  const live = getLiveCredential();
+  if (live && live.leaderId !== lastAlignedLeaderId && navigator.onLine) {
+    const ok = await silentRelogin();
+    if (ok) lastAlignedLeaderId = live.leaderId;
+  }
 
   try {
     // Outer loop: re-fetch items + restart after a successful silent re-login.

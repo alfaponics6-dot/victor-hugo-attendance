@@ -12,6 +12,13 @@ import { getDB } from './offlineQueue';
 // the exposure we expire cached creds after 24h.
 const STORE_AUTH = 'cached_auth';
 const TTL_MS = 24 * 60 * 60 * 1000;
+// Leader accounts share a single LEADER_ACCESS_CODE (per README). Caching
+// the credential per-leaderId would force every leader to log in online
+// once per device — wrong UX for shared tablets where any of 14 leaders
+// can pick up the device and need to mark attendance offline. We key the
+// leader cache by role instead. Admin/profesor still use per-leaderId
+// caching since their passwords are personal.
+const SHARED_LEADER_KEY = 'role:leader';
 // PBKDF2-SHA256 iterations. OWASP 2023 recommendation for SHA-256 is
 // 600k; we honor that for new records. Old records store their own
 // iteration count so they keep verifying after upgrades. SubtleCrypto
@@ -64,12 +71,21 @@ export async function cacheCredential({ leaderId, credential, profile }) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const hashed = await hashCredential(credential, salt, ITERATIONS);
     const db = await getDB();
+    const role = profile?.role || 'leader';
+    // leader → shared key (any leader's online login unlocks offline for
+    // ALL leaders on this device, since the access code is org-wide).
+    // admin/profesor → per-user key (their password is personal).
+    const key = role === 'leader' ? SHARED_LEADER_KEY : Number(leaderId);
     await db.put(STORE_AUTH, {
-      leaderId: Number(leaderId),
+      leaderId: key,
       salt: buf2hex(salt),
       hashed: buf2hex(hashed),
       iterations: ITERATIONS,
+      // For shared-leader records the embedded profile is the leader who
+      // happened to log in online. We don't restore it on offline-login —
+      // tryOfflineLogin reconstructs from the selected leader instead.
       profile,
+      role,
       createdAt: Date.now(),
       expiresAt: Date.now() + TTL_MS,
     });
@@ -82,26 +98,71 @@ export async function cacheCredential({ leaderId, credential, profile }) {
 // Returns the cached profile if the credential matches and isn't expired,
 // null otherwise. Caller is responsible for restoring the session
 // (writing to localStorage, navigating).
-export async function tryOfflineLogin({ leaderId, credential }) {
+//
+// `leader` is the leader object the user selected from the dropdown (from
+// /auth/leaders). For the shared-leader cache path we reconstruct the
+// profile from this object so the restored session reflects who the user
+// actually picked, not whoever last logged in online.
+export async function tryOfflineLogin({ leaderId, credential, leader }) {
   if (!crypto?.subtle || !leaderId || !credential) return null;
   try {
     const db = await getDB();
+
+    // Path 1: shared leader cache. Only applies if the selected leader has
+    // role 'leader' (or unspecified, which defaults to leader in this app).
+    const selectedRole = leader?.role || 'leader';
+    if (selectedRole === 'leader') {
+      const shared = await db.get(STORE_AUTH, SHARED_LEADER_KEY);
+      if (shared && Date.now() <= shared.expiresAt) {
+        if (await verifyAgainst(credential, shared)) {
+          return buildProfileFromLeader(leader);
+        }
+      } else if (shared && Date.now() > shared.expiresAt) {
+        await db.delete(STORE_AUTH, SHARED_LEADER_KEY).catch(() => {});
+      }
+    }
+
+    // Path 2: per-user cache. Used for admin/profesor + legacy leader
+    // records cached before SHARED_LEADER_KEY existed.
     const record = await db.get(STORE_AUTH, Number(leaderId));
     if (!record) return null;
     if (Date.now() > record.expiresAt) {
-      await db.delete(STORE_AUTH, Number(leaderId));
+      await db.delete(STORE_AUTH, Number(leaderId)).catch(() => {});
       return null;
     }
-    const salt = hex2buf(record.salt);
-    // Old records may not have an iterations field — fall back to 100k
-    // (the original setting) so existing cached creds keep verifying.
-    const iterations = record.iterations || 100_000;
-    const hashed = await hashCredential(credential, salt, iterations);
-    const expected = hex2buf(record.hashed);
-    return constantTimeEqual(hashed, expected) ? record.profile : null;
+    if (await verifyAgainst(credential, record)) {
+      return record.profile;
+    }
+    return null;
   } catch {
     return null;
   }
+}
+
+async function verifyAgainst(credential, record) {
+  const salt = hex2buf(record.salt);
+  // Old records may not have an iterations field — fall back to 100k
+  // (the original setting) so existing cached creds keep verifying.
+  const iterations = record.iterations || 100_000;
+  const hashed = await hashCredential(credential, salt, iterations);
+  const expected = hex2buf(record.hashed);
+  return constantTimeEqual(hashed, expected);
+}
+
+// The leaders list returns snake_case fields; the rest of the app
+// (AuthContext, pages) expects camelCase. Mirror the shape /auth/login
+// returns so consumers don't have to special-case offline login.
+function buildProfileFromLeader(leader) {
+  if (!leader) return null;
+  return {
+    id: leader.id,
+    name: leader.name,
+    email: leader.email ?? null,
+    projectId: leader.project_id ?? leader.projectId ?? null,
+    projectName: leader.project_name ?? leader.projectName ?? null,
+    projectNumber: leader.project_number ?? leader.projectNumber ?? null,
+    role: leader.role || 'leader',
+  };
 }
 
 // Returns true if a cached credential exists for this leader and hasn't
