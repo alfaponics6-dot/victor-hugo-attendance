@@ -24,9 +24,6 @@ client/dist/
 # VAPID keys (Web Push) — generated on first server boot
 server/vapid-keys.json
 
-# Microsoft Graph refresh token (rotates after each token exchange)
-server/ms-graph-token.json
-
 # IDE
 .vscode/
 .idea/
