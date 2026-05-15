@@ -57,7 +57,14 @@
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; padding: 0; }
+/* `height: 100%` on #root made it EXACTLY one viewport tall, capping
+   any descendant's `min-h-screen` (Tailwind's `min-height: 100vh`)
+   when the parent constraint conflicted. Switching to min-height lets
+   the document grow with its content while still filling the viewport
+   when content is short — sticky-footer patterns now work reliably. */
+html, body, #root { margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+#root { min-height: 100dvh; display: flex; flex-direction: column; }
 html { color-scheme: dark; background-color: var(--color-bg); }
 :root.light { color-scheme: light; }
 
