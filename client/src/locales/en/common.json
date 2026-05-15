@@ -102,5 +102,39 @@
   "theme": {
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
+  },
+  "offline": {
+    "banner": "No connection — working with saved data",
+    "bannerWithPending_one": "No connection · 1 change saved locally",
+    "bannerWithPending_other": "No connection · {{count}} changes saved locally",
+    "syncing_one": "Syncing 1 change…",
+    "syncing_other": "Syncing {{count}} changes…",
+    "pending_one": "1 change pending",
+    "pending_other": "{{count}} changes pending",
+    "conflicts_one": "1 unresolved conflict",
+    "conflicts_other": "{{count}} unresolved conflicts",
+    "conflictsCta": "Resolve",
+    "conflictsModal": {
+      "title": "Unresolved conflicts",
+      "description": "The following changes couldn't sync. Resolve each one to save or discard.",
+      "empty": "No pending conflicts.",
+      "review": "Review",
+      "attendance": "Attendance",
+      "attendanceForDate": "Attendance for {{date}}"
+    },
+    "conflictResolver": {
+      "intro": "Your offline version for {{date}} differs from the server's. Choose which version to keep for each student.",
+      "serverFetchFailed": "Couldn't load the server's current version",
+      "mine": "Mine (offline)",
+      "theirs": "Server",
+      "allMine": "Keep all mine",
+      "allTheirs": "Keep all server",
+      "noRecord": "No record",
+      "confirm": "Confirm resolution",
+      "discard": "Discard",
+      "emptyAfterMerge": "Your selection contains no records to save.",
+      "unsupported": "Conflict type not supported yet.",
+      "genericIntro": "This operation couldn't complete. You can discard it and retry manually later."
+    }
   }
 }

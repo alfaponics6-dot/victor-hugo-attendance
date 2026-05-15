@@ -127,6 +127,79 @@ router.post('/bulk', express.json(), async (req, res) => {
   }
 });
 
+// Resolve a duplicate-attendance conflict that was queued offline. The
+// client UI lets the leader pick a final per-student outcome (or pick
+// "all mine" / "all theirs"), then POSTs the merged result here. We
+// REPLACE the existing rows for (projectId, date) atomically and write
+// an audit row so the resolution is reviewable later.
+router.post('/bulk/resolve', express.json(), async (req, res) => {
+  try {
+    const { date, time, records, resolution } = req.body;
+
+    const projectId = req.user.projectId;
+    const leaderId = req.user.id;
+
+    if (!projectId || !leaderId) {
+      return res.status(403).json({ error: 'Authenticated user has no project assignment' });
+    }
+    if (!date || !time || !records || !Array.isArray(records)) {
+      return res.status(400).json({ error: 'Missing required fields: date, time, records' });
+    }
+    if (records.length === 0) {
+      return res.status(400).json({ error: 'No attendance records provided' });
+    }
+    if (records.length > 200) {
+      return res.status(413).json({ error: 'Too many records in a single submission (max 200)' });
+    }
+    if (resolution !== 'overwrite' && resolution !== 'merge') {
+      return res.status(400).json({ error: 'resolution must be "overwrite" or "merge"' });
+    }
+
+    for (const record of records) {
+      if (!record.studentId || !record.status) {
+        return res.status(400).json({ error: 'Each record must have studentId and status' });
+      }
+      if (record.status !== 'present' && record.status !== 'absent') {
+        return res.status(400).json({ error: 'Status must be either "present" or "absent"' });
+      }
+      if (record.justification && !['justificada', 'injustificada'].includes(record.justification)) {
+        return res.status(400).json({ error: 'Justification must be "justificada" or "injustificada"' });
+      }
+      if (record.status === 'present' && record.justification) {
+        return res.status(400).json({ error: 'Justification can only be provided for absent status' });
+      }
+    }
+
+    const bulkRecords = records.map((record) => ({
+      studentId: parseInt(record.studentId),
+      projectId: Number(projectId),
+      leaderId: Number(leaderId),
+      date,
+      time,
+      status: record.status,
+      justification: record.status === 'absent' ? (record.justification || 'injustificada') : null,
+      observation: record.observation || null,
+      attachmentFilePath: null,
+      attachmentFileName: null,
+    }));
+
+    // Persist the original payload (not the sanitized server-side version)
+    // so reviewers see what the client actually sent.
+    const payloadJson = JSON.stringify({ date, time, records, resolution });
+
+    const result = await db.resolveBulkAttendance(bulkRecords, resolution, payloadJson);
+    res.json({
+      success: true,
+      message: 'Attendance resolved successfully',
+      inserted: result.inserted,
+      replaced: result.replaced,
+    });
+  } catch (error) {
+    console.error('Error resolving bulk attendance:', error);
+    res.status(500).json({ error: 'Failed to resolve attendance' });
+  }
+});
+
 // Mark attendance for a single student (multipart, supports attachment)
 router.post('/', uploadSingle, validateAttendance, async (req, res) => {
   const filePath = req.file ? req.file.path : null;

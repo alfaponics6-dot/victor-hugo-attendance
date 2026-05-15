@@ -102,5 +102,39 @@
   "theme": {
     "switchToLight": "Passer au mode clair",
     "switchToDark": "Passer au mode sombre"
+  },
+  "offline": {
+    "banner": "Pas de connexion — travail avec données enregistrées",
+    "bannerWithPending_one": "Pas de connexion · 1 changement enregistré localement",
+    "bannerWithPending_other": "Pas de connexion · {{count}} changements enregistrés localement",
+    "syncing_one": "Synchronisation de 1 changement…",
+    "syncing_other": "Synchronisation de {{count}} changements…",
+    "pending_one": "1 changement en attente",
+    "pending_other": "{{count}} changements en attente",
+    "conflicts_one": "1 conflit non résolu",
+    "conflicts_other": "{{count}} conflits non résolus",
+    "conflictsCta": "Résoudre",
+    "conflictsModal": {
+      "title": "Conflits non résolus",
+      "description": "Les changements suivants n'ont pas pu être synchronisés. Résolvez chacun pour enregistrer ou abandonner.",
+      "empty": "Aucun conflit en attente.",
+      "review": "Examiner",
+      "attendance": "Présence",
+      "attendanceForDate": "Présence du {{date}}"
+    },
+    "conflictResolver": {
+      "intro": "Votre version hors-ligne du {{date}} diffère de celle du serveur. Choisissez quelle version conserver pour chaque étudiant.",
+      "serverFetchFailed": "Impossible de charger la version actuelle du serveur",
+      "mine": "La mienne (hors-ligne)",
+      "theirs": "Serveur",
+      "allMine": "Tout garder à moi",
+      "allTheirs": "Tout garder du serveur",
+      "noRecord": "Aucun enregistrement",
+      "confirm": "Confirmer la résolution",
+      "discard": "Abandonner",
+      "emptyAfterMerge": "Votre sélection ne contient aucun enregistrement à sauvegarder.",
+      "unsupported": "Type de conflit pas encore pris en charge.",
+      "genericIntro": "Cette opération n'a pas pu se terminer. Vous pouvez l'abandonner et réessayer manuellement plus tard."
+    }
   }
 }

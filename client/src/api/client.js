@@ -1,6 +1,23 @@
 import axios from 'axios';
+import { enqueueRequest } from '../lib/syncQueue';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// Endpoints we never queue: they require a synchronous server answer
+// (login validates credentials, password change validates current pw).
+const NEVER_QUEUE = [
+  /\/auth\/login$/,
+  /\/auth\/change-password$/,
+  /\/auth\/logout$/,
+];
+
+function shouldQueue(config) {
+  if (!config) return false;
+  const method = (config.method || 'get').toUpperCase();
+  if (method === 'GET' || method === 'HEAD') return false;
+  const url = config.url || '';
+  return !NEVER_QUEUE.some((pat) => pat.test(url));
+}
 
 // The JWT now lives in an HttpOnly Secure cookie set by the server. The
 // client only persists the user profile (so the UI can render its name/role
@@ -39,7 +56,39 @@ const api = axios.create({
 // page should surface the error in context.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Network failure on a mutating request → enqueue for later replay so
+    // the leader doesn't lose their work. Returning an optimistic 202
+    // keeps callers happy without touching every page's success path.
+    if (!error.response && shouldQueue(error.config)) {
+      const cfg = error.config;
+      const fullUrl = (cfg.baseURL || '') + (cfg.url || '');
+      const isFormData = typeof FormData !== 'undefined' && cfg.data instanceof FormData;
+      let userId = null;
+      try {
+        userId = JSON.parse(localStorage.getItem('auth_user') || 'null')?.id ?? null;
+      } catch { /* malformed cache — ignore */ }
+      try {
+        const queueId = await enqueueRequest({
+          method: cfg.method,
+          url: fullUrl,
+          headers: cfg.headers,
+          data: cfg.data,
+          isFormData,
+          userId,
+        });
+        return {
+          data: { success: true, _queued: true, _queueId: queueId },
+          status: 202,
+          statusText: 'Queued (offline)',
+          headers: {},
+          config: cfg,
+        };
+      } catch {
+        // IndexedDB write failed — surface the original network error so the
+        // caller can show its existing failure UI instead of pretending we saved.
+      }
+    }
     if (error.response?.status === 401) {
       clearStoredUser();
       localStorage.removeItem('leader');
@@ -187,6 +236,16 @@ export const markBulkAttendance = async (projectId, leaderId, date, time, record
     date,
     time,
     records
+  });
+  return response.data;
+};
+
+// Resolve a queued-offline attendance conflict. Replaces the existing rows
+// for (project, date) with the merged payload the leader picked. The
+// server writes an audit row so the override is reviewable later.
+export const resolveAttendanceBulk = async ({ date, time, records, resolution }) => {
+  const response = await api.post('/attendance/bulk/resolve', {
+    date, time, records, resolution,
   });
   return response.data;
 };

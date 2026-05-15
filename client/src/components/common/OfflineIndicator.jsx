@@ -1,0 +1,85 @@
+import { useState } from 'react';
+import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useOnlineStatus } from '../../lib/useOnlineStatus';
+import { useSyncStatus } from '../../lib/useSyncStatus';
+import ConflictsModal from './ConflictsModal';
+
+// Single banner that surfaces three related states:
+//   1. offline (amber)   — no network, may have queued writes
+//   2. syncing (blue)    — back online, draining the queue
+//   3. conflicts (orange) — replay hit a 409 / hard error; user action needed
+// We collapse into one slot to avoid stacking banners; precedence is
+// offline > conflicts > syncing > idle-pending > nothing.
+//
+// When conflicts > 0 the banner becomes a button — clicking it opens the
+// resolver modal. Other states render as a static <div role="status">.
+export default function OfflineIndicator() {
+  const isOnline = useOnlineStatus();
+  const { pending, conflicts, isSyncing } = useSyncStatus();
+  const { t } = useTranslation('common');
+  const [modalOpen, setModalOpen] = useState(false);
+
+  if (isOnline && pending === 0 && conflicts === 0) return null;
+
+  let tone, Icon, message, spin = false;
+  if (!isOnline) {
+    tone = 'amber';
+    Icon = WifiOff;
+    message = pending > 0
+      ? t('offline.bannerWithPending', { count: pending })
+      : t('offline.banner');
+  } else if (conflicts > 0) {
+    tone = 'orange';
+    Icon = AlertTriangle;
+    message = t('offline.conflicts', { count: conflicts });
+  } else if (isSyncing) {
+    tone = 'blue';
+    Icon = RefreshCw;
+    message = t('offline.syncing', { count: pending });
+    spin = true;
+  } else {
+    tone = 'blue';
+    Icon = RefreshCw;
+    message = t('offline.pending', { count: pending });
+  }
+
+  const tones = {
+    amber: 'border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200',
+    blue:  'border-sky-300  bg-sky-100  text-sky-900  dark:border-sky-800  dark:bg-sky-950  dark:text-sky-200',
+    orange:'border-orange-300 bg-orange-100 text-orange-900 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200',
+  };
+
+  const baseCls = `sticky top-0 z-50 flex items-center justify-center gap-2 border-b px-4 py-2 text-sm font-medium ${tones[tone]}`;
+  const inner = (
+    <>
+      <Icon className={`size-4 shrink-0 ${spin ? 'animate-spin' : ''}`} aria-hidden="true" />
+      <span>{message}</span>
+      {conflicts > 0 && (
+        <span className="ml-2 text-xs underline underline-offset-2 opacity-90">
+          {t('offline.conflictsCta')}
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {conflicts > 0 ? (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className={`${baseCls} w-full hover:brightness-95 cursor-pointer text-center`}
+          aria-haspopup="dialog"
+        >
+          {inner}
+        </button>
+      ) : (
+        <div role="status" aria-live="polite" className={baseCls}>
+          {inner}
+        </div>
+      )}
+      <ConflictsModal open={modalOpen} onClose={() => setModalOpen(false)} />
+    </>
+  );
+}

@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './context/useAuth.js';
 import Footer from './components/common/Footer';
 import Loading from './components/common/Loading';
+import OfflineIndicator from './components/common/OfflineIndicator';
 import './App.css';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -45,6 +46,7 @@ function PrivateRoute({ children }) {
 function AuthedShell({ children }) {
   return (
     <div className="min-h-screen flex flex-col">
+      <OfflineIndicator />
       <div className="flex-1">{children}</div>
       <Footer />
     </div>

@@ -102,5 +102,39 @@
   "theme": {
     "switchToLight": "Modo claro",
     "switchToDark": "Modo escuro"
+  },
+  "offline": {
+    "banner": "Sem conexão — trabalhando com dados salvos",
+    "bannerWithPending_one": "Sem conexão · 1 alteração salva localmente",
+    "bannerWithPending_other": "Sem conexão · {{count}} alterações salvas localmente",
+    "syncing_one": "Sincronizando 1 alteração…",
+    "syncing_other": "Sincronizando {{count}} alterações…",
+    "pending_one": "1 alteração pendente",
+    "pending_other": "{{count}} alterações pendentes",
+    "conflicts_one": "1 conflito não resolvido",
+    "conflicts_other": "{{count}} conflitos não resolvidos",
+    "conflictsCta": "Resolver",
+    "conflictsModal": {
+      "title": "Conflitos não resolvidos",
+      "description": "As alterações a seguir não puderam ser sincronizadas. Resolva cada uma para salvar ou descartar.",
+      "empty": "Nenhum conflito pendente.",
+      "review": "Revisar",
+      "attendance": "Presença",
+      "attendanceForDate": "Presença de {{date}}"
+    },
+    "conflictResolver": {
+      "intro": "Sua versão offline de {{date}} difere da do servidor. Escolha qual versão manter para cada estudante.",
+      "serverFetchFailed": "Não foi possível carregar a versão atual do servidor",
+      "mine": "Minha (offline)",
+      "theirs": "Servidor",
+      "allMine": "Manter todas as minhas",
+      "allTheirs": "Manter todas do servidor",
+      "noRecord": "Sem registro",
+      "confirm": "Confirmar resolução",
+      "discard": "Descartar",
+      "emptyAfterMerge": "Sua seleção não contém registros para salvar.",
+      "unsupported": "Tipo de conflito ainda não suportado.",
+      "genericIntro": "Esta operação não pôde ser concluída. Você pode descartá-la e tentar novamente manualmente mais tarde."
+    }
   }
 }

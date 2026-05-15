@@ -16,7 +16,8 @@ const MIME_TYPES = {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.woff': 'font/woff',
-    '.woff2': 'font/woff2'
+    '.woff2': 'font/woff2',
+    '.webmanifest': 'application/manifest+json'
 };
 
 function proxyRequest(req, res) {

@@ -137,6 +137,26 @@ class Database {
       this.db.run(`ALTER TABLE attendance ADD COLUMN attachment_file_path TEXT`, () => {});
       this.db.run(`ALTER TABLE attendance ADD COLUMN attachment_file_name TEXT`, () => {});
 
+      // Audit log for attendance resolutions (offline-queue conflict
+      // overrides). Every resolve call appends a row with the full payload
+      // so a later review can reconstruct who overwrote what and when.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS attendance_resolutions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          leader_id INTEGER,
+          date DATE NOT NULL,
+          resolution_mode TEXT NOT NULL,
+          records_count INTEGER NOT NULL,
+          replaced_count INTEGER NOT NULL,
+          payload_json TEXT NOT NULL,
+          resolved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (leader_id) REFERENCES leaders(id) ON DELETE SET NULL
+        )
+      `);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_resolutions_project_date ON attendance_resolutions(project_id, date)`);
+
       // Rotations table - track student rotation assignments
       this.db.run(`
         CREATE TABLE IF NOT EXISTS rotations (
@@ -1227,6 +1247,82 @@ class Database {
                   resolve({ inserted: records.length });
                 });
               });
+            }
+          );
+        });
+      });
+    }));
+  }
+
+  // Replace attendance for a (projectId, date) atomically. Used by the
+  // offline-queue conflict resolver: when a leader's queued submission
+  // hits a 409 because someone else already saved, the resolver UI lets
+  // them pick a final per-student outcome and POSTs the merged result
+  // here. We delete the existing rows and insert the new ones inside one
+  // transaction so a partial failure can't leave the day in a half state.
+  //
+  // Records is the SAME shape as insertBulkAttendance expects.
+  // resolutionMode is just metadata (overwrite vs merge) for the audit log.
+  resolveBulkAttendance(records, resolutionMode, payloadJson) {
+    if (!records || records.length === 0) {
+      return Promise.reject(new Error('No records to insert'));
+    }
+    const projectId = records[0].projectId;
+    const leaderId = records[0].leaderId;
+    const date = records[0].date;
+
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
+      this.db.serialize(() => {
+        this.db.run('BEGIN IMMEDIATE TRANSACTION', (beginErr) => {
+          if (beginErr) { reject(beginErr); return; }
+
+          const fail = (err) => this.db.run('ROLLBACK', () => reject(err));
+
+          // Count what we're about to wipe so the audit row is honest.
+          this.db.get(
+            'SELECT COUNT(*) AS n FROM attendance WHERE project_id = ? AND date = ?',
+            [projectId, date],
+            (countErr, countRow) => {
+              if (countErr) return fail(countErr);
+              const replaced = countRow?.n ?? 0;
+
+              this.db.run(
+                'DELETE FROM attendance WHERE project_id = ? AND date = ?',
+                [projectId, date],
+                (delErr) => {
+                  if (delErr) return fail(delErr);
+
+                  const stmt = this.db.prepare(`
+                    INSERT INTO attendance (student_id, project_id, leader_id, date, time, status, justification, observation, attachment_file_path, attachment_file_name, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                  `);
+                  let firstError = null;
+                  for (const r of records) {
+                    stmt.run(
+                      [r.studentId, r.projectId, r.leaderId, r.date, r.time, r.status, r.justification, r.observation, r.attachmentFilePath, r.attachmentFileName],
+                      function (err) { if (err && !firstError) firstError = err; }
+                    );
+                  }
+                  stmt.finalize((finalizeErr) => {
+                    const err = firstError || finalizeErr;
+                    if (err) return fail(err);
+
+                    this.db.run(
+                      `INSERT INTO attendance_resolutions
+                       (project_id, leader_id, date, resolution_mode, records_count, replaced_count, payload_json)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                      [projectId, leaderId, date, resolutionMode, records.length, replaced, payloadJson],
+                      (auditErr) => {
+                        if (auditErr) return fail(auditErr);
+                        this.db.run('COMMIT', (commitErr) => {
+                          if (commitErr) return reject(commitErr);
+                          resolve({ inserted: records.length, replaced });
+                        });
+                      }
+                    );
+                  });
+                }
+              );
             }
           );
         });
