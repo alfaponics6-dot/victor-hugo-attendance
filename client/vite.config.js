@@ -21,6 +21,9 @@ export default defineConfig({
       includeAssets: [
         'Logo-Universidad-EARTH_academico-300x257.png',
         'login-bg.jpg',
+        'icon-192.png',
+        'icon-512.png',
+        'icon-maskable-512.png',
       ],
       manifest: {
         name: 'Asistencia EF 2026',
@@ -33,15 +36,13 @@ export default defineConfig({
         scope: '/',
         start_url: '/',
         lang: 'es',
-        // TODO Phase 4: replace with proper 192/512 icons. The EARTH logo
-        // is 300x257; browsers will install but Lighthouse will warn.
         icons: [
-          {
-            src: 'Logo-Universidad-EARTH_academico-300x257.png',
-            sizes: '300x257',
-            type: 'image/png',
-            purpose: 'any',
-          },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          // Maskable variant has extra padding so OS-level icon shape
+          // cropping (Android round/squircle, iOS rounded square) doesn't
+          // chop the EARTH logo. Renders inside the OS-chosen safe area.
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       injectManifest: {

@@ -28,6 +28,22 @@ function loadOrGenerate() {
       console.error('vapid-keys.json unreadable, regenerating:', e.message);
     }
   }
+  // SHOUTY warning so the operator can't miss this in the boot logs. New
+  // VAPID keys mean every existing push_subscription row is now bound to
+  // the OLD public key — webpush calls will start failing with 410/Gone
+  // and the cron will silently delete those subscriptions. Recovery
+  // requires every leader to revisit the app and re-grant notification
+  // permission (which only re-prompts if they hadn't decided yet).
+  console.warn('');
+  console.warn('================================================================');
+  console.warn('[vapid] No VAPID keys found — GENERATING NEW ONES.');
+  console.warn('[vapid] Every existing push_subscriptions row is now invalid;');
+  console.warn('[vapid] those leaders must reopen the app and re-grant');
+  console.warn('[vapid] notifications. If you intended to restore an existing');
+  console.warn('[vapid] vapid-keys.json (e.g., from a backup), STOP THE SERVER');
+  console.warn('[vapid] now and put the file back at ' + KEYS_PATH);
+  console.warn('================================================================');
+  console.warn('');
   const generated = webpush.generateVAPIDKeys();
   try {
     fs.writeFileSync(KEYS_PATH, JSON.stringify(generated, null, 2), {
@@ -35,7 +51,12 @@ function loadOrGenerate() {
     });
     console.log(`Generated new VAPID keys at ${KEYS_PATH}`);
   } catch (e) {
-    console.error('Could not persist VAPID keys:', e.message);
+    // If we can't persist, fall back to in-memory keys for this boot — but
+    // SHOUT about it so the operator knows: on the next restart, NEW keys
+    // will be generated again, and every push subscription dies in a loop.
+    console.error('[vapid] CRITICAL: cannot write vapid-keys.json:', e.message);
+    console.error('[vapid] Push subscriptions will reset on every restart.');
+    console.error('[vapid] Fix filesystem permissions or set VAPID_*_KEY env vars.');
   }
   return generated;
 }

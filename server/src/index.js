@@ -79,9 +79,16 @@ app.use(requestId);
 // vector. The strict bucket is applied only to credential-checking endpoints
 // (/login, /setup) inside routes/auth.js; everything else under /api uses
 // the general limiter.
+// Bumped from 200 → 1000/min because behind the Cloudflare tunnel
+// `req.ip` resolves to a single shared edge IP, so EVERY leader's
+// requests fall into one bucket. With 14 leaders each firing the
+// ~12-request login prime, an end-of-shift reconnect wave produces
+// ~168 requests in seconds. 1000/min leaves comfortable headroom while
+// the per-credential limiter on /auth/login still bounds brute force
+// at 30/min. Override via GENERAL_RATE_LIMIT for tighter deployments.
 const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 200,
+  max: Number(process.env.GENERAL_RATE_LIMIT) || 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please slow down.' }

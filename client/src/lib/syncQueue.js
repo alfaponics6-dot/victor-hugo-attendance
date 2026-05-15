@@ -7,7 +7,7 @@ import {
   count as queueCount,
   conflictCount,
 } from './offlineQueue';
-import { getLiveCredential } from './offlineAuth';
+import { getLiveCredential, onLiveCredentialChange } from './offlineAuth';
 import { setAppBadge } from './appBadge';
 
 const MAX_RETRIES = 5;
@@ -211,11 +211,14 @@ async function doDrainQueue() {
     await notify();
   }
 
-  // If items remain and we're still online but made no progress, schedule
-  // an exponential-backoff retry. Flaky cellular shouldn't leave the queue
-  // stuck waiting for the next `online` event that may not come.
+  // If items remain and we're still online and we didn't successfully
+  // process any of them, schedule an exponential-backoff retry. The
+  // earlier predicate also required conflicts===0 and failed===0 — that
+  // was wrong: if one bad item always goes to the conflicts store, the
+  // other genuinely-stuck items would never retry. Only `processed`
+  // counts as "made forward progress on the network side".
   const { pending } = await snapshot();
-  if (pending > 0 && navigator.onLine && processed === 0 && conflicts === 0 && failed === 0) {
+  if (pending > 0 && navigator.onLine && processed === 0) {
     scheduleBackoffRetry();
   } else {
     resetBackoff();
@@ -250,8 +253,13 @@ function resetBackoff() {
 // Silent re-login using the in-memory plaintext credential captured at
 // the last successful login. Returns true if the server accepted it (and
 // therefore the auth cookie is now fresh). Only retried once per process
-// — a stable 401 with this credential is a dead account, not transient.
+// per credential — a stable 401 means the cached cred is dead, but a
+// fresh online login (rememberLiveCredential firing) resets the latch
+// so retries resume with the new credential.
 let silentReloginPermanentlyFailed = false;
+onLiveCredentialChange(() => {
+  silentReloginPermanentlyFailed = false;
+});
 
 async function silentRelogin() {
   if (silentReloginPermanentlyFailed) return false;

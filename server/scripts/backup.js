@@ -68,6 +68,16 @@ function safeBackup(src, dest) {
   });
 }
 
+// Sidecar files we want to capture in the same backup window as the DB.
+// vapid-keys.json is critical: losing it silently invalidates every push
+// subscription (the cron's 410-prune deletes them after the new keys
+// fail to decrypt). .env is critical: losing JWT_SECRET logs every
+// leader out at once.
+const SIDECARS = [
+  { src: path.join(__dirname, '..', 'vapid-keys.json'), name: 'vapid-keys.json' },
+  { src: path.join(__dirname, '..', '.env'), name: 'env' },
+];
+
 async function backup() {
   if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 
@@ -84,6 +94,23 @@ async function backup() {
     const method = await safeBackup(DB_PATH, backupPath);
     const size = fs.statSync(backupPath).size;
     console.log(`Backup created (${method}, ${size} bytes): ${backupPath}`);
+
+    for (const { src, name } of SIDECARS) {
+      if (!fs.existsSync(src)) continue;
+      const dest = path.join(BACKUP_DIR, `attendance_backup_${timestamp}.${name}`);
+      try {
+        fs.copyFileSync(src, dest);
+        // Mode 0600 — secrets, not readable to other users.
+        fs.chmodSync(dest, 0o600);
+        console.log(`Sidecar backup: ${dest}`);
+      } catch (e) {
+        // Don't fail the whole backup if a sidecar can't be copied; the
+        // DB itself is the priority. Operator sees the warning in cron
+        // mail.
+        console.warn(`Sidecar backup failed for ${name}: ${e.message}`);
+      }
+    }
+
     cleanOldBackups(KEEP);
   } catch (error) {
     console.error('Backup failed:', error.message);
@@ -94,21 +121,38 @@ async function backup() {
 }
 
 function cleanOldBackups(keepCount) {
+  // Group all backup artifacts by their shared timestamp prefix so we
+  // delete sidecars (vapid, env) alongside the .db they go with.
   const files = fs
     .readdirSync(BACKUP_DIR)
-    .filter((f) => f.startsWith('attendance_backup_') && f.endsWith('.db'))
+    .filter((f) => f.startsWith('attendance_backup_'))
     .map((f) => ({
       name: f,
       path: path.join(BACKUP_DIR, f),
       time: fs.statSync(path.join(BACKUP_DIR, f)).mtime.getTime(),
-    }))
+    }));
+
+  // Pick the .db files only for keep-count purposes (one DB = one "backup")
+  const dbFiles = files
+    .filter((f) => f.name.endsWith('.db'))
     .sort((a, b) => b.time - a.time);
 
-  if (files.length > keepCount) {
-    files.slice(keepCount).forEach((file) => {
-      fs.unlinkSync(file.path);
-      console.log('Deleted old backup:', file.name);
-    });
+  if (dbFiles.length <= keepCount) return;
+
+  const toDelete = new Set();
+  for (const dbFile of dbFiles.slice(keepCount)) {
+    // Match the timestamp portion (attendance_backup_<TS>) and find every
+    // sidecar that shares it.
+    const prefix = dbFile.name.replace(/\.db$/, '');
+    for (const f of files) {
+      if (f.name.startsWith(prefix + '.') || f.name === prefix + '.db') {
+        toDelete.add(f.path);
+      }
+    }
+  }
+  for (const p of toDelete) {
+    fs.unlinkSync(p);
+    console.log('Deleted old backup:', path.basename(p));
   }
 }
 

@@ -178,24 +178,14 @@ async function drainQueueInSW() {
       // no conflict-record. It'll be processed next tab open.
       continue;
     } else {
-      // network / 5xx: bump retries, give up at MAX
-      const retries = (item.retries || 0) + 1;
-      try {
-        await db.put(STORE_PENDING, { ...item, retries });
-      } catch { /* ignore */ }
-      if (retries >= MAX_RETRIES) {
-        try {
-          await db.add(STORE_CONFLICTS, {
-            url: item.url,
-            method: item.method,
-            body: itemBodyForConflict(item),
-            serverMessage: `Failed after ${MAX_RETRIES} attempts`,
-            serverStatus: 0,
-            createdAt: Date.now(),
-          });
-          await db.delete(STORE_PENDING, item.id);
-        } catch { /* ignore */ }
-      }
+      // network / 5xx in SW context: DO NOT bump retries. The page-side
+      // drain has the authoritative retry counter (and can do silent
+      // relogin, which the SW can't). If the leader's tablet is asleep
+      // and a series of cron-triggered pushes all hit a flaky cellular
+      // window, bumping retries here would burn through MAX_RETRIES and
+      // surface fake conflicts that the user has no way to action.
+      // Leave the item alone — next push (or next tab open) will retry
+      // with the same counter.
     }
   }
 

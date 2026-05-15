@@ -1500,14 +1500,20 @@ class Database {
   // contact" signal for future device-pruning logic.
   upsertLeaderSyncState(leaderId, queueSize) {
     if (!leaderId) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-      const sizeNum = Number.isFinite(queueSize) ? queueSize : 0;
-      const needed = sizeNum > 0 ? 'CURRENT_TIMESTAMP' : 'NULL';
-      // When queue clears (sizeNum===0), also reset last_email_sent_at so
-      // a future pending session can trigger a fresh email after the
-      // staleness threshold — the 24h debounce was meant to prevent
-      // duplicate emails inside one session, not across sessions.
-      const emailReset = sizeNum === 0 ? ', last_email_sent_at = NULL' : '';
+    const sizeNum = Number.isFinite(queueSize) ? queueSize : 0;
+    const needed = sizeNum > 0 ? 'CURRENT_TIMESTAMP' : 'NULL';
+    // When queue clears (sizeNum===0), also reset last_email_sent_at so
+    // a future pending session can trigger a fresh email after the
+    // staleness threshold — the 24h debounce was meant to prevent
+    // duplicate emails inside one session, not across sessions.
+    const emailReset = sizeNum === 0 ? ', last_email_sent_at = NULL' : '';
+    // Goes through the same writeMutex as bulk-attendance writes: without
+    // it, the upsert competes with BEGIN IMMEDIATE on the single sqlite3
+    // connection, and 14 leaders pressing Guardar at the same moment can
+    // pile up "database is locked" busy-timeouts on the unprivileged
+    // tracker path while the privileged bulk-write transaction holds the
+    // lock.
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
       this.db.run(
         `INSERT INTO leader_sync_state (leader_id, last_known_queue_size, sync_needed_at, last_seen_at)
          VALUES (?, ?, ${needed}, CURRENT_TIMESTAMP)
@@ -1521,7 +1527,7 @@ class Database {
           else resolve(this.changes);
         },
       );
-    });
+    }));
   }
 
   // Mark a successful push so we can age out devices that haven't been

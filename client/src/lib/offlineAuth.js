@@ -220,6 +220,12 @@ function loadPersistedCredential() {
 }
 
 let liveCredential = loadPersistedCredential();
+// Listeners notified whenever the live credential changes — syncQueue
+// subscribes so it can reset its silent-relogin "permanently failed"
+// latch when a fresh credential lands (otherwise a transient 401 early
+// in the session would stick forever, even after the user re-logins
+// with correct creds later in the same tab).
+const credChangeListeners = new Set();
 
 export function rememberLiveCredential({ leaderId, credential, mode }) {
   if (!leaderId || !credential) return;
@@ -234,6 +240,14 @@ export function rememberLiveCredential({ leaderId, credential, mode }) {
   } else {
     try { localStorage.removeItem(LIVE_STORAGE_KEY); } catch { /* ignore */ }
   }
+  for (const l of credChangeListeners) {
+    try { l(liveCredential); } catch { /* don't let one listener kill another */ }
+  }
+}
+
+export function onLiveCredentialChange(listener) {
+  credChangeListeners.add(listener);
+  return () => credChangeListeners.delete(listener);
 }
 
 export function getLiveCredential() {

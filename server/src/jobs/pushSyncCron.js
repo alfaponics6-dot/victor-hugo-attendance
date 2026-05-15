@@ -67,29 +67,43 @@ function start() {
   cron.schedule(
     SCHEDULE,
     async () => {
+      const tickStart = Date.now();
+      let pushSent = 0;
+      let pushFailed = 0;
+      let emailSent = 0;
+      let emailFailed = 0;
       try {
-        const pushResult = await runOnce();
-        if (pushResult.sent || pushResult.failed) {
-          console.log(`Push cron: sent=${pushResult.sent} failed=${pushResult.failed}`);
-        }
+        const r = await runOnce();
+        pushSent = r.sent ?? 0;
+        pushFailed = r.failed ?? 0;
       } catch (e) {
         console.error('Push cron error:', e.message);
       }
-      // Email escalation runs on the same tick. The DB query inside
-      // checks staleness + 24h dedupe so we don't email at every cron
-      // firing — only when push has been silent long enough to matter.
       try {
-        const emailResult = await emailNotifier.runOnce();
-        if (emailResult.sent || emailResult.failed) {
-          console.log(`Email escalation: sent=${emailResult.sent} failed=${emailResult.failed}`);
-        }
+        const r = await emailNotifier.runOnce();
+        emailSent = r.sent ?? 0;
+        emailFailed = r.failed ?? 0;
       } catch (e) {
         console.error('Email escalation error:', e.message);
       }
+      // Always log a tick line so the operator can distinguish "cron
+      // healthy, nothing to do" from "cron is dead." Previous behavior
+      // logged nothing when sent=0 failed=0 — silent ticks looked
+      // identical to a stopped scheduler.
+      const elapsedMs = Date.now() - tickStart;
+      console.log(
+        `Push cron tick (${elapsedMs}ms): push sent=${pushSent}/failed=${pushFailed}, email sent=${emailSent}/failed=${emailFailed}`,
+      );
     },
     { timezone: TIMEZONE },
   );
   console.log(`Push cron scheduled: "${SCHEDULE}" (${TIMEZONE})`);
+  // Warn loudly if email escalation is unconfigured. Without this an
+  // operator who forgot SMTP_USER/SMTP_PASS gets identical "0/0" cron
+  // logs to a healthy-but-quiet system.
+  if (!require('../config/mailer').isConfigured()) {
+    console.warn('[startup] Email escalation disabled — SMTP_USER + SMTP_PASS not set in .env');
+  }
 }
 
 module.exports = { start, runOnce };

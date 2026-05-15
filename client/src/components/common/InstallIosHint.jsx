@@ -17,10 +17,17 @@ const DISMISS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 function isIosSafariNonStandalone() {
   if (typeof window === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  // iPadOS 13+ masquerades as MacIntel; touch-point check disambiguates.
-  const isIos =
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // First the easy case: UA literally says iPad/iPhone/iPod.
+  let isIos = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ masquerades as MacIntel in the UA string. Touch-bar
+  // MacBooks ALSO report maxTouchPoints > 0, so > 1 alone false-positives
+  // those — a profesor reviewing the dashboard from a Mac with touch bar
+  // would see an irrelevant "add to Home Screen" banner. Threshold of >=
+  // 5 cleanly excludes touch bar (max 1-2 points) while keeping every
+  // real iPad (which reports 5+ for multi-touch gestures).
+  if (!isIos && navigator.platform === 'MacIntel' && navigator.maxTouchPoints >= 5) {
+    isIos = true;
+  }
   if (!isIos) return false;
   const isStandalone =
     window.matchMedia?.('(display-mode: standalone)').matches ||
