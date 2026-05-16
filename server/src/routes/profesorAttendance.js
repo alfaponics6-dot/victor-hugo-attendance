@@ -78,4 +78,30 @@ router.post('/bulk', express.json(), async (req, res) => {
   }
 });
 
+// GET /profesor-attendance/compliance/:date
+// Coordinator-only oversight view. Returns one row per project with
+// the latest start-pass and end-pass status (who, when, counts), so
+// the lead profe can see at a glance which projects still need
+// today's final pass. Other profes (and admins) get 403.
+router.get('/compliance/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    if (!DATE_RX.test(date)) {
+      return res.status(400).json({ error: 'Invalid date (expected YYYY-MM-DD)' });
+    }
+    // Inline coordinator check: only the lead profesor should see this.
+    // We re-read the live row so a coordinator flag flip takes effect
+    // immediately, without waiting for token refresh.
+    const me = await db.getLeaderById(req.user.id);
+    if (!me || me.is_coordinator !== 1) {
+      return res.status(403).json({ error: 'Coordinator access required' });
+    }
+    const rows = await db.getProfesorAttendanceCompliance(date);
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /profesor-attendance/compliance failed:', err);
+    res.status(500).json({ error: 'Failed to load compliance' });
+  }
+});
+
 module.exports = router;

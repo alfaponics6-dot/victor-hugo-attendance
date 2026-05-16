@@ -34,6 +34,7 @@ import {
   Folders,
   ListChecks,
   ClipboardCheck,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth.js';
 import {
@@ -59,6 +60,7 @@ import { Input, Select, Label } from '../components/ui/Input';
 import { cn } from '../lib/cn';
 import { getProjectLabel } from '../lib/projectI18n';
 import ProfesorPassesView from '../components/features/profesor/ProfesorPassesView';
+import ProfesorComplianceView from '../components/features/profesor/ProfesorComplianceView';
 
 /* ────────────────────────────────────────────────────────────────────────────
    Small helpers used throughout the page. Kept inline so the file stays
@@ -459,7 +461,9 @@ function ProfesorDashboard() {
       />
 
       {/* Top-level switcher between the existing "Ausencias" oversight
-          view and the new profe-only attendance "Pasadas" workflow. */}
+          view and the new profe-only attendance "Pasadas" workflow.
+          The "Supervisión" tab is coordinator-only — gated by
+          leader.isCoordinator so non-coordinators don't even see it. */}
       <div className="mb-5">
         <Tabs
           value={mainView}
@@ -467,12 +471,17 @@ function ProfesorDashboard() {
           tabs={[
             { key: 'absences', label: t('mainViews.absences'), icon: ListChecks },
             { key: 'passes', label: t('mainViews.passes'), icon: ClipboardCheck },
+            ...(leader?.isCoordinator
+              ? [{ key: 'compliance', label: t('mainViews.compliance'), icon: ShieldCheck }]
+              : []),
           ]}
         />
       </div>
 
       {mainView === 'passes' ? (
         <ProfesorPassesView />
+      ) : mainView === 'compliance' && leader?.isCoordinator ? (
+        <ProfesorComplianceView />
       ) : (
       <>
 

@@ -7,7 +7,26 @@
   },
   "mainViews": {
     "absences": "Ausencias",
-    "passes": "Pasadas"
+    "passes": "Pasadas",
+    "compliance": "Supervisión"
+  },
+  "compliance": {
+    "dateLabel": "Fecha",
+    "refresh": "Actualizar",
+    "loadError": "No se pudo cargar el panel de supervisión.",
+    "empty": "No hay proyectos con estudiantes para mostrar.",
+    "startPass": "Inicio",
+    "endPass": "Final",
+    "markedBy": "Marcado por {{who}}",
+    "unknownProfe": "profesor desconocido",
+    "notYet": "Aún no marcada",
+    "present": "presentes",
+    "rosterSize": "{{n}} estudiantes",
+    "summary": {
+      "projects": "Proyectos",
+      "startDone": "Inicio guardado",
+      "endDone": "Final guardado"
+    }
   },
   "passes": {
     "projectLabel": "Proyecto",

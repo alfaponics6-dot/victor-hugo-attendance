@@ -7,7 +7,26 @@
   },
   "mainViews": {
     "absences": "Absences",
-    "passes": "Passes"
+    "passes": "Passes",
+    "compliance": "Oversight"
+  },
+  "compliance": {
+    "dateLabel": "Date",
+    "refresh": "Refresh",
+    "loadError": "Failed to load oversight panel.",
+    "empty": "No projects with students to display.",
+    "startPass": "Start",
+    "endPass": "End",
+    "markedBy": "Marked by {{who}}",
+    "unknownProfe": "unknown profesor",
+    "notYet": "Not marked yet",
+    "present": "present",
+    "rosterSize": "{{n}} students",
+    "summary": {
+      "projects": "Projects",
+      "startDone": "Start saved",
+      "endDone": "End saved"
+    }
   },
   "passes": {
     "projectLabel": "Project",

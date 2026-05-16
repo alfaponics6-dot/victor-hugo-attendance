@@ -52,6 +52,10 @@ export const AuthProvider = ({ children }) => {
           // Default to true when missing so older cached profiles don't
           // accidentally hide UI from users who still have the permission.
           canDeleteStudents: u.canDeleteStudents !== false,
+          // Coordinator flag — gates the Supervisión tab in the profe
+          // dashboard. Default false so a non-coordinator with a stale
+          // profile never sees the supervisor UI by accident.
+          isCoordinator: u.isCoordinator === true,
         };
         setLeader(merged);
         setStoredUser(merged);

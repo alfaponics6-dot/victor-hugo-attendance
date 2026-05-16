@@ -166,6 +166,7 @@ router.post('/login', credentialLimiter, validateLogin, async (req, res) => {
         projectNumber: leader.project_number,
         role,
         canDeleteStudents: leader.can_delete_students !== 0,
+        isCoordinator: leader.is_coordinator === 1,
       }
     });
   } catch (error) {
@@ -198,6 +199,7 @@ router.get('/verify', authenticateToken, async (req, res) => {
         projectNumber: fresh.project_number,
         role: fresh.role || 'leader',
         canDeleteStudents: fresh.can_delete_students !== 0,
+        isCoordinator: fresh.is_coordinator === 1,
       }
     });
   } catch (error) {

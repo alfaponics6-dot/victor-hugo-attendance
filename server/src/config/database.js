@@ -99,6 +99,11 @@ class Database {
       // ability they had before this column existed. Set to 0 to revoke
       // delete from a specific admin without changing their role.
       this.db.run(`ALTER TABLE leaders ADD COLUMN can_delete_students INTEGER NOT NULL DEFAULT 1`, () => {});
+      // Coordinator flag: when set, a profesor sees the "Supervisión"
+      // tab that shows which other profes have submitted the daily
+      // start/end attendance passes for each project. Default 0; flip
+      // to 1 for the lead profesor (currently Ronald, leaders.id=16).
+      this.db.run(`ALTER TABLE leaders ADD COLUMN is_coordinator INTEGER NOT NULL DEFAULT 0`, () => {});
 
       // Students table
       this.db.run(`
@@ -1751,6 +1756,64 @@ class Database {
         });
       });
     }));
+  }
+
+  // Coordinator compliance view: for a given date, return one row per
+  // project that has any students, with the latest start- and end-pass
+  // status (who marked, when, how many present). NULL pass columns mean
+  // no profe has saved that pass yet — the supervisor's "still pending"
+  // signal.
+  getProfesorAttendanceCompliance(date) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        WITH project_rosters AS (
+          SELECT DISTINCT p.id AS project_id,
+                 p.project_name,
+                 p.project_number,
+                 (SELECT COUNT(*) FROM students s WHERE s.project_id = p.id) AS roster_size
+          FROM projects p
+          WHERE EXISTS (SELECT 1 FROM students s WHERE s.project_id = p.id)
+        ),
+        latest_per_pass AS (
+          SELECT pa.project_id, pa.pass_type,
+                 MAX(pa.recorded_at) AS latest_recorded_at,
+                 COUNT(*)              AS rows_count,
+                 SUM(CASE WHEN pa.status = 'present' THEN 1 ELSE 0 END) AS present_count
+          FROM profesor_attendance pa
+          WHERE pa.date = ?
+          GROUP BY pa.project_id, pa.pass_type
+        ),
+        latest_row AS (
+          -- Pick the actual most-recent row per (project, pass) so we
+          -- can name the profe who saved it last.
+          SELECT pa.project_id, pa.pass_type, pa.profesor_id, pa.recorded_at,
+                 l.name AS profesor_name
+          FROM profesor_attendance pa
+          LEFT JOIN leaders l ON l.id = pa.profesor_id
+          WHERE pa.date = ?
+            AND pa.recorded_at = (
+              SELECT MAX(p2.recorded_at) FROM profesor_attendance p2
+              WHERE p2.project_id = pa.project_id AND p2.pass_type = pa.pass_type AND p2.date = ?
+            )
+          GROUP BY pa.project_id, pa.pass_type
+        )
+        SELECT pr.project_id, pr.project_name, pr.project_number, pr.roster_size,
+               s_lp.latest_recorded_at AS start_recorded_at,
+               s_lr.profesor_name       AS start_profesor_name,
+               s_lp.present_count       AS start_present_count,
+               s_lp.rows_count          AS start_rows_count,
+               e_lp.latest_recorded_at AS end_recorded_at,
+               e_lr.profesor_name       AS end_profesor_name,
+               e_lp.present_count       AS end_present_count,
+               e_lp.rows_count          AS end_rows_count
+        FROM project_rosters pr
+        LEFT JOIN latest_per_pass s_lp ON s_lp.project_id = pr.project_id AND s_lp.pass_type = 'start'
+        LEFT JOIN latest_per_pass e_lp ON e_lp.project_id = pr.project_id AND e_lp.pass_type = 'end'
+        LEFT JOIN latest_row      s_lr ON s_lr.project_id = pr.project_id AND s_lr.pass_type = 'start'
+        LEFT JOIN latest_row      e_lr ON e_lr.project_id = pr.project_id AND e_lr.pass_type = 'end'
+        ORDER BY pr.project_number, pr.project_name`;
+      this.db.all(sql, [date, date, date], (err, rows) => (err ? reject(err) : resolve(rows || [])));
+    });
   }
 
   close() {
