@@ -518,13 +518,14 @@ function Login() {
               }}
             />
 
-            {/* Inline `background` overrides the `surface` utility's 88 %
-                opacity. ~62 % lets the bg photo show through more clearly
-                while keeping form text readable against the bigger
-                backdrop-blur. */}
+            {/* Card is intentionally ~25% opaque so the forest photo
+                shows through clearly. Text contrast is rescued by the
+                `card-readable-text` class (defined in index.css) which
+                applies a theme-aware text-shadow so headings/paragraphs
+                stay legible against the busy backdrop in both modes. */}
             <div
-              className="relative surface rounded-2xl sm:rounded-3xl p-4 sm:p-7 lg:p-9"
-              style={{ background: 'color-mix(in oklch, var(--color-surface) 62%, transparent)' }}
+              className="relative surface rounded-2xl sm:rounded-3xl p-4 sm:p-7 lg:p-9 card-readable-text"
+              style={{ background: 'color-mix(in oklch, var(--color-surface) 25%, transparent)' }}
             >
               {/* Logo + heading */}
               <motion.div
