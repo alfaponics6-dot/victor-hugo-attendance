@@ -1758,6 +1758,33 @@ class Database {
     }));
   }
 
+  // Return the subset of given student IDs that do NOT belong to the
+  // given project. Used by POST /profesor-attendance/bulk to reject
+  // cross-tenant writes before they hit the upsert. Empty input or
+  // all-correct input returns []. Note: a student id that doesn't
+  // exist at all is also returned as "not in project" — same response
+  // either way (the row would have been junk).
+  findStudentsNotInProject(studentIds, projectId) {
+    if (!Array.isArray(studentIds) || studentIds.length === 0) {
+      return Promise.resolve([]);
+    }
+    // Deduplicate so the IN-clause stays minimal; cap at 500 to keep
+    // the placeholder list bounded.
+    const ids = [...new Set(studentIds)].slice(0, 500);
+    const placeholders = ids.map(() => '?').join(',');
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT id FROM students WHERE id IN (${placeholders}) AND project_id = ?`,
+        [...ids, projectId],
+        (err, rows) => {
+          if (err) return reject(err);
+          const ok = new Set((rows || []).map((r) => r.id));
+          resolve(ids.filter((id) => !ok.has(id)));
+        },
+      );
+    });
+  }
+
   // Coordinator compliance view: for a given date, return one row per
   // project that has any students, with the latest start- and end-pass
   // status (who marked, when, how many present). NULL pass columns mean

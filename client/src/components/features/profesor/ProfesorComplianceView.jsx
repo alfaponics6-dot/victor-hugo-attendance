@@ -39,25 +39,34 @@ export default function ProfesorComplianceView() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
-  const fetchData = async (forDate) => {
+  // Cancellable fetch — if the user rapidly changes the date the
+  // earlier in-flight request would otherwise resolve after the newer
+  // one and clobber the displayed rows with stale data.
+  const fetchData = async (forDate, isCancelled) => {
     setLoading(true);
     setMessage(null);
     try {
       const data = await getProfesorAttendanceCompliance(forDate);
+      if (isCancelled?.()) return;
       setRows(data || []);
     } catch (err) {
+      if (isCancelled?.()) return;
       setMessage({
         type: 'error',
         text: err?.response?.data?.error || t('compliance.loadError'),
       });
       setRows([]);
     } finally {
-      setLoading(false);
+      if (!isCancelled?.()) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData(date);
+    let cancelled = false;
+    fetchData(date, () => cancelled);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
@@ -106,7 +115,7 @@ export default function ProfesorComplianceView() {
             />
           </div>
           <div className="flex items-center gap-2 sm:ml-auto">
-            <Button variant="ghost" size="sm" onClick={() => fetchData(date)} disabled={loading}>
+            <Button variant="ghost" size="sm" onClick={() => fetchData(date, () => false)} disabled={loading}>
               <RefreshCw className={cn('size-4', loading && 'animate-spin')} />
               {t('compliance.refresh')}
             </Button>
