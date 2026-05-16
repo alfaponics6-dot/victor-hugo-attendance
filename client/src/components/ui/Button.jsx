@@ -25,13 +25,20 @@ const SIZES = {
 };
 
 const Button = forwardRef(function Button(
-  { variant = 'primary', size = 'md', loading, className, children, disabled, ...props },
+  { variant = 'primary', size = 'md', loading, className, children, disabled, type, ...props },
   ref
 ) {
   return (
     <button
       ref={ref}
+      // Default to type="button" so a <Button> dropped into a <form> doesn't
+      // accidentally submit it. Forms can opt in with type="submit".
+      type={type || 'button'}
       disabled={disabled || loading}
+      // aria-busy tells assistive tech the action is in flight; combined
+      // with the disabled state it conveys "wait, don't tap again" instead
+      // of just "this button is broken".
+      aria-busy={loading || undefined}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight',
         'transition-[background,color,transform,box-shadow] duration-150 ease-out',
@@ -44,7 +51,10 @@ const Button = forwardRef(function Button(
       {...props}
     >
       {loading && (
-        <span className="size-4 rounded-full border-2 border-current border-t-transparent animate-spin-slow" />
+        <span
+          className="size-4 rounded-full border-2 border-current border-t-transparent animate-spin-slow"
+          aria-hidden="true"
+        />
       )}
       {children}
     </button>

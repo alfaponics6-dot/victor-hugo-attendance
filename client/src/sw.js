@@ -121,7 +121,21 @@ const DRAIN_LOCK_NAME = 'vh-drain-queue';
 
 self.addEventListener('sync', (event) => {
   if (event.tag === SYNC_TAG) {
-    event.waitUntil(drainWithLock());
+    // Background Sync semantics: if the promise passed to waitUntil
+    // REJECTS, the browser keeps the sync registration alive and retries
+    // it with exponential backoff. If it RESOLVES, the registration is
+    // cleared. We don't want a transient IDB / lock error to silently
+    // suppress future drains by leaving the registration in a bad state,
+    // and we ALSO don't want a single unrelated throw (e.g. an aborted
+    // fetch during shutdown) to mark the sync "failed forever" once the
+    // browser exhausts its retry budget. Swallow + log so the runtime
+    // sees a resolved promise; the next push or page-side drain will
+    // pick up anything that was missed.
+    event.waitUntil(
+      drainWithLock().catch((err) => {
+        console.warn('[sw] background sync drain failed:', err?.message || err);
+      }),
+    );
   }
 });
 
@@ -359,7 +373,24 @@ async function showSyncNotification(processed, conflicts) {
 // drain logic decides whether it's "synced N records" or a quiet
 // "connected" stub).
 self.addEventListener('push', (event) => {
-  event.waitUntil(handlePush(event));
+  // Wrap so an unexpected throw in handlePush can't surface as a "push
+  // event failed" → iOS would treat that as silent push and revoke our
+  // subscription after a few strikes. If everything else fails, fire a
+  // last-resort visible notification so Apple sees we honored the push.
+  event.waitUntil(
+    handlePush(event).catch(async () => {
+      try {
+        if (Notification.permission === 'granted') {
+          await self.registration.showNotification('Asistencia', {
+            body: 'Conectado.',
+            icon: '/Logo-Universidad-EARTH_academico-300x257.png',
+            tag: 'sync-status',
+            silent: true,
+          });
+        }
+      } catch { /* nothing we can do */ }
+    }),
+  );
 });
 
 async function handlePush(event) {
@@ -373,7 +404,21 @@ async function handlePush(event) {
   // already handling everything (including its own notification) — we
   // skip the fallback to avoid a duplicate "Conectado" stub on top of
   // the real "Asistencia sincronizada" notification the page will show.
-  const ranDrain = await drainWithLock();
+  //
+  // CRITICAL: every catch path here MUST still attempt to fire a visible
+  // notification. iOS penalizes silent push aggressively — if the drain
+  // throws and we return early without a notification, Apple's push
+  // service starts demoting our subscription within a handful of strikes.
+  let ranDrain = false;
+  try {
+    ranDrain = await drainWithLock();
+  } catch {
+    // Treat a drain error like "we ran but produced no notification" —
+    // we still owe the user (and Apple) a visible notification.
+    ranDrain = true;
+  }
+
+  // If page-side has the lock, it'll handle its own notification — skip.
   if (!ranDrain) return;
 
   // If drainQueueInSW emitted a real notification (processed > 0), we're
@@ -381,7 +426,10 @@ async function handlePush(event) {
   // to a quiet status notification with a short auto-dismiss so we
   // satisfy the visible-notification requirement without spamming.
   if (Notification.permission === 'granted') {
-    const recent = await self.registration.getNotifications({ tag: 'attendance-sync' });
+    let recent = [];
+    try {
+      recent = await self.registration.getNotifications({ tag: 'attendance-sync' });
+    } catch { /* very rare; treat as "no recent notification" and fall back */ }
     if (recent.length === 0) {
       await self.registration
         .showNotification('Asistencia', {
@@ -393,9 +441,13 @@ async function handlePush(event) {
         })
         .catch(() => {});
       // Auto-dismiss the quiet notification after 4s so it doesn't pile up.
-      setTimeout(async () => {
-        const stale = await self.registration.getNotifications({ tag: 'sync-status' });
-        for (const n of stale) n.close();
+      // Wrapped in async catch so a getNotifications/close throw doesn't
+      // leak an unhandled rejection out of the timer (which would log
+      // noise in DevTools and could be picked up by error reporting).
+      setTimeout(() => {
+        self.registration.getNotifications({ tag: 'sync-status' })
+          .then((stale) => { for (const n of stale) n.close(); })
+          .catch(() => {});
       }, 4000);
     }
   }

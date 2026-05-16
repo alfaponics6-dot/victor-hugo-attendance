@@ -70,6 +70,7 @@
       "loadPrevError": "Error al cargar asistencia previa",
       "selectOne": "Por favor marque la asistencia de al menos un estudiante",
       "savedSuccess": "Asistencia guardada exitosamente para {{date}}",
+      "savedQueued": "Sin conexión: asistencia guardada localmente para {{date}}. Se enviará al servidor en cuanto vuelva la señal.",
       "alreadySaved": "La asistencia ya fue guardada para esta fecha. No se puede modificar.",
       "saveError": "Error al guardar asistencia",
       "partialSave": "Guardados {{saved}} de {{total}}. Fallaron: {{names}}. Reintente solo los adjuntos faltantes."

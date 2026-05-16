@@ -195,11 +195,22 @@ export async function hasCachedCredential(leaderId, opts = {}) {
   }
 }
 
+// When called with no argument, clears every cached identity. When called
+// with a specific leaderId, removes BOTH the per-leader record AND the
+// shared `role:leader` cache — without the latter, a logged-out leader's
+// device still had the org-wide access-code hash sitting in IDB, ready
+// for anyone to "offline-login" as any other leader on this device.
+// The whole point of logout-on-this-device is to forget enough to make
+// passive impersonation impossible.
 export async function purgeCachedAuth(leaderId) {
   try {
     const db = await getDB();
-    if (leaderId !== undefined) await db.delete(STORE_AUTH, Number(leaderId));
-    else await db.clear(STORE_AUTH);
+    if (leaderId === undefined) {
+      await db.clear(STORE_AUTH);
+      return;
+    }
+    await db.delete(STORE_AUTH, Number(leaderId));
+    await db.delete(STORE_AUTH, SHARED_LEADER_KEY);
   } catch { /* nothing to do */ }
 }
 

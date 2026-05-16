@@ -18,34 +18,61 @@ function QuickStatsWidget({ projectId }) {
     todayPresent: 0,
     todayAbsent: 0,
     attendanceRate: 0,
+    noRotation: false,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (projectId) fetchQuickStats();
+    if (!projectId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const todayDate = getTodayDate();
+
+        // Fetch independently. Previously these were wrapped in Promise.all,
+        // which meant a 404 from getCurrentRotationStudents (legitimately
+        // returned when no rotation is active) rejected the whole batch and
+        // we ended up showing four zeroed tiles with hint "Current rotation"
+        // — actively misleading. Now: roster failure → noRotation flag,
+        // attendance still loads (today's marked rows are still meaningful
+        // for a between-rotations day).
+        const rosterPromise = getCurrentRotationStudents(projectId).catch((err) => {
+          if (err?.response?.status === 404) return { _noRotation: true, students: [] };
+          throw err;
+        });
+        const attendancePromise = getAttendanceByProjectAndDate(projectId, todayDate)
+          .catch(() => []);
+
+        const [studentsData, attendanceData] = await Promise.all([
+          rosterPromise,
+          attendancePromise,
+        ]);
+
+        if (cancelled) return;
+
+        const noRotation = studentsData?._noRotation === true;
+        const totalStudents = studentsData?.students?.length || 0;
+        const rows = Array.isArray(attendanceData) ? attendanceData : [];
+        const present = rows.filter((a) => a.status === 'present').length;
+        const absent = rows.filter((a) => a.status === 'absent').length;
+        const rate = totalStudents > 0 ? +((present / totalStudents) * 100).toFixed(1) : 0;
+
+        setStats({
+          totalStudents,
+          todayPresent: present,
+          todayAbsent: absent,
+          attendanceRate: rate,
+          noRotation,
+        });
+      } catch (error) {
+        console.error('Error fetching quick stats:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [projectId]);
-
-  const fetchQuickStats = async () => {
-    setLoading(true);
-    try {
-      const todayDate = getTodayDate();
-      const [studentsData, attendanceData] = await Promise.all([
-        getCurrentRotationStudents(projectId),
-        getAttendanceByProjectAndDate(projectId, todayDate),
-      ]);
-
-      const totalStudents = studentsData.students?.length || 0;
-      const present = attendanceData.filter((a) => a.status === 'present').length;
-      const absent = attendanceData.filter((a) => a.status === 'absent').length;
-      const rate = totalStudents > 0 ? +((present / totalStudents) * 100).toFixed(1) : 0;
-
-      setStats({ totalStudents, todayPresent: present, todayAbsent: absent, attendanceRate: rate });
-    } catch (error) {
-      console.error('Error fetching quick stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -60,11 +87,17 @@ function QuickStatsWidget({ projectId }) {
   const rateTone =
     stats.attendanceRate >= 80 ? 'success' : stats.attendanceRate >= 50 ? 'warn' : 'danger';
 
+  // When the project has no active rotation, the API returns 404 and the
+  // tiles below would otherwise show "0 students · Current rotation" which
+  // reads as a data bug. Swap in the existing "noRecords" hint so the user
+  // understands the zeros aren't a stale render but the system's actual
+  // state. The "—" value avoids implying the roster is empty (it isn't —
+  // there just isn't a current rotation to pull from).
   const tiles = [
     {
       label: t('quickStats.students'),
-      value: stats.totalStudents,
-      hint: t('quickStats.studentsHint'),
+      value: stats.noRotation ? '—' : stats.totalStudents,
+      hint: stats.noRotation ? t('quickStats.noRecords') : t('quickStats.studentsHint'),
       icon: Users,
       tone: 'default',
     },
@@ -90,11 +123,15 @@ function QuickStatsWidget({ projectId }) {
     },
     {
       label: t('quickStats.attendanceRate'),
-      value: stats.attendanceRate,
-      unit: '%',
+      // With no active rotation the rate would always be 0 (no denominator),
+      // which would light up the "danger" tone. Show "—" + neutral tone
+      // instead so an admin doesn't mistake "between rotations" for a 0%
+      // attendance crisis.
+      value: stats.noRotation ? '—' : stats.attendanceRate,
+      unit: stats.noRotation ? undefined : '%',
       hint: t('quickStats.today'),
       icon: Activity,
-      tone: rateTone,
+      tone: stats.noRotation ? 'default' : rateTone,
     },
   ];
 

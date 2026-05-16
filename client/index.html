@@ -3,8 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/Logo-Universidad-EARTH_academico-300x257.png" />
-    <link rel="apple-touch-icon" href="/Logo-Universidad-EARTH_academico-300x257.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Apple touch icon MUST be square — the 300x257 EARTH logo would get
+         visibly squashed on the iOS home screen. Use the 512-square PWA
+         icon instead. -->
+    <link rel="apple-touch-icon" href="/icon-512.png" />
+    <!-- viewport-fit=cover is required for env(safe-area-inset-*) to return
+         non-zero values on iOS. Several pages (Attendance, Footer,
+         ProfesorPassesView) and the InstallIosHint banner depend on it to
+         keep content above the home indicator on notched iPads/iPhones. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Status bar / browser chrome color. Matches the dark theme used by
+         the manifest. The manifest theme_color isn't read by iOS Safari
+         before install, so the HTML meta is the source of truth there. -->
+    <meta name="theme-color" content="#0a0a0a" />
+    <!-- Lets iOS Safari run the site fullscreen when added to home screen
+         (matches the manifest's display: standalone). Without it, some iOS
+         versions wrap the PWA in a Safari chrome shell. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Asistencia" />
     <meta name="description" content="Sistema de Asistencia Digital - Escenario Forestal 2026" />
     <title>Asistencia EF 2026 · Plataforma de Control</title>
 

@@ -76,16 +76,18 @@ function StudentManagement() {
     try {
       if (rotationNumber) {
         const data = await getStudentsByRotation(leader.projectId, rotationNumber);
-        setStudents(data);
+        // Coerce non-array responses (server error shapes, undefined) to [] so
+        // the downstream `students.filter` in the search useMemo never throws.
+        setStudents(Array.isArray(data) ? data : []);
       } else {
         try {
           const data = await getCurrentRotationStudents(leader.projectId);
-          setStudents(data.students);
-          setCurrentRotation(data.rotationNumber);
-          setSelectedRotation(data.rotationNumber);
+          setStudents(Array.isArray(data?.students) ? data.students : []);
+          setCurrentRotation(data?.rotationNumber ?? null);
+          setSelectedRotation(data?.rotationNumber ?? null);
         } catch {
           const data = await getStudentsByRotation(leader.projectId, 1);
-          setStudents(data);
+          setStudents(Array.isArray(data) ? data : []);
           setSelectedRotation(1);
           setCurrentRotation(null);
         }
@@ -111,17 +113,25 @@ function StudentManagement() {
       showMessage('error', t('students.messages.nameRequired'));
       return;
     }
+    // Trim before submit so trailing whitespace from copy-paste doesn't
+    // create duplicate rows ("Ana " vs "Ana") and so MailRotation later
+    // doesn't blow up the mailto with stray spaces in addresses.
+    const payload = {
+      name: formData.name.trim(),
+      studentId: formData.studentId.trim(),
+      email: formData.email.trim(),
+    };
     setLoading(true);
     try {
       if (editingStudent) {
         await updateStudent(editingStudent.id, {
-          name: formData.name,
-          student_id: formData.studentId,
-          email: formData.email,
+          name: payload.name,
+          student_id: payload.studentId,
+          email: payload.email,
         });
         showMessage('success', t('students.messages.updated'));
       } else {
-        await addStudent(leader.projectId, formData);
+        await addStudent(leader.projectId, payload);
         showMessage('success', t('students.messages.added'));
       }
       setFormData({ name: '', studentId: '', email: '' });
@@ -172,7 +182,12 @@ function StudentManagement() {
   };
 
   const handleRotationChange = (e) => {
-    const rotation = parseInt(e.target.value);
+    // parseInt without radix bit us once with an octal "08" interpretation
+    // on older Safari; pin base 10. Empty-value (the "no rotations" option)
+    // yields NaN — fall back to the current/null rotation so we don't ship
+    // NaN to /rotations/NaN/students.
+    const parsed = parseInt(e.target.value, 10);
+    const rotation = Number.isFinite(parsed) ? parsed : null;
     setSelectedRotation(rotation);
     fetchStudents(rotation);
   };
@@ -182,7 +197,9 @@ function StudentManagement() {
     if (!q) return students;
     return students.filter(
       (s) =>
-        s.name.toLowerCase().includes(q) ||
+        // `s.name` is null-guarded so a malformed/cached row (missing name)
+        // doesn't tank the search input mid-typing.
+        (s?.name || '').toLowerCase().includes(q) ||
         (s.student_id && s.student_id.toLowerCase().includes(q)) ||
         (s.email && s.email.toLowerCase().includes(q)),
     );
@@ -380,7 +397,11 @@ function StudentManagement() {
 
 function StudentCard({ student, index, onEdit, onDelete, onShowHistory }) {
   const { t } = useTranslation(['leader', 'common']);
-  const initials = student.name
+  // Server validation guarantees `name` is set, but we still get cached or
+  // partially-hydrated student objects on the offline path — guard against
+  // the empty-name case so this card doesn't take the whole grid down.
+  const safeName = (student?.name || '').trim();
+  const initials = safeName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
@@ -391,9 +412,9 @@ function StudentCard({ student, index, onEdit, onDelete, onShowHistory }) {
   // Pseudorandom hue from name for avatar accent (deterministic).
   const hue = useMemo(() => {
     let h = 0;
-    for (let i = 0; i < student.name.length; i++) h = (h * 31 + student.name.charCodeAt(i)) % 360;
+    for (let i = 0; i < safeName.length; i++) h = (h * 31 + safeName.charCodeAt(i)) % 360;
     return h;
-  }, [student.name]);
+  }, [safeName]);
 
   return (
     <motion.div
@@ -417,7 +438,7 @@ function StudentCard({ student, index, onEdit, onDelete, onShowHistory }) {
             {initials || '·'}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold tracking-tight truncate">{student.name}</div>
+            <div className="text-sm font-semibold tracking-tight truncate">{safeName}</div>
             {student.student_id ? (
               <div className="inline-flex items-center gap-1 text-[11px] text-[color:var(--color-fg-subtle)] mt-0.5">
                 <IdCard className="size-3" />

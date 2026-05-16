@@ -1,22 +1,52 @@
 const express = require('express');
 const router = express.Router();
+const { query } = require('express-validator');
 const db = require('../config/database');
 const { parseExcelAndPopulateDB, EXCEL_PATH } = require('../utils/excelParser');
 const { authenticateToken, requireAdmin, requireProfesor, requireCanDeleteStudents } = require('../middleware/auth');
-const { validateStudentId, validateDateParam, validateDateQuery } = require('../middleware/validation');
+const { validateStudentId, validateDateParam, validateDateQuery, handleValidationErrors } = require('../middleware/validation');
+
+// Inline validators for the optional ?projectId= and ?justification= query
+// params used by the profesor-facing reports below. We can't lean on the
+// shared validateProjectId middleware here because it targets a param,
+// not a query, and projectId is optional in these endpoints (omitting it
+// means "all projects"). Keeping them locally scoped avoids polluting
+// the validation module with admin-only one-offs.
+const validateOptionalProjectIdQuery = [
+  query('projectId')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 }).withMessage('projectId must be a positive integer')
+    .toInt(),
+];
+
+const validateOptionalJustificationQuery = [
+  query('justification')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(['justificada', 'injustificada'])
+    .withMessage('justification must be "justificada" or "injustificada"'),
+];
 
 // Profesor routes (before admin-only middleware)
 // Get all absent students with filters
-router.get('/absences', authenticateToken, requireProfesor, validateDateQuery, async (req, res) => {
-  try {
-    const { date, projectId, justification } = req.query;
-    const absences = await db.getAbsentStudents(date, projectId, justification);
-    res.json(absences);
-  } catch (error) {
-    console.error('Error fetching absences:', error);
-    res.status(500).json({ error: 'Failed to fetch absences' });
+router.get(
+  '/absences',
+  authenticateToken,
+  requireProfesor,
+  validateDateQuery,
+  validateOptionalProjectIdQuery,
+  validateOptionalJustificationQuery,
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { date, projectId, justification } = req.query;
+      const absences = await db.getAbsentStudents(date, projectId, justification);
+      res.json(absences);
+    } catch (error) {
+      console.error('Error fetching absences:', error);
+      res.status(500).json({ error: 'Failed to fetch absences' });
+    }
   }
-});
+);
 
 // Get all projects for filter dropdown
 router.get('/projects', authenticateToken, requireProfesor, async (req, res) => {
@@ -24,20 +54,30 @@ router.get('/projects', authenticateToken, requireProfesor, async (req, res) => 
     const projects = await db.getProjects();
     res.json(projects);
   } catch (error) {
+    console.error('Error fetching projects:', error);
     res.status(500).json({ error: 'Failed to fetch projects' });
   }
 });
 
 // Get attendance summary by date range
-router.get('/attendance-summary', authenticateToken, requireProfesor, validateDateQuery, async (req, res) => {
-  try {
-    const { startDate, endDate, projectId } = req.query;
-    const summary = await db.getAttendanceSummary(startDate, endDate, projectId);
-    res.json(summary);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch attendance summary' });
+router.get(
+  '/attendance-summary',
+  authenticateToken,
+  requireProfesor,
+  validateDateQuery,
+  validateOptionalProjectIdQuery,
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { startDate, endDate, projectId } = req.query;
+      const summary = await db.getAttendanceSummary(startDate, endDate, projectId);
+      res.json(summary);
+    } catch (error) {
+      console.error('Error fetching attendance summary:', error);
+      res.status(500).json({ error: 'Failed to fetch attendance summary' });
+    }
   }
-});
+);
 
 // All admin routes require authentication and admin role
 router.use(authenticateToken);
@@ -50,6 +90,7 @@ router.get('/students', async (req, res) => {
     const students = await db.getAllStudents();
     res.json(students);
   } catch (error) {
+    console.error('Error fetching students:', error);
     res.status(500).json({ error: 'Failed to fetch students' });
   }
 });
@@ -61,6 +102,7 @@ router.get('/attendance/:date', validateDateParam, async (req, res) => {
     const attendance = await db.getAllAttendanceByDate(date);
     res.json(attendance);
   } catch (error) {
+    console.error('Error fetching attendance by date:', error);
     res.status(500).json({ error: 'Failed to fetch attendance' });
   }
 });
@@ -95,6 +137,10 @@ router.delete('/students/:studentId', requireCanDeleteStudents, validateStudentI
 // write lock used by leader bulk-attendance submissions. Without this,
 // the re-import's many INSERT statements race leader transactions on the
 // shared sqlite3 connection.
+//
+// `force` must be the literal boolean `true`. Loose-equality and string
+// "true" are deliberately not accepted so a stray `?force=1` from a CLI
+// can't bypass the safety prompt.
 router.post('/reimport-spreadsheet', async (req, res) => {
   try {
     const existing = await db.getProjects();
@@ -109,6 +155,7 @@ router.post('/reimport-spreadsheet', async (req, res) => {
     const result = await db.runExclusive(() => parseExcelAndPopulateDB());
     res.json({ success: true, ...result, excelPath: EXCEL_PATH });
   } catch (error) {
+    console.error('Re-import failed:', error);
     res.status(500).json({ error: 'Re-import failed', message: error.message });
   }
 });

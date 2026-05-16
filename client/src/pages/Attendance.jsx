@@ -50,12 +50,69 @@ function Attendance() {
   const [attendanceAlreadySaved, setAttendanceAlreadySaved] = useState(false);
   const [search, setSearch] = useState('');
   const fileInputRefs = useRef({});
+  // Monotonic counter used to discard out-of-order fetch responses. If the
+  // user rapidly flips between dates, the slower request must not overwrite
+  // the newer one's state.
+  const fetchSeq = useRef(0);
+
+  // Defined up-front so the loaders below can call it from their .catch
+  // without relying on JS temporal-dead-zone surviving the microtask hop.
+  const showMessage = useCallback((type, text) => setMessage({ type, text }), []);
 
   useEffect(() => {
-    if (leader) {
-      fetchStudents();
-      fetchAttendance();
-    }
+    if (!leader) return;
+    const seq = ++fetchSeq.current;
+    let cancelled = false;
+    const isCurrent = () => !cancelled && fetchSeq.current === seq;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await getCurrentRotationStudents(leader.projectId);
+        if (!isCurrent()) return;
+        setStudents(data.students || []);
+        setCurrentRotation(data.rotationNumber ?? null);
+      } catch {
+        if (!isCurrent()) return;
+        setStudents([]);
+        setCurrentRotation(null);
+      } finally {
+        if (isCurrent()) setLoading(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        const data = await getAttendanceByProjectAndDate(leader.projectId, selectedDate);
+        if (!isCurrent()) return;
+        const map = {};
+        data.forEach((r) => {
+          map[r.student_id] = {
+            status: r.status,
+            justification: r.justification || null,
+            observation: r.observation || '',
+            attachmentFileName: r.attachment_file_name,
+            attachmentFilePath: r.attachment_file_path,
+          };
+        });
+        setAttendance(map);
+        setAttendanceAlreadySaved(data.length > 0);
+      } catch (err) {
+        if (!isCurrent()) return;
+        // The fetched attendance failed → don't keep stale rows from the
+        // previous date in memory; the leader needs a clean slate to mark.
+        setAttendance({});
+        setAttendanceAlreadySaved(false);
+        console.error('Error fetching attendance:', err);
+        showMessage('error', t('attendance.messages.loadPrevError'));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // t is stable per locale, but we deliberately scope this effect to the
+    // identity that drives a refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leader, selectedDate]);
 
@@ -66,23 +123,15 @@ function Attendance() {
     }
   }, [message]);
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    try {
-      const data = await getCurrentRotationStudents(leader.projectId);
-      setStudents(data.students);
-      setCurrentRotation(data.rotationNumber);
-    } catch {
-      setStudents([]);
-      setCurrentRotation(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAttendance = async () => {
+  // Manual refetch used after a successful save. Returns a promise so callers
+  // can await it. Uses the same seq guard as the effect-driven loaders so a
+  // late post-save fetch never clobbers a newer date selection.
+  const refetchAttendance = useCallback(async () => {
+    if (!leader) return;
+    const seq = ++fetchSeq.current;
     try {
       const data = await getAttendanceByProjectAndDate(leader.projectId, selectedDate);
+      if (fetchSeq.current !== seq) return;
       const map = {};
       data.forEach((r) => {
         map[r.student_id] = {
@@ -96,12 +145,11 @@ function Attendance() {
       setAttendance(map);
       setAttendanceAlreadySaved(data.length > 0);
     } catch (err) {
-      console.error('Error fetching attendance:', err);
-      showMessage('error', t('attendance.messages.loadPrevError'));
+      // Best-effort post-save reconciliation: a queued/offline save will
+      // also fail here. Don't blow away the optimistic state.
+      console.error('Error refetching attendance:', err);
     }
-  };
-
-  const showMessage = (type, text) => setMessage({ type, text });
+  }, [leader, selectedDate]);
 
   const handleAttendanceChange = (studentId, status) => {
     setAttendance((prev) => ({
@@ -159,8 +207,14 @@ function Attendance() {
   };
 
   const handleDownloadAttachment = (studentId) => {
+    // Guard: don't punch a tab open if there's no attachment on this row.
+    // The button is hidden in that case but defensively check anyway since
+    // attachmentFileName can be cleared async between render and click.
+    if (!attendance[studentId]?.attachmentFileName) return;
     const url = getAttachmentUrl(studentId, selectedDate);
-    window.open(url, '_blank');
+    // noopener+noreferrer hardens the new tab against any rogue script the
+    // attachment might be — and matches what window.open default lacks.
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleSubmit = async (e) => {
@@ -173,6 +227,14 @@ function Attendance() {
 
     setSaving(true);
     const currentTime = getCurrentTime();
+    // Track whether the api layer queued any request offline (status 202
+    // with `_queued: true` from the axios interceptor). When that happens
+    // we must NOT lock the form via attendanceAlreadySaved — the data is
+    // still client-side only, and a follow-up refetch will return [] on
+    // the same offline trip and would wrongly re-set the flag to false
+    // anyway. We surface a distinct "queued" message instead.
+    let anyQueued = false;
+    const isQueued = (res) => !!(res && res._queued);
 
     try {
       const studentsWithAttachments = Object.keys(attachments).filter((id) => attachments[id]);
@@ -185,8 +247,13 @@ function Attendance() {
           observation: data.observation,
         }));
 
-        await markBulkAttendance(leader.projectId, leader.id, selectedDate, currentTime, records);
-        showMessage('success', t('attendance.messages.savedSuccess', { date: selectedDate }));
+        const res = await markBulkAttendance(leader.projectId, leader.id, selectedDate, currentTime, records);
+        if (isQueued(res)) {
+          anyQueued = true;
+          showMessage('info', t('attendance.messages.savedQueued', { date: selectedDate }));
+        } else {
+          showMessage('success', t('attendance.messages.savedSuccess', { date: selectedDate }));
+        }
       } else {
         const noAttachmentRecords = Object.entries(attendance)
           .filter(([studentId]) => !attachments[studentId])
@@ -198,24 +265,33 @@ function Attendance() {
           }));
 
         if (noAttachmentRecords.length > 0) {
-          await markBulkAttendance(
+          const res = await markBulkAttendance(
             leader.projectId,
             leader.id,
             selectedDate,
             currentTime,
             noAttachmentRecords,
           );
+          if (isQueued(res)) anyQueued = true;
         }
 
         const attachmentEntries = Object.entries(attendance).filter(
           ([studentId]) => attachments[studentId],
         );
         const failures = [];
+        // savedIds tracks who actually went through (queued or live). Used
+        // to selectively wipe just-saved attachments at the end so the
+        // leader can retry only the failed ones, as the partial-save
+        // message promises.
+        const savedIds = new Set();
+        if (noAttachmentRecords.length > 0) {
+          noAttachmentRecords.forEach((r) => savedIds.add(String(r.studentId)));
+        }
         let savedCount = noAttachmentRecords.length;
 
         for (const [studentId, data] of attachmentEntries) {
           try {
-            await markAttendance({
+            const res = await markAttendance({
               studentId: parseInt(studentId),
               date: selectedDate,
               time: currentTime,
@@ -224,15 +300,21 @@ function Attendance() {
               observation: data.observation,
               attachment: attachments[studentId] || null,
             });
+            if (isQueued(res)) anyQueued = true;
             savedCount++;
-          } catch (e) {
+            savedIds.add(String(studentId));
+          } catch (err) {
             const studentName = students.find((s) => s.id === parseInt(studentId))?.name || studentId;
-            failures.push({ studentName, error: e.response?.data?.message || e.message });
+            failures.push({ studentId, studentName, error: err.response?.data?.message || err.message });
           }
         }
 
         if (failures.length === 0) {
-          showMessage('success', t('attendance.messages.savedSuccess', { date: selectedDate }));
+          if (anyQueued) {
+            showMessage('info', t('attendance.messages.savedQueued', { date: selectedDate }));
+          } else {
+            showMessage('success', t('attendance.messages.savedSuccess', { date: selectedDate }));
+          }
         } else {
           const failureNames = failures.map((f) => f.studentName).join(', ');
           showMessage(
@@ -244,13 +326,38 @@ function Attendance() {
             }),
           );
         }
+
+        // Only wipe the attachment slots for rows that actually saved so
+        // the leader can retry just the failed uploads (matches what the
+        // partialSave message tells them to do).
+        if (savedIds.size > 0) {
+          setAttachments((prev) => {
+            const next = { ...prev };
+            savedIds.forEach((id) => delete next[id]);
+            return next;
+          });
+          savedIds.forEach((id) => {
+            const el = fileInputRefs.current[id];
+            if (el) el.value = '';
+          });
+        }
       }
 
-      setAttachments({});
-      Object.keys(fileInputRefs.current).forEach((k) => {
-        if (fileInputRefs.current[k]) fileInputRefs.current[k].value = '';
-      });
-      await fetchAttendance();
+      // Single-bulk path: nothing to retry by definition.
+      if (studentsWithAttachments.length === 0) {
+        setAttachments({});
+        Object.keys(fileInputRefs.current).forEach((k) => {
+          if (fileInputRefs.current[k]) fileInputRefs.current[k].value = '';
+        });
+      }
+
+      // If anything was queued offline, the server doesn't yet have the
+      // rows — refetching would return [] and wrongly unlock the form by
+      // setting attendanceAlreadySaved to false. Skip the refetch in that
+      // case and keep the optimistic state.
+      if (!anyQueued) {
+        await refetchAttendance();
+      }
     } catch (err) {
       if (err.response?.status === 409) {
         showMessage('error', t('attendance.messages.alreadySaved'));
@@ -265,15 +372,25 @@ function Attendance() {
   };
 
   const handleQuickMarkAll = (status) => {
-    const next = {};
-    students.forEach((s) => {
-      next[s.id] = {
-        status,
-        justification: status === STATUS.ABSENT ? JUSTIFICATION.UNJUSTIFIED : null,
-        observation: attendance[s.id]?.observation || '',
-      };
+    // Defensive: the buttons are disabled when locked, but a stray click
+    // path (keyboard, programmatic) should still no-op so we never
+    // overwrite a saved session.
+    if (attendanceAlreadySaved) return;
+    setAttendance((prev) => {
+      const next = {};
+      students.forEach((s) => {
+        next[s.id] = {
+          ...prev[s.id],
+          status,
+          justification:
+            status === STATUS.ABSENT
+              ? prev[s.id]?.justification || JUSTIFICATION.UNJUSTIFIED
+              : null,
+          observation: prev[s.id]?.observation || '',
+        };
+      });
+      return next;
     });
-    setAttendance(next);
   };
 
   const exportToCSV = () => {
@@ -314,12 +431,25 @@ function Attendance() {
         leader.name,
       ];
     });
-    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\n');
+    // RFC 4180-style escaping: wrap every cell in quotes and double any
+    // literal quotes inside. Without this, a student name like
+    // O"Brien or any observation containing a `"` would burst the row.
+    const esc = (c) => `"${String(c ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers.map(esc).join(','), ...rows.map((r) => r.map(esc).join(','))].join('\r\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `${t('attendance.csv.filenamePrefix')}_${leader.projectName}_${selectedDate}.csv`;
+    document.body.appendChild(link);
     link.click();
+    // Yield to the browser so the download is initiated before we revoke.
+    // Without revoke, the blob is pinned in memory until tab close (small
+    // here, but multiplied by repeated exports it adds up).
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 0);
   };
 
   // Counts
@@ -343,16 +473,18 @@ function Attendance() {
     };
   }, [attendance, students]);
 
-  // Filter
+  // Filter. Coerce student_id to a string before calling .toLowerCase() —
+  // the schema column is text but a future numeric source (or a server
+  // already returning numbers) would crash the search box otherwise.
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
-    return students.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.student_id && s.student_id.toLowerCase().includes(q)) ||
-        (s.email && s.email.toLowerCase().includes(q)),
-    );
+    return students.filter((s) => {
+      const name = (s.name || '').toLowerCase();
+      const sid = s.student_id != null ? String(s.student_id).toLowerCase() : '';
+      const email = (s.email || '').toLowerCase();
+      return name.includes(q) || sid.includes(q) || email.includes(q);
+    });
   }, [students, search]);
 
   return (
@@ -502,7 +634,13 @@ function Attendance() {
                     onFileSelect={handleFileSelect}
                     onRemoveFile={handleRemoveFile}
                     onDownloadAttachment={handleDownloadAttachment}
-                    registerFileInput={(el) => (fileInputRefs.current[student.id] = el)}
+                    registerFileInput={(el) => {
+                      // null means the row is unmounting — drop the entry
+                      // so we don't accumulate refs to detached inputs
+                      // across rotation swaps.
+                      if (el) fileInputRefs.current[student.id] = el;
+                      else delete fileInputRefs.current[student.id];
+                    }}
                   />
                 ))}
               </AnimatePresence>
@@ -598,20 +736,48 @@ function CountChip({ label, value, tone = 'default' }) {
   );
 }
 
-function StatusToggle({ value, onChange, locked, groupId }) {
+function StatusToggle({ value, onChange, locked, groupId, ariaLabel }) {
   const { t } = useTranslation(['leader', 'common']);
+  const options = [
+    { v: 'present', label: t('common:status.present'), tone: 'success' },
+    { v: 'absent', label: t('common:status.absent'), tone: 'danger' },
+  ];
+  // Roving tabindex: only one radio in the group is reachable via Tab; arrow
+  // keys move focus and the selection within the group. Without this, every
+  // student row adds two stops to the keyboard tab order — going through a
+  // 25-student roster would take 50 presses just to skip past the toggles.
+  const activeIndex = Math.max(
+    0,
+    options.findIndex((o) => o.v === value),
+  );
+
+  const handleKeyDown = (e, idx) => {
+    if (locked) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = options[(idx + 1) % options.length];
+      onChange(next.v);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const next = options[(idx - 1 + options.length) % options.length];
+      onChange(next.v);
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      onChange(options[idx].v);
+    }
+  };
+
   return (
     <div
       role="radiogroup"
+      aria-label={ariaLabel}
+      aria-disabled={locked || undefined}
       className={cn(
         'relative inline-flex items-center p-0.5 rounded-xl bg-[color:var(--color-bg-2)] hairline shrink-0 w-full sm:w-auto',
         locked && 'opacity-60 pointer-events-none',
       )}
     >
-      {[
-        { v: 'present', label: t('common:status.present'), tone: 'success' },
-        { v: 'absent', label: t('common:status.absent'), tone: 'danger' },
-      ].map((opt) => {
+      {options.map((opt, idx) => {
         const active = value === opt.v;
         const accent =
           opt.tone === 'success' ? 'var(--color-success)' : 'var(--color-danger)';
@@ -621,10 +787,13 @@ function StatusToggle({ value, onChange, locked, groupId }) {
             role="radio"
             aria-checked={active}
             type="button"
+            tabIndex={idx === activeIndex ? 0 : -1}
             onClick={() => onChange(opt.v)}
+            onKeyDown={(e) => handleKeyDown(e, idx)}
             disabled={locked}
             className={cn(
               'relative inline-flex items-center justify-center h-9 sm:h-8 px-3 sm:px-3.5 rounded-[10px] text-xs font-medium tracking-tight transition-colors duration-150 flex-1 sm:flex-initial',
+              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]',
               active ? 'text-[oklch(0.18_0.02_260)]' : 'text-[color:var(--color-fg-muted)]',
             )}
           >
@@ -660,6 +829,10 @@ function StudentRow({
 }) {
   const { t } = useTranslation(['leader', 'common']);
   const inputRef = useRef(null);
+  // ref callback: registers AND deregisters with the parent. React calls
+  // setRef(null) on unmount which is the only chance we get to evict the
+  // stale entry from fileInputRefs.current — otherwise rosters that swap
+  // students between rotations leak refs to detached <input>s forever.
   const setRef = useCallback(
     (el) => {
       inputRef.current = el;
@@ -724,6 +897,7 @@ function StudentRow({
         <StatusToggle
           value={status}
           groupId={student.id}
+          ariaLabel={`${t('common:status.present')} / ${t('common:status.absent')} · ${student.name}`}
           onChange={(v) => onStatusChange(student.id, v)}
           locked={locked}
         />
@@ -741,7 +915,11 @@ function StudentRow({
           >
             <div className="mt-3 sm:mt-4 grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-2.5 sm:gap-3 lg:items-start lg:pl-[3.25rem]">
               {/* Justification radios */}
-              <div className="flex gap-1.5 p-0.5 rounded-xl bg-[color:var(--color-bg-2)] hairline w-full sm:w-auto">
+              <div
+                role="radiogroup"
+                aria-label={`${t('common:labels.justification')} · ${student.name}`}
+                className="flex gap-1.5 p-0.5 rounded-xl bg-[color:var(--color-bg-2)] hairline w-full sm:w-auto"
+              >
                 {[
                   { v: 'injustificada', label: t('common:status.unjustified'), tone: 'danger' },
                   { v: 'justificada', label: t('common:status.justified'), tone: 'warn' },
@@ -752,10 +930,13 @@ function StudentRow({
                     <button
                       key={opt.v}
                       type="button"
+                      role="radio"
+                      aria-checked={active}
                       onClick={() => onJustificationChange(student.id, opt.v)}
                       disabled={locked}
                       className={cn(
                         'h-8 sm:h-7 px-2.5 rounded-[10px] text-[11px] font-medium tracking-tight transition-colors flex-1 sm:flex-initial',
+                        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]',
                         active
                           ? 'text-[oklch(0.18_0.02_260)]'
                           : 'text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)]',

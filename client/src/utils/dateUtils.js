@@ -74,16 +74,29 @@ export const parseDateString = (dateString) => {
 };
 
 /**
- * Check if a date string is valid YYYY-MM-DD format
+ * Check if a date string is valid YYYY-MM-DD format AND a real calendar
+ * date. The previous implementation only checked the regex and that
+ * `new Date(...)` returned a Date — that wrongly accepted impossible
+ * inputs like "2024-02-30" because the JS Date constructor silently
+ * rolls overflow into the next month (Feb 30 → Mar 1).
+ *
  * @param {string} dateString - Date string to validate
- * @returns {boolean} True if valid
+ * @returns {boolean} True if valid AND not a roll-over (e.g. Feb 30 rejected)
  */
 export const isValidDateString = (dateString) => {
   if (!dateString) return false;
   const regex = /^\d{4}-\d{2}-\d{2}$/;
   if (!regex.test(dateString)) return false;
+  const [year, month, day] = dateString.split('-').map(Number);
   const date = parseDateString(dateString);
-  return date instanceof Date && !isNaN(date);
+  if (!(date instanceof Date) || isNaN(date)) return false;
+  // Guard against silent overflow: if the parsed date's components don't
+  // match the input, the constructor rolled forward (e.g. Feb 30 → Mar 1).
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 };
 
 /**

@@ -58,7 +58,20 @@ router.post('/heartbeat', authenticateToken, express.json(), async (req, res) =>
 });
 
 // Drop the subscription. Called on logout from the device that owns it.
-router.delete('/subscribe', authenticateToken, express.json(), async (req, res) => {
+//
+// Intentionally NOT gated by authenticateToken. The client's logout flow
+// is: POST /auth/logout (clears the auth cookie) → unsubscribePush()
+// (this endpoint). If we required auth here, the DELETE would always
+// 401 post-logout and the server would leak push subscription rows
+// forever — the cron would then keep pushing into the dead endpoint
+// until the push service itself returned 404/410. The endpoint string
+// is sufficient identifier on its own (it's effectively a secret URL
+// the push service issued to the browser); knowing it is the only
+// thing required to push to it, so allowing endpoint-only unsubscribe
+// has the same trust model as the push itself. A hostile third party
+// who somehow learned an endpoint can at worst unsubscribe it — the
+// device just re-subscribes on next login.
+router.delete('/subscribe', express.json(), async (req, res) => {
   try {
     const { endpoint } = req.body || {};
     if (!endpoint) {

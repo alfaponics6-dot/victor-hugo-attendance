@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { validateDateQuery } = require('../middleware/validation');
+const { validateDateQuery, validateDays, validateLeaderId } = require('../middleware/validation');
 
 // Apply authentication to all routes in this file
 router.use(authenticateToken);
@@ -37,23 +37,34 @@ router.get('/by-project', validateDateQuery, async (req, res) => {
   }
 });
 
-// Get attendance history (last N days)
-router.get('/history', async (req, res) => {
+// Get attendance history (last N days). validateDays bounds the query to
+// [1, 365] so a hostile `?days=99999999` can't fan out into an unbounded
+// scan, and a non-numeric value gets rejected with 400 rather than turning
+// into NaN and silently returning [].
+router.get('/history', validateDays, async (req, res) => {
   try {
     const { days = 7 } = req.query;
-    const history = await db.getAttendanceHistory(parseInt(days));
+    const parsedDays = parseInt(days, 10);
+    // validateDays already rejects non-ints; this is defense-in-depth so
+    // we never pass NaN into the date('now', '-NaN days') SQL expression.
+    const safeDays = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 7;
+    const history = await db.getAttendanceHistory(safeDays);
     res.json(history);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch attendance history' });
   }
 });
 
-// Get statistics for a specific leader's project
-router.get('/leader/:leaderId', async (req, res) => {
+// Get statistics for a specific leader's project.
+// validateLeaderId rejects non-int paths (e.g. /leader/abc → 400) instead of
+// letting parseInt('abc')=NaN reach the SQL layer, and validateDateQuery
+// bounds `?date=` to YYYY-MM-DD so a crafted date can't break the BETWEEN
+// in getLeaderProjectStatistics.
+router.get('/leader/:leaderId', validateLeaderId, validateDateQuery, async (req, res) => {
   try {
     const { leaderId } = req.params;
     const { date } = req.query;
-    const stats = await db.getLeaderProjectStatistics(parseInt(leaderId), date || null);
+    const stats = await db.getLeaderProjectStatistics(parseInt(leaderId, 10), date || null);
     res.json(stats);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch leader statistics' });

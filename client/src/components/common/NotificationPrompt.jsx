@@ -44,6 +44,21 @@ export default function NotificationPrompt() {
 
   useEffect(() => {
     setShow(isStandalone());
+    // Re-evaluate when the install state flips (user installs the PWA
+    // mid-session, or switches between standalone/browser tab views).
+    // Without this the prompt stays hidden until the next full reload
+    // even though the leader just installed the app.
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(display-mode: standalone)');
+    const onChange = () => setShow(isStandalone());
+    // Older Safari uses addListener/removeListener instead of add/remove
+    // EventListener — feature-detect both so iOS 13 doesn't blow up.
+    if (mql.addEventListener) mql.addEventListener('change', onChange);
+    else if (mql.addListener) mql.addListener(onChange);
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', onChange);
+      else if (mql.removeListener) mql.removeListener(onChange);
+    };
   }, []);
 
   if (!show) return null;

@@ -14,21 +14,37 @@ import { Select } from '../../ui/Input';
 import Skeleton from '../../ui/Skeleton';
 import { formatDateForDisplay } from '../../../utils/dateUtils';
 
-// Always-included Cc address. Configurable via VITE_COORDINATION_CC so a
-// new term can rotate the address without a code change. Falls back to the
-// known Forestry Scenario coordination inbox.
-const COORDINATION_CC =
-  (import.meta.env?.VITE_COORDINATION_CC || 'forestryscenary@earth.ac.cr').trim();
+// Always-included Cc address(es). Configurable via VITE_COORDINATION_CC so
+// a new term can rotate the address without a code change. Accepts a
+// comma-separated list ("a@earth.ac.cr,b@earth.ac.cr") so coordination can
+// CC more than one inbox without touching code. Falls back to the known
+// Forestry Scenario coordination inbox.
+const COORDINATION_CC_LIST = (import.meta.env?.VITE_COORDINATION_CC || 'forestryscenary@earth.ac.cr')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+// Kept for backwards-compat in the UI label below — show the first address
+// (which is the historical single-inbox value in production today).
+const COORDINATION_CC_DISPLAY = COORDINATION_CC_LIST[0] || '';
 
 // Build a mailto URL. RFC 6068 says addresses go in the To position (URL path),
 // other recipients/subject go as query params. Multi-address values are
 // comma-separated. We encodeURIComponent each address so accented characters
 // or odd chars don't break the URL — most mail apps accept either form, but
 // some Outlook/Android handlers are picky.
+//
+// We trim and drop falsy entries first so a stray space in the env-configured
+// CC (e.g. "a@b.com, c@d.com") doesn't survive into the mailto and stop
+// Outlook from auto-resolving the second address.
 function buildMailto({ to, cc, subject }) {
-  const enc = (arr) => arr.map((a) => encodeURIComponent(a)).join(',');
+  const clean = (arr) =>
+    (arr || [])
+      .map((a) => (typeof a === 'string' ? a.trim() : ''))
+      .filter(Boolean);
+  const enc = (arr) => clean(arr).map((a) => encodeURIComponent(a)).join(',');
   const params = [];
-  if (cc.length) params.push(`cc=${enc(cc)}`);
+  const encodedCc = enc(cc);
+  if (encodedCc) params.push(`cc=${encodedCc}`);
   if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
   return `mailto:${enc(to)}${params.length ? '?' + params.join('&') : ''}`;
 }
@@ -112,7 +128,7 @@ function MailRotation() {
     [collaborators]
   );
   const ccList = useMemo(
-    () => [COORDINATION_CC, ...collabEmails],
+    () => [...COORDINATION_CC_LIST, ...collabEmails],
     [collabEmails]
   );
 
@@ -265,7 +281,7 @@ function MailRotation() {
               <div className="text-[10px] uppercase tracking-wide text-[color:var(--color-fg-subtle)] mb-1">
                 {t('mail.ccAlways')}
               </div>
-              <div className="text-sm font-mono tabular">{COORDINATION_CC}</div>
+              <div className="text-sm font-mono tabular">{COORDINATION_CC_DISPLAY}</div>
             </div>
             {collaborators.length > 0 && (
               <div>

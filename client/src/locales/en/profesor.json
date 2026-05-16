@@ -21,7 +21,8 @@
     "unknownProfe": "unknown profesor",
     "notYet": "Not marked yet",
     "present": "present",
-    "rosterSize": "{{n}} students",
+    "rosterSize_one": "{{count}} student",
+    "rosterSize_other": "{{count}} students",
     "summary": {
       "projects": "Projects",
       "endDone": "End saved",
@@ -51,7 +52,11 @@
     "rosterLoadError": "Failed to load the student list.",
     "emptyRoster": "No students in this project's current rotation.",
     "lastSavedAt": "Last saved at: {{when}}",
-    "notYetSaved": "This pass has not been saved yet for this date."
+    "notYetSaved": "This pass has not been saved yet for this date.",
+    "saveQueued": "Offline: the pass will sync when the network is back.",
+    "unsavedChanges": "Unsaved changes",
+    "unsavedConfirm": "You have unsaved changes in this pass. Discard them?",
+    "emptyRosterTitle": "Empty roster"
   },
   "stats": {
     "totalAbsences": "Total absences",

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ import { cn } from '../../../lib/cn';
  */
 function AttendanceCalendar({ projectId }) {
   const { t, i18n } = useTranslation(['leader', 'common']);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => new Date());
   const [attendanceData, setAttendanceData] = useState({});
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,57 +26,72 @@ function AttendanceCalendar({ projectId }) {
   const [selectedDateData, setSelectedDateData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  // Monotonic counters so rapid month flips / day clicks don't have the
+  // slower response overwrite the newer one. Without these, a hand on the
+  // Next-month chevron can fan out 31 GETs per click — the prior month's
+  // late responses then clobber the new month's data when they finally
+  // resolve.
+  const monthSeq = useRef(0);
+  const daySeq = useRef(0);
 
   useEffect(() => {
-    if (projectId) {
-      fetchStudents();
-      fetchMonthAttendance();
-    }
-  }, [projectId, currentDate]);
+    if (!projectId) return;
+    const seq = ++monthSeq.current;
+    let cancelled = false;
+    const isCurrent = () => !cancelled && monthSeq.current === seq;
 
-  const fetchStudents = async () => {
-    try {
-      const data = await getCurrentRotationStudents(projectId);
-      setStudents(data.students || []);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
-
-  const fetchMonthAttendance = async () => {
-    setLoading(true);
-    try {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      const promises = [];
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const dateStr = formatDateToYYYYMMDD(date);
-        promises.push(
-          getAttendanceByProjectAndDate(projectId, dateStr)
-            .then((data) => ({ date: dateStr, data }))
-            .catch(() => ({ date: dateStr, data: [] })),
-        );
+    (async () => {
+      try {
+        const data = await getCurrentRotationStudents(projectId);
+        if (!isCurrent()) return;
+        setStudents(data.students || []);
+      } catch (error) {
+        if (!isCurrent()) return;
+        console.error('Error fetching students:', error);
       }
+    })();
 
-      const results = await Promise.all(promises);
-      const dataMap = {};
-      results.forEach(({ date, data }) => {
-        dataMap[date] = {
-          present: data.filter((a) => a.status === 'present').length,
-          absent: data.filter((a) => a.status === 'absent').length,
-          total: data.length,
-        };
-      });
-      setAttendanceData(dataMap);
-    } catch (error) {
-      console.error('Error fetching month attendance:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    (async () => {
+      setLoading(true);
+      try {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const promises = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = new Date(year, month, day);
+          const dateStr = formatDateToYYYYMMDD(date);
+          promises.push(
+            getAttendanceByProjectAndDate(projectId, dateStr)
+              .then((data) => ({ date: dateStr, data }))
+              .catch(() => ({ date: dateStr, data: [] })),
+          );
+        }
+
+        const results = await Promise.all(promises);
+        if (!isCurrent()) return;
+        const dataMap = {};
+        results.forEach(({ date, data }) => {
+          dataMap[date] = {
+            present: data.filter((a) => a.status === 'present').length,
+            absent: data.filter((a) => a.status === 'absent').length,
+            total: data.length,
+          };
+        });
+        setAttendanceData(dataMap);
+      } catch (error) {
+        if (!isCurrent()) return;
+        console.error('Error fetching month attendance:', error);
+      } finally {
+        if (isCurrent()) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, currentDate]);
 
   const days = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -123,23 +138,33 @@ function AttendanceCalendar({ projectId }) {
   const handleDateClick = async (date) => {
     if (!date || !isAttendanceDay(date)) return;
     const dateStr = formatDateToYYYYMMDD(date);
+    const seq = ++daySeq.current;
     setSelectedDate(dateStr);
+    // Wipe stale rows from a previous day so users never see the wrong
+    // day's data flash while the new fetch is in flight.
+    setSelectedDateData([]);
     setShowModal(true);
     setModalLoading(true);
     try {
       const data = await getAttendanceByProjectAndDate(projectId, dateStr);
+      if (daySeq.current !== seq) return;
       setSelectedDateData(data);
     } catch {
+      if (daySeq.current !== seq) return;
       setSelectedDateData([]);
     } finally {
-      setModalLoading(false);
+      if (daySeq.current === seq) setModalLoading(false);
     }
   };
 
   const closeModal = () => {
+    // Bump the day seq so any in-flight fetch from a previous click is
+    // ignored if it resolves after close.
+    daySeq.current++;
     setShowModal(false);
     setSelectedDate(null);
     setSelectedDateData([]);
+    setModalLoading(false);
   };
 
   const weekDays = [
@@ -168,20 +193,22 @@ function AttendanceCalendar({ projectId }) {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
+            type="button"
             onClick={() =>
-              setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+              setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
             }
             aria-label={t('calendar.prevMonth')}
-            className="size-8 grid place-items-center rounded-lg text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-hover)] transition-colors"
+            className="size-8 grid place-items-center rounded-lg text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
           >
             <ChevronLeft className="size-4" />
           </button>
           <button
+            type="button"
             onClick={() =>
-              setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+              setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
             }
             aria-label={t('calendar.nextMonth')}
-            className="size-8 grid place-items-center rounded-lg text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-hover)] transition-colors"
+            className="size-8 grid place-items-center rounded-lg text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -284,6 +311,21 @@ function DayCell({ date, isValid, rate, today, data, onClick }) {
           ? 'var(--color-danger)'
           : 'var(--color-fg-subtle)';
 
+  // Build a screen-reader label that includes both the date and the
+  // session count if present. Visually the cell shows just the day
+  // number; without this, AT users hear "button 3" with no context.
+  const ariaLabel = (() => {
+    const dateLabel = date.toLocaleDateString(undefined, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+    if (data?.total > 0) {
+      return `${dateLabel} — ${data.present}/${data.total}`;
+    }
+    return dateLabel;
+  })();
+
   return (
     <motion.button
       type="button"
@@ -291,8 +333,11 @@ function DayCell({ date, isValid, rate, today, data, onClick }) {
       whileHover={isValid ? { y: -2 } : {}}
       whileTap={isValid ? { scale: 0.97 } : {}}
       disabled={!isValid}
+      aria-label={ariaLabel}
+      aria-current={today ? 'date' : undefined}
       className={cn(
         'relative aspect-square rounded-md sm:rounded-xl flex flex-col items-center justify-center gap-0 sm:gap-0.5 text-[11px] sm:text-[12px] font-medium transition-colors min-w-0',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]',
         isValid
           ? 'bg-[color:var(--color-bg-2)] hairline hover:border-[color:var(--color-border-strong)] cursor-pointer'
           : 'text-[color:var(--color-fg-subtle)] opacity-45',
@@ -309,10 +354,9 @@ function DayCell({ date, isValid, rate, today, data, onClick }) {
           (the dot sat right under the count and looked like it was
           blocking the "5/5"). */}
       {data?.total > 0 && (
-        <span className="flex items-center gap-1 text-[8px] sm:text-[9px] tabular text-[color:var(--color-fg-subtle)] leading-none">
+        <span aria-hidden className="flex items-center gap-1 text-[8px] sm:text-[9px] tabular text-[color:var(--color-fg-subtle)] leading-none">
           {tone && (
             <span
-              aria-hidden
               className="size-1 sm:size-1.5 rounded-full shrink-0"
               style={{ background: accent, boxShadow: `0 0 6px ${accent}` }}
             />

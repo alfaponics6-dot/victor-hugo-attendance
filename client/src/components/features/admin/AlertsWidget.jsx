@@ -19,24 +19,30 @@ function AlertsWidget({ projectId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (projectId) fetchAlerts();
+    if (!projectId) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const [lowAtt, consAbs] = await Promise.all([
+          getStudentsWithLowAttendance(projectId, 75),
+          getStudentsWithConsecutiveAbsences(projectId, 3),
+        ]);
+        if (cancelled) return;
+        // Defensive: the offline-queue interceptor returns `{ _queued: true }`
+        // for non-GET requests when the network is down. These are GETs so it
+        // shouldn't trigger, but coercing to [] keeps a stray non-array from
+        // crashing the `.length` reads below.
+        setLowAttendance(Array.isArray(lowAtt) ? lowAtt : []);
+        setConsecutiveAbsences(Array.isArray(consAbs) ? consAbs : []);
+      } catch (error) {
+        console.error('Error fetching alerts:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [projectId]);
-
-  const fetchAlerts = async () => {
-    setLoading(true);
-    try {
-      const [lowAtt, consAbs] = await Promise.all([
-        getStudentsWithLowAttendance(projectId, 75),
-        getStudentsWithConsecutiveAbsences(projectId, 3),
-      ]);
-      setLowAttendance(lowAtt);
-      setConsecutiveAbsences(consAbs);
-    } catch (error) {
-      console.error('Error fetching alerts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const totalAlerts = lowAttendance.length + consecutiveAbsences.length;
 

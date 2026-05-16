@@ -81,6 +81,12 @@ const validateStudentUpdate = [
 // projectId and leaderId are NOT validated here - the route handler always
 // overrides them from the authenticated JWT for security. We accept them in
 // the body for backwards compatibility but ignore the values.
+//
+// Note: `isISO8601()` happily accepts "2025-02-30" — the format is
+// well-formed even though the calendar date doesn't exist. The route layer
+// re-validates with a real Date round-trip via sanityCheckAttendanceDate;
+// we use `{ strict: true, strictSeparator: true }` here as a first line of
+// defense to reject obviously bad strings like "2025/02/30".
 const validateAttendance = [
   body('studentId')
     .notEmpty().withMessage('Student ID is required')
@@ -88,20 +94,28 @@ const validateAttendance = [
   body('date')
     .notEmpty().withMessage('Date is required')
     .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date must be in YYYY-MM-DD format')
-    .isISO8601().withMessage('Date must be a valid date'),
+    .isISO8601({ strict: true, strictSeparator: true }).withMessage('Date must be a valid date'),
+  // The attendance table declares `time TIME NOT NULL`, so we require it
+  // here. The HH:MM regex pins the leading hour to a single digit (avoids
+  // ambiguity around "3:05" vs "03:05") — the route layer accepts the
+  // same shape.
   body('time')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Time must be in HH:MM format'),
+    .notEmpty().withMessage('Time is required')
+    .matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Time must be in HH:MM format'),
   body('status')
     .notEmpty().withMessage('Status is required')
     .isIn(['present', 'absent']).withMessage('Status must be either "present" or "absent"')
     .trim(),
+  // checkFalsy lets "", null, undefined all skip validation and be
+  // interpreted by the route as "no justification". Without checkFalsy,
+  // a client sending `justification: ""` would fail `.isIn()` instead of
+  // being normalized to null.
   body('justification')
-    .optional({ nullable: true })
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(['justificada', 'injustificada']).withMessage('Justification must be either "justificada" or "injustificada"')
     .trim(),
   body('observation')
-    .optional({ nullable: true })
+    .optional({ nullable: true, checkFalsy: true })
     .isLength({ max: 500 }).withMessage('Observation must be less than 500 characters')
     .trim(),
   handleValidationErrors
@@ -134,10 +148,13 @@ const validateRotation = [
   handleValidationErrors
 ];
 
+// Same calendar-validity caveat as validateAttendance.date: isISO8601 is
+// format-only. Routes that use this validator AND care about real calendar
+// validity (e.g. attendance writes) re-validate via sanityCheckAttendanceDate.
 const validateDateParam = [
   param('date')
     .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date must be in YYYY-MM-DD format')
-    .isISO8601().withMessage('Date must be a valid date'),
+    .isISO8601({ strict: true, strictSeparator: true }).withMessage('Date must be a valid date'),
   handleValidationErrors
 ];
 

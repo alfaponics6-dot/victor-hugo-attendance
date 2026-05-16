@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,14 +29,29 @@ import { getProjectLabel } from '../lib/projectI18n';
 
 /* ---------- small presentational atoms ---------------------------------- */
 
-const FieldLabel = ({ htmlFor, children }) => (
-  <label
-    htmlFor={htmlFor}
-    className="mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-fg-subtle)]"
-  >
-    {children}
-  </label>
-);
+const FIELD_LABEL_CLASS =
+  'mb-2 flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--color-fg-subtle)]';
+
+// When htmlFor is provided we render a real <label> bound to a form control
+// (a11y + click-to-focus). Without htmlFor (e.g. the role-picker heading
+// that owns two <button>s, not a single input) a bare <label> would be
+// invalid markup and screen readers would announce "label" for nothing.
+// Fall back to a div so callers can wire it up via aria-labelledby on the
+// surrounding group (see the role-step <motion.div>).
+const FieldLabel = ({ htmlFor, id, children }) => {
+  if (htmlFor) {
+    return (
+      <label htmlFor={htmlFor} id={id} className={FIELD_LABEL_CLASS}>
+        {children}
+      </label>
+    );
+  }
+  return (
+    <div id={id} className={FIELD_LABEL_CLASS}>
+      {children}
+    </div>
+  );
+};
 
 /* A faint, animated sparkline — decorative only.
    Hidden on phones (the hero panel itself is hidden < lg:); rendering this
@@ -113,6 +128,16 @@ function Login() {
   const { loginLeader } = useAuth();
   const navigate = useNavigate();
   const { isDark } = useTheme();
+  // Refs for focus management when the form transitions between steps.
+  // Without these, clicking "Cambiar" drops focus to <body> and a
+  // keyboard-only user has to re-tab from the top of the page.
+  const roleLeaderBtnRef = useRef(null);
+  const leaderSelectRef = useRef(null);
+  // Re-entry guard so a second Enter keypress (or a click + Enter race)
+  // can't dispatch handleLogin twice before the button's disabled prop
+  // settles. The state-based `loading` flag still drives the UI; this
+  // ref drives the submit-handler short-circuit.
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     fetchLeadersWithRetry();
@@ -174,6 +199,10 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    // Idempotent guard: rapid Enter-key repeats can fire submit again
+    // before React paints the disabled state on the button.
+    if (submittingRef.current) return;
+
     if (!selectedLeaderId) {
       setError(t('errors.selectName'));
       return;
@@ -188,6 +217,7 @@ function Login() {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
 
@@ -246,8 +276,17 @@ function Login() {
       } else {
         setError(t('errors.loginFailed'));
       }
-      console.error('Login error:', err);
+      // Redact the raw axios error before logging — err.config.data is
+      // the JSON-serialized request body and carries the plaintext
+      // password/access code. Devtools logs persist; CI captures stderr;
+      // a single rage-quit screenshot could leak a credential.
+      console.error(
+        'Login error:',
+        err?.response?.status ?? null,
+        err?.response?.data?.error ?? err?.message ?? 'unknown',
+      );
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -276,6 +315,12 @@ function Login() {
     setPassword('');
     setAccessCode('');
     setError('');
+    // Move focus into the role picker on the next paint — without this,
+    // keyboard users land on <body> and have to retab from the top of
+    // the page to reach the picker they just opened.
+    requestAnimationFrame(() => {
+      roleLeaderBtnRef.current?.focus();
+    });
   };
 
   const handlePickRole = (role) => {
@@ -285,6 +330,12 @@ function Login() {
     setPassword('');
     setAccessCode('');
     setError('');
+    // Step 1's dropdown is now the next logical control. autoFocus on
+    // <select> doesn't fire after a mount-during-state-change in motion
+    // children, so move focus imperatively after the layout settles.
+    requestAnimationFrame(() => {
+      leaderSelectRef.current?.focus();
+    });
   };
 
   /* shared field motion config */
@@ -508,10 +559,13 @@ function Login() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
+                      role="group"
+                      aria-labelledby="role-step-label"
                     >
-                      <FieldLabel>{t('roleStep.label')}</FieldLabel>
+                      <FieldLabel id="role-step-label">{t('roleStep.label')}</FieldLabel>
                       <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <button
+                          ref={roleLeaderBtnRef}
                           type="button"
                           onClick={() => handlePickRole('leader')}
                           disabled={loading || loadingLeaders}
@@ -577,6 +631,7 @@ function Login() {
                   </div>
                   <div className="relative group">
                     <select
+                      ref={leaderSelectRef}
                       id="leader-select"
                       value={selectedLeaderId}
                       onChange={handleLeaderSelect}

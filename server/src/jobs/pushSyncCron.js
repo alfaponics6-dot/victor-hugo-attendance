@@ -37,20 +37,31 @@ async function runOnce() {
       endpoint: sub.endpoint,
       keys: { p256dh: sub.p256dh, auth: sub.auth },
     };
+    let timeoutHandle = null;
     try {
       // web-push uses Node's default HTTPS agent which has NO socket
       // timeout. A single hung push endpoint would stall the entire
       // cron tick — Promise.race with a 10s deadline forces forward
       // progress so a misbehaving Apple/Mozilla edge can't block the
-      // other leaders' wake-ups.
+      // other leaders' wake-ups. We clear the timer in finally so a
+      // fast-resolving push doesn't leave a 10s pending setTimeout
+      // dangling (28 leaders × every 30 min = ~1300 stale timers/day
+      // otherwise) and attach .catch on the racing call so a
+      // late-rejecting webpush promise after the timeout fires can't
+      // surface as an unhandledRejection.
+      const sendPromise = webpush.sendNotification(subscription, payload, {
+        TTL: 60 * 5,
+        urgency: 'normal',
+      });
+      sendPromise.catch(() => { /* late rejection after timeout — swallow */ });
       await Promise.race([
-        webpush.sendNotification(subscription, payload, {
-          TTL: 60 * 5,
-          urgency: 'normal',
+        sendPromise,
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(new Error('push timeout')),
+            10_000,
+          );
         }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('push timeout')), 10_000),
-        ),
       ]);
       sent += 1;
       db.markPushed(sub.endpoint, 200).catch(() => {});
@@ -64,6 +75,8 @@ async function runOnce() {
       } else {
         db.markPushed(sub.endpoint, status).catch(() => {});
       }
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
     }
   }
   return { sent, failed };

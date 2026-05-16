@@ -114,19 +114,29 @@ function Statistics({ isAdmin = false }) {
     setExporting(true);
     try {
       const XLSX = await import('xlsx');
-      const detailedStudents = await getDetailedStudentData(selectedDate);
+      // Range mode: the detailed-students endpoint is single-date only, so
+      // export the per-student detail for the start of the range (the most
+      // common ask) and label the summary as the range. Without this guard
+      // we used to send stale `selectedDate` while the rest of the workbook
+      // reflected the visible range — confusing for the user.
+      const inRange = dateRangeMode && startDate && endDate;
+      const detailDate = inRange ? startDate : selectedDate;
+      const detailedStudents = await getDetailedStudentData(detailDate);
       const wb = XLSX.utils.book_new();
 
+      const rangeLabel = inRange ? `${startDate} → ${endDate}` : null;
       const summaryData = [
         [t('statistics.excel.title')],
-        [t('statistics.excel.date'), selectedDate || t('statistics.excel.allDates')],
+        [t('statistics.excel.date'), rangeLabel || selectedDate || t('statistics.excel.allDates')],
         [''],
         [t('statistics.excel.summarySection')],
         [t('statistics.excel.totalProjects'), overallStats?.total_projects || 0],
         [t('statistics.excel.totalStudents'), overallStats?.total_students || 0],
         [''],
       ];
-      if (selectedDate) {
+      // We have presence/absence numbers whenever a date or range is set.
+      const hasDateScope = !!(selectedDate || inRange);
+      if (hasDateScope) {
         summaryData.push(
           [t('statistics.excel.present'), overallStats?.total_present || 0, `${calculateRate(overallStats?.total_present || 0, overallStats?.total_students || 0)}%`],
           [t('statistics.excel.justified'), overallStats?.total_absent_justified || 0, `${calculateRate(overallStats?.total_absent_justified || 0, overallStats?.total_students || 0)}%`],
@@ -136,12 +146,12 @@ function Statistics({ isAdmin = false }) {
       const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(wb, ws1, t('statistics.excel.sheetSummary'));
 
-      const projectHeaders = selectedDate
+      const projectHeaders = hasDateScope
         ? [t('statistics.excel.projectNumber'), t('statistics.excel.projectName'), t('statistics.excel.studentsTotal'), t('statistics.excel.present'), t('statistics.excel.absentCol'), t('statistics.excel.rateCol')]
         : [t('statistics.excel.projectNumber'), t('statistics.excel.projectName'), t('statistics.excel.studentsTotal')];
       const projectRows = projectStats.map((p) => {
         const row = [p.project_number, p.project_name, p.total_students];
-        if (selectedDate) {
+        if (hasDateScope) {
           row.push(p.present || 0, p.absent || 0, calculateRate(p.present || 0, p.total_students));
         }
         return row;
@@ -149,7 +159,10 @@ function Statistics({ isAdmin = false }) {
       const ws2 = XLSX.utils.aoa_to_sheet([projectHeaders, ...projectRows]);
       XLSX.utils.book_append_sheet(wb, ws2, t('statistics.excel.sheetProjects'));
 
-      const studentHeaders = selectedDate
+      // Per-student detail comes from a single-date endpoint, so the
+      // status/justification columns are only meaningful when we actually
+      // sent a date (single or range-start). hasDateScope covers both.
+      const studentHeaders = hasDateScope
         ? [t('statistics.excel.projectNumber'), t('statistics.excel.projectName'), t('statistics.excel.studentName'), t('statistics.excel.studentId'), t('statistics.excel.email'), t('statistics.excel.status'), t('statistics.excel.justification'), t('statistics.excel.observation')]
         : [t('statistics.excel.projectNumber'), t('statistics.excel.projectName'), t('statistics.excel.studentName'), t('statistics.excel.studentId'), t('statistics.excel.email')];
       const studentRows = (detailedStudents || []).map((s) => {
@@ -160,7 +173,7 @@ function Statistics({ isAdmin = false }) {
           s.student_id || 'N/A',
           s.email || t('statistics.excel.noEmail'),
         ];
-        if (selectedDate) {
+        if (hasDateScope) {
           const statusText =
             s.status === 'present' ? t('statistics.excel.statusPresent') :
             s.status === 'absent' ? t('statistics.excel.statusAbsent') : t('statistics.excel.statusUnmarked');
@@ -182,7 +195,10 @@ function Statistics({ isAdmin = false }) {
         XLSX.utils.book_append_sheet(wb, ws4, t('statistics.excel.sheetHistory'));
       }
 
-      const fileName = `estadisticas_victorhugo_${selectedDate || 'completo'}_${Date.now()}.xlsx`;
+      // Filename reflects whichever scope was actually exported. Range mode
+      // uses `start_end`, single uses the date, otherwise "completo".
+      const fileScope = inRange ? `${startDate}_${endDate}` : (selectedDate || 'completo');
+      const fileName = `estadisticas_victorhugo_${fileScope}_${Date.now()}.xlsx`;
       XLSX.writeFile(wb, fileName);
     } catch (error) {
       console.error('Error exporting to Excel:', error);

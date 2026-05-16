@@ -30,6 +30,17 @@ const constantTimeEqual = (a, b) => {
   return crypto.timingSafeEqual(aBuf, bBuf);
 };
 
+// Local helper so route-handler catches don't silently swallow errors.
+// The shared errorHandler() only sees errors passed to next(); the routes
+// here intentionally return user-facing strings instead of leaking
+// err.message, so we log to stderr here to preserve observability.
+const logRouteError = (req, scope, err) => {
+  const reqId = req && req.id ? req.id : '-';
+  process.stderr.write(
+    `[${new Date().toISOString()}] [${reqId}] auth/${scope} -> ${err && (err.stack || err.message) || err}\n`
+  );
+};
+
 // Get all leaders (including admin + profesor) for the login dropdown. The
 // cohort is hand-curated by EARTH staff and every authorized user needs to
 // pick themselves from the list, so we don't filter by role here. Email is
@@ -47,6 +58,7 @@ router.get('/leaders', async (req, res) => {
     }));
     res.json(sanitized);
   } catch (error) {
+    logRouteError(req, 'leaders', error);
     res.status(500).json({ error: 'Failed to fetch leaders' });
   }
 });
@@ -57,6 +69,7 @@ router.get('/setup-status', async (req, res) => {
     const needsSetup = await db.checkAdminNeedsSetup();
     res.json({ needsSetup });
   } catch (error) {
+    logRouteError(req, 'setup-status', error);
     res.status(500).json({ error: 'Failed to check setup status' });
   }
 });
@@ -70,12 +83,28 @@ router.post('/setup', credentialLimiter, async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // adminId must be a positive integer. Without this guard the value
+    // flows straight into a parameterised SQLite query; objects/arrays
+    // bind in surprising ways and would let a caller send `{}` to make
+    // the role check vacuously pass on the wrong row.
+    const adminIdNum = Number(adminId);
+    if (!Number.isInteger(adminIdNum) || adminIdNum < 1) {
+      return res.status(400).json({ error: 'Invalid admin account' });
+    }
+
+    // password / confirmPassword must be strings — guards against
+    // `password: ['x','x']` shenanigans where length checks pass on the
+    // wrong type.
+    if (typeof password !== 'string' || typeof confirmPassword !== 'string') {
+      return res.status(400).json({ error: 'Invalid password' });
+    }
+
     if (password !== confirmPassword) {
       return res.status(400).json({ error: 'Passwords do not match' });
     }
 
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (password.length < 8 || password.length > 200) {
+      return res.status(400).json({ error: 'Password must be between 8 and 200 characters' });
     }
 
     const needsSetup = await db.checkAdminNeedsSetup();
@@ -83,16 +112,24 @@ router.post('/setup', credentialLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Setup already completed' });
     }
 
-    const admin = await db.getLeaderByIdWithAuth(adminId);
+    const admin = await db.getLeaderByIdWithAuth(adminIdNum);
     if (!admin || admin.role !== 'admin') {
       return res.status(400).json({ error: 'Invalid admin account' });
     }
 
+    // Hash THEN check changes from the UPDATE. Between checkAdminNeedsSetup
+    // and the UPDATE another setup call could have raced ahead. If we get
+    // zero rows updated the row no longer matches (e.g. already has a
+    // hash, or role changed), so don't claim success.
     const hash = await bcrypt.hash(password, 12);
-    await db.setAdminPassword(adminId, hash);
+    const changes = await db.setAdminPassword(adminIdNum, hash);
+    if (!changes) {
+      return res.status(400).json({ error: 'Setup already completed' });
+    }
 
     res.json({ success: true, message: 'Admin setup completed' });
   } catch (error) {
+    logRouteError(req, 'setup', error);
     res.status(500).json({ error: 'Setup failed' });
   }
 });
@@ -170,6 +207,7 @@ router.post('/login', credentialLimiter, validateLogin, async (req, res) => {
       }
     });
   } catch (error) {
+    logRouteError(req, 'login', error);
     res.status(500).json({ error: 'Login failed' });
   }
 });
@@ -203,6 +241,7 @@ router.get('/verify', authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
+    logRouteError(req, 'verify', error);
     res.status(500).json({ error: 'Verification failed' });
   }
 });
@@ -220,17 +259,37 @@ router.post('/change-password', credentialLimiter, authenticateToken, async (req
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    // Reject non-string credentials. Without this an array body like
+    // `{ newPassword: ['xxxxxxxx','xxxxxxxx'] }` passes the length check
+    // because arrays have a `.length` and !== returns false for distinct
+    // refs — which would then bcrypt.hash the string-coerced array.
+    if (
+      typeof currentPassword !== 'string' ||
+      typeof newPassword !== 'string' ||
+      typeof confirmPassword !== 'string'
+    ) {
+      return res.status(400).json({ error: 'Invalid password' });
+    }
+
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ error: 'New passwords do not match' });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (newPassword.length < 8 || newPassword.length > 200) {
+      return res.status(400).json({ error: 'Password must be between 8 and 200 characters' });
     }
 
     const leader = await db.getLeaderByIdWithAuth(req.user.id);
     if (!leader || !leader.password_hash) {
       return res.status(400).json({ error: 'No password set for this account' });
+    }
+    // Re-check role against the live DB row, not just the JWT. A user
+    // demoted from admin/profesor to plain leader after issuing their
+    // token would otherwise still satisfy the JWT-only check above and
+    // hit the DB write — where setUserPassword's WHERE clause would
+    // silently no-op while we returned success.
+    if (leader.role !== 'admin' && leader.role !== 'profesor') {
+      return res.status(403).json({ error: 'Only admins and profesores can change password' });
     }
     const match = await bcrypt.compare(currentPassword, leader.password_hash);
     if (!match) {
@@ -238,10 +297,17 @@ router.post('/change-password', credentialLimiter, authenticateToken, async (req
     }
 
     const hash = await bcrypt.hash(newPassword, 12);
-    await db.setUserPassword(req.user.id, hash);
+    const changes = await db.setUserPassword(req.user.id, hash);
+    if (!changes) {
+      // Row vanished or role changed between the read above and the
+      // write. Treat as a 409 so the client knows to re-authenticate
+      // rather than silently believing the password rotated.
+      return res.status(409).json({ error: 'Account changed during password update, please re-login' });
+    }
 
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
+    logRouteError(req, 'change-password', error);
     res.status(500).json({ error: 'Failed to change password' });
   }
 });

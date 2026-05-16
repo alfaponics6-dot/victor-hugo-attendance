@@ -70,6 +70,7 @@
       "loadPrevError": "Error loading previous attendance",
       "selectOne": "Please mark attendance for at least one student",
       "savedSuccess": "Attendance saved successfully for {{date}}",
+      "savedQueued": "Offline: attendance saved locally for {{date}}. It will sync once you're back online.",
       "alreadySaved": "Attendance was already saved for this date and cannot be modified.",
       "saveError": "Error saving attendance",
       "partialSave": "Saved {{saved}} of {{total}}. Failed: {{names}}. Retry only the missing attachments."

@@ -111,9 +111,19 @@ function AdminStudents() {
       setMessage({ type: 'success', text: t('students.deleteSuccess', { name: student.name }) });
     } catch (error) {
       console.error('Error deleting student:', error);
-      setMessage({ type: 'error', text: t('students.deleteError') });
+      // Surface the server's localized 403 message verbatim when present
+      // (e.g. "Esta cuenta no tiene permiso..." or the FK-constraint 409)
+      // so the user knows *why* the delete was rejected instead of getting
+      // a generic toast.
+      const serverMsg = error?.response?.data?.message || error?.response?.data?.error;
+      setMessage({ type: 'error', text: serverMsg || t('students.deleteError') });
     } finally {
       setBusyId(null);
+      // Always close the modal — leaving it open after success was a real
+      // UX bug (each delete required an extra dismissal click). On error
+      // the toast now carries the failure reason, so closing the modal
+      // doesn't swallow information.
+      setPendingDelete(null);
     }
   };
 

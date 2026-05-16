@@ -110,6 +110,11 @@ const requireAdmin = (req, res, next) => {
 // capability without changing their role. The check fetches the live
 // row each request — JWT payloads don't carry this flag, so a flag
 // change takes effect immediately instead of waiting for token refresh.
+//
+// Also enforces that the caller is an admin/profesor: the middleware is
+// reused from routes that don't pre-gate by role (e.g. projects router
+// only requires authenticateToken), so without this check a plain
+// leader with the default flag would be allowed to delete any student.
 const requireCanDeleteStudents = async (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Not authenticated' });
@@ -120,7 +125,19 @@ const requireCanDeleteStudents = async (req, res, next) => {
     if (!leader) {
       return res.status(401).json({ error: 'User not found' });
     }
-    if (leader.can_delete_students === 0) {
+    const role = leader.role || 'leader';
+    if (role !== 'admin' && role !== 'profesor') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Solo administradores y profesores pueden eliminar estudiantes.',
+      });
+    }
+    // Allow-by-default semantics: the column defaults to 1, so only an
+    // explicit zero/'0' revokes. Handle the stringly-typed case too in
+    // case a future migration surfaces text instead of INTEGER — the
+    // original `=== 0` check would silently grant access on `'0'`.
+    const flag = leader.can_delete_students;
+    if (flag === 0 || flag === '0') {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'Esta cuenta no tiene permiso para eliminar estudiantes.',

@@ -21,7 +21,8 @@
     "unknownProfe": "profesor desconocido",
     "notYet": "Aún no marcada",
     "present": "presentes",
-    "rosterSize": "{{n}} estudiantes",
+    "rosterSize_one": "{{count}} estudiante",
+    "rosterSize_other": "{{count}} estudiantes",
     "summary": {
       "projects": "Proyectos",
       "endDone": "Final guardado",
@@ -51,7 +52,11 @@
     "rosterLoadError": "Error al cargar la lista de estudiantes.",
     "emptyRoster": "No hay estudiantes en la rotación actual de este proyecto.",
     "lastSavedAt": "Última vez guardado: {{when}}",
-    "notYetSaved": "Aún no se ha guardado esta pasada para esta fecha."
+    "notYetSaved": "Aún no se ha guardado esta pasada para esta fecha.",
+    "saveQueued": "Sin conexión: la pasada se guardará cuando vuelva la red.",
+    "unsavedChanges": "Cambios sin guardar",
+    "unsavedConfirm": "Tiene cambios sin guardar en esta pasada. ¿Descartarlos?",
+    "emptyRosterTitle": "Lista vacía"
   },
   "stats": {
     "totalAbsences": "Total ausencias",

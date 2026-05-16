@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, AlertTriangle } from 'lucide-react';
 import Modal from '../ui/Modal';
@@ -30,14 +30,28 @@ export default function ConflictsModal({ open, onClose }) {
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
 
+  // refresh is intentionally NOT memoized on `selected`. Doing so caused
+  // the useEffect below to tear down + re-subscribe every time the user
+  // drilled into or out of a conflict, which both leaks listener churn
+  // through the syncQueue subscriber set and runs an extra IDB read on
+  // every navigation. Instead we read `selected` via a ref so the
+  // callback always sees the current value without invalidating its
+  // identity.
+  const selectedRef = useRef(selected);
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
   const refresh = useCallback(async () => {
     const all = await listConflicts();
     setItems(all);
-    // If the currently-selected conflict was resolved, clear selection
-    if (selected && !all.find((c) => c.id === selected.id)) {
+    // If the currently-selected conflict was resolved (drained from
+    // another tab / by the SW), clear selection so the user isn't stuck
+    // on a phantom record. Read via the ref so this callback doesn't
+    // need `selected` in its dep list.
+    const cur = selectedRef.current;
+    if (cur && !all.find((c) => c.id === cur.id)) {
       setSelected(null);
     }
-  }, [selected]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;

@@ -30,6 +30,18 @@ const errorHandler = (err, req, res, next) => {
     message = 'Database constraint violation';
   }
 
+  // Do NOT leak internal error messages to clients in production. Raw
+  // err.message can include file paths, SQL fragments, library internals,
+  // or other server-side details. Only `AppError` instances are considered
+  // safe-to-display (they're authored by us with user-facing copy).
+  // Non-operational 5xx errors get a generic message; clients should use
+  // the requestId to correlate with server logs.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSafeMessage = err.isOperational === true || (statusCode >= 400 && statusCode < 500);
+  if (isProduction && !isSafeMessage) {
+    message = 'Server Error';
+  }
+
   res.status(statusCode).json({
     success: false,
     error: message,

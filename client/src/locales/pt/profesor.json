@@ -21,7 +21,8 @@
     "unknownProfe": "professor desconhecido",
     "notYet": "Ainda não marcado",
     "present": "presentes",
-    "rosterSize": "{{n}} estudantes",
+    "rosterSize_one": "{{count}} estudante",
+    "rosterSize_other": "{{count}} estudantes",
     "summary": {
       "projects": "Projetos",
       "endDone": "Final salvo",
@@ -51,7 +52,11 @@
     "rosterLoadError": "Erro ao carregar a lista de estudantes.",
     "emptyRoster": "Não há estudantes na rotação atual deste projeto.",
     "lastSavedAt": "Última vez salvo: {{when}}",
-    "notYetSaved": "Esta passagem ainda não foi salva para esta data."
+    "notYetSaved": "Esta passagem ainda não foi salva para esta data.",
+    "saveQueued": "Sem conexão: a passagem será sincronizada quando a rede voltar.",
+    "unsavedChanges": "Alterações não salvas",
+    "unsavedConfirm": "Você tem alterações não salvas nesta passagem. Descartar?",
+    "emptyRosterTitle": "Lista vazia"
   },
   "stats": {
     "totalAbsences": "Total de ausências",

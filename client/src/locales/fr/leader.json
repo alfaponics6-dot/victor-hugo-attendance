@@ -70,6 +70,7 @@
       "loadPrevError": "Erreur lors du chargement de la présence précédente",
       "selectOne": "Veuillez marquer la présence d'au moins un étudiant",
       "savedSuccess": "Présence enregistrée avec succès pour {{date}}",
+      "savedQueued": "Hors ligne : présence enregistrée localement pour {{date}}. Elle sera synchronisée dès le retour de la connexion.",
       "alreadySaved": "La présence a déjà été enregistrée pour cette date et ne peut plus être modifiée.",
       "saveError": "Erreur lors de l'enregistrement de la présence",
       "partialSave": "Enregistrés {{saved}} sur {{total}}. Échecs : {{names}}. Réessayez uniquement les pièces jointes manquantes."

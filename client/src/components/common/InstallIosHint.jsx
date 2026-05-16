@@ -83,7 +83,13 @@ export default function InstallIosHint() {
     <div
       role="region"
       aria-label={t('install.title')}
-      className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-950 shadow-lg dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100"
+      // bottom offset adds env(safe-area-inset-bottom) so the banner
+      // clears the iOS home indicator AND sits above Safari's bottom
+      // URL bar. Without this it gets obscured by the URL bar on
+      // non-installed iPhone Safari (which is exactly where the banner
+      // is shown — InstallIosHint never appears in standalone mode).
+      style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+      className="fixed left-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-sky-300 bg-sky-50 p-3 text-sm text-sky-950 shadow-lg dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100"
     >
       <div className="flex items-start gap-3">
         <Share className="mt-0.5 size-4 shrink-0 text-sky-700 dark:text-sky-300" aria-hidden="true" />

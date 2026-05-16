@@ -79,18 +79,26 @@ export default function ProfesorComplianceView() {
     return { total, endDone, endPending: total - endDone };
   }, [rows]);
 
-  const formatWhen = (iso) => {
-    if (!iso) return null;
+  const formatWhen = (raw) => {
+    if (!raw) return null;
+    // SQLite usually returns naive UTC strings ("2026-05-16 14:32:00").
+    // Append Z so the JS Date parses as UTC. But if the value already
+    // carries a timezone marker (driver swap, replication adapter,
+    // direct ISO insert), don't double-stamp it. And if Date() can't
+    // parse it at all (corrupt locale settings, malformed value),
+    // fall back to the raw string rather than throwing "Invalid time
+    // value" out of toLocaleString — which would crash the React tree.
+    const hasTz = /[zZ]|[+\-]\d{2}:?\d{2}$/.test(raw);
+    const iso = hasTz ? raw : (raw.includes('T') ? raw + 'Z' : raw.replace(' ', 'T') + 'Z');
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return raw;
     try {
-      // SQLite returns naive UTC strings (no Z). Append Z so the JS
-      // Date parses it as UTC and toLocaleString formats correctly in
-      // the user's locale.
-      return new Date(iso + 'Z').toLocaleString(i18n.language, {
+      return d.toLocaleString(i18n.language, {
         hour: '2-digit',
         minute: '2-digit',
       });
     } catch {
-      return iso;
+      return raw;
     }
   };
 
@@ -211,7 +219,11 @@ function ProjectComplianceCard({ project, pname, formatWhen, t }) {
             <h3 className="text-sm font-semibold tracking-tight">{pname(project)}</h3>
           </div>
           <Badge tone="outline" className="shrink-0">
-            {t('compliance.rosterSize', { n: project.roster_size })}
+            {/* i18next plural form: pass `count` so the _one/_other
+                variant is picked correctly ("1 estudiante" vs "5
+                estudiantes"). Without this we'd render "1 estudiantes"
+                on every project that's down to a single student. */}
+            {t('compliance.rosterSize', { count: project.roster_size ?? 0 })}
           </Badge>
         </header>
 

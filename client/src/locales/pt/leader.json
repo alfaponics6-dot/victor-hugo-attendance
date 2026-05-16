@@ -70,6 +70,7 @@
       "loadPrevError": "Erro ao carregar a presença anterior",
       "selectOne": "Por favor, marque a presença de pelo menos um estudante",
       "savedSuccess": "Presença salva com sucesso para {{date}}",
+      "savedQueued": "Sem conexão: presença salva localmente para {{date}}. Será sincronizada quando o sinal voltar.",
       "alreadySaved": "A presença já foi salva para esta data. Não é possível modificar.",
       "saveError": "Erro ao salvar presença",
       "partialSave": "Salvos {{saved}} de {{total}}. Falharam: {{names}}. Tente novamente apenas os anexos faltantes."
