@@ -12,6 +12,7 @@ import Skeleton from '../../ui/Skeleton';
 import Message from '../../common/Message';
 import ConfirmModal from '../../ui/ConfirmModal';
 import { getProjectLabel } from '../../../lib/projectI18n';
+import { useAuth } from '../../../context/useAuth.js';
 
 function AdminStudents() {
   const [students, setStudents] = useState([]);
@@ -24,6 +25,12 @@ function AdminStudents() {
   const { t } = useTranslation(['admin', 'common']);
   const { t: tProject } = useTranslation('projects');
   const pname = (s) => getProjectLabel(tProject, s);
+  const { leader } = useAuth();
+  // Server enforces this via requireCanDeleteStudents middleware; hiding
+  // the button is a UX nicety so the user doesn't try and get a 403.
+  // Default to true when missing so a slightly-stale profile doesn't hide
+  // the action from users who should still have it.
+  const canDelete = leader?.canDeleteStudents !== false;
 
   useEffect(() => {
     let cancelled = false;
@@ -205,16 +212,18 @@ function AdminStudents() {
                         </Badge>
                       ) : null}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      loading={busyId === s.id}
-                      onClick={() => handleDelete(s)}
-                      aria-label={t('students.deleteAria', { name: s.name })}
-                      className="h-11 w-11 p-0 shrink-0 text-[color:var(--color-fg-muted)] hover:!text-[color:var(--color-danger)]"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        loading={busyId === s.id}
+                        onClick={() => handleDelete(s)}
+                        aria-label={t('students.deleteAria', { name: s.name })}
+                        className="h-11 w-11 p-0 shrink-0 text-[color:var(--color-fg-muted)] hover:!text-[color:var(--color-danger)]"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                   </div>
                 </Card>
               </motion.div>
@@ -284,17 +293,21 @@ function AdminStudents() {
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          loading={busyId === s.id}
-                          onClick={() => handleDelete(s)}
-                          aria-label={t('students.deleteAria', { name: s.name })}
-                          className="text-[color:var(--color-fg-muted)] hover:!text-[color:var(--color-danger)]"
-                        >
-                          <Trash2 className="size-3.5" />
-                          {t('students.actions.delete')}
-                        </Button>
+                        {canDelete ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            loading={busyId === s.id}
+                            onClick={() => handleDelete(s)}
+                            aria-label={t('students.deleteAria', { name: s.name })}
+                            className="text-[color:var(--color-fg-muted)] hover:!text-[color:var(--color-danger)]"
+                          >
+                            <Trash2 className="size-3.5" />
+                            {t('students.actions.delete')}
+                          </Button>
+                        ) : (
+                          <span className="text-[11px] text-[color:var(--color-fg-subtle)]">—</span>
+                        )}
                       </td>
                     </motion.tr>
                   ))}

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireCanDeleteStudents } = require('../middleware/auth');
 const {
   validateStudent,
   validateStudentUpdate,
@@ -129,8 +129,10 @@ router.put('/students/:studentId', validateStudentUpdate, async (req, res) => {
   }
 });
 
-// Delete a student
-router.delete('/students/:studentId', validateStudentId, async (req, res) => {
+// Delete a student. Gated by the per-account `can_delete_students`
+// flag (default 1) so individual admins/leaders can be denied destructive
+// student deletion without losing their other permissions.
+router.delete('/students/:studentId', requireCanDeleteStudents, validateStudentId, async (req, res) => {
   try {
     const { studentId } = req.params;
 

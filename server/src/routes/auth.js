@@ -164,7 +164,8 @@ router.post('/login', credentialLimiter, validateLogin, async (req, res) => {
         projectId: leader.project_id,
         projectName: leader.project_name,
         projectNumber: leader.project_number,
-        role
+        role,
+        canDeleteStudents: leader.can_delete_students !== 0,
       }
     });
   } catch (error) {
@@ -195,7 +196,8 @@ router.get('/verify', authenticateToken, async (req, res) => {
         projectId: fresh.project_id,
         projectName: fresh.project_name,
         projectNumber: fresh.project_number,
-        role: fresh.role || 'leader'
+        role: fresh.role || 'leader',
+        canDeleteStudents: fresh.can_delete_students !== 0,
       }
     });
   } catch (error) {

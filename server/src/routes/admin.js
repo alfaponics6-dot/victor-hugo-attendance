@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { parseExcelAndPopulateDB, EXCEL_PATH } = require('../utils/excelParser');
-const { authenticateToken, requireAdmin, requireProfesor } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireProfesor, requireCanDeleteStudents } = require('../middleware/auth');
 const { validateStudentId, validateDateParam, validateDateQuery } = require('../middleware/validation');
 
 // Profesor routes (before admin-only middleware)
@@ -65,8 +65,10 @@ router.get('/attendance/:date', validateDateParam, async (req, res) => {
   }
 });
 
-// Admin: Delete a student
-router.delete('/students/:studentId', validateStudentId, async (req, res) => {
+// Admin: Delete a student. Gated by the per-account `can_delete_students`
+// flag so a specific admin can be denied destructive deletes without
+// losing the rest of their admin abilities.
+router.delete('/students/:studentId', requireCanDeleteStudents, validateStudentId, async (req, res) => {
   try {
     const { studentId } = req.params;
     const result = await db.deleteStudent(studentId);

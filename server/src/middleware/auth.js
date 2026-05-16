@@ -104,6 +104,34 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+// Per-account override for destructive student deletion. Defaults to
+// allowed for all admins (the column defaults to 1); set a leader's
+// `can_delete_students` to 0 in the DB to revoke this specific
+// capability without changing their role. The check fetches the live
+// row each request — JWT payloads don't carry this flag, so a flag
+// change takes effect immediately instead of waiting for token refresh.
+const requireCanDeleteStudents = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const db = require('../config/database');
+    const leader = await db.getLeaderById(req.user.id);
+    if (!leader) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    if (leader.can_delete_students === 0) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Esta cuenta no tiene permiso para eliminar estudiantes.',
+      });
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Middleware para verificar rol profesor (o admin)
 const requireProfesor = (req, res, next) => {
   if (!req.user) {
@@ -165,6 +193,7 @@ module.exports = {
   authenticateToken,
   requireAdmin,
   requireProfesor,
+  requireCanDeleteStudents,
   setAuthCookie,
   clearAuthCookie,
   JWT_EXPIRES_IN

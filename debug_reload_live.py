@@ -110,6 +110,18 @@ async def main():
 
         page = await context.new_page()
 
+        # Block /sw.js so no SW registers — if the reload still happens
+        # without a SW in the picture, the SW is definitely NOT the cause.
+        import os
+        if os.environ.get("BLOCK_SW") == "1":
+            print("BLOCK_SW=1: blocking /sw.js to test if SW is the trigger")
+            async def block_sw(route):
+                if "/sw.js" in route.request.url:
+                    await route.abort()
+                else:
+                    await route.continue_()
+            await context.route("**/*", block_sw)
+
         navigations = []
         console_msgs = []
         sw_events = []

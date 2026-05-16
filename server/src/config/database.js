@@ -84,6 +84,7 @@ class Database {
           role TEXT DEFAULT 'leader',
           password_hash TEXT,
           email TEXT,
+          can_delete_students INTEGER NOT NULL DEFAULT 1,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
         )
@@ -93,6 +94,11 @@ class Database {
       this.db.run(`ALTER TABLE leaders ADD COLUMN role TEXT DEFAULT 'leader'`, () => {});
       this.db.run(`ALTER TABLE leaders ADD COLUMN password_hash TEXT`, () => {});
       this.db.run(`ALTER TABLE leaders ADD COLUMN email TEXT`, () => {});
+      // Per-account override for the destructive `DELETE /students/:id`
+      // endpoints. Defaults to 1 (allowed) so existing admins keep the
+      // ability they had before this column existed. Set to 0 to revoke
+      // delete from a specific admin without changing their role.
+      this.db.run(`ALTER TABLE leaders ADD COLUMN can_delete_students INTEGER NOT NULL DEFAULT 1`, () => {});
 
       // Students table
       this.db.run(`

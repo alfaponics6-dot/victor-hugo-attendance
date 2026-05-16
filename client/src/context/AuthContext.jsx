@@ -49,6 +49,9 @@ export const AuthProvider = ({ children }) => {
           projectName: u.projectName,
           projectNumber: u.projectNumber,
           role: u.role,
+          // Default to true when missing so older cached profiles don't
+          // accidentally hide UI from users who still have the permission.
+          canDeleteStudents: u.canDeleteStudents !== false,
         };
         setLeader(merged);
         setStoredUser(merged);
