@@ -24,8 +24,8 @@
     "rosterSize": "{{n}} estudiantes",
     "summary": {
       "projects": "Proyectos",
-      "startDone": "Inicio guardado",
-      "endDone": "Final guardado"
+      "endDone": "Final guardado",
+      "endPending": "Final pendiente"
     }
   },
   "passes": {
@@ -34,6 +34,7 @@
     "pickProjectHint": "Seleccione un proyecto para empezar la pasada.",
     "dateLabel": "Fecha",
     "passLabel": "Pasada",
+    "finalOnlyBadge": "Pasada final del día",
     "start": "Inicio",
     "end": "Final",
     "present": "Presente",

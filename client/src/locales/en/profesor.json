@@ -24,8 +24,8 @@
     "rosterSize": "{{n}} students",
     "summary": {
       "projects": "Projects",
-      "startDone": "Start saved",
-      "endDone": "End saved"
+      "endDone": "End saved",
+      "endPending": "End pending"
     }
   },
   "passes": {
@@ -34,6 +34,7 @@
     "pickProjectHint": "Pick a project to start the pass.",
     "dateLabel": "Date",
     "passLabel": "Pass",
+    "finalOnlyBadge": "End-of-day pass",
     "start": "Start",
     "end": "End",
     "present": "Present",

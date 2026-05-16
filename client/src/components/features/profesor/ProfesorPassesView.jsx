@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Sunrise,
   Sunset,
   Save,
   CheckCircle2,
@@ -25,7 +24,6 @@ import Badge from '../../ui/Badge';
 import Skeleton from '../../ui/Skeleton';
 import Message from '../../common/Message';
 import { Select } from '../../ui/Input';
-import Tabs from '../../ui/Tabs';
 import { cn } from '../../../lib/cn';
 
 /**
@@ -46,7 +44,13 @@ export default function ProfesorPassesView() {
   const [projects, setProjects] = useState([]);
   const [projectId, setProjectId] = useState('');
   const [date, setDate] = useState(getTodayDate());
-  const [passType, setPassType] = useState('start');
+  // Profes only do the FINAL/end pass — the start (Inicio) of each
+  // session is handled by the project leader through the regular
+  // leader attendance flow. We hardcode passType to 'end' so the
+  // saved row goes into the correct slot for Ronald's Supervisión
+  // dashboard. (Schema still supports 'start' for future use, but
+  // there's no UI to set it here.)
+  const passType = 'end';
 
   const [roster, setRoster] = useState([]);
   const [rosterLoading, setRosterLoading] = useState(false);
@@ -190,9 +194,12 @@ export default function ProfesorPassesView() {
         <Message type={message.type} text={message.text} onClose={() => setMessage(null)} />
       )}
 
-      {/* Toolbar: project picker, date, pass toggle */}
+      {/* Toolbar: project picker + date. Profes only do the FINAL
+          attendance pass (the start of each session is the leader's
+          job), so no start/end toggle here — a static "Pasada final"
+          badge keeps it obvious which pass is being saved. */}
       <Card className="p-3 sm:p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-fg-subtle)] block mb-1">
               {t('passes.projectLabel')}
@@ -217,19 +224,10 @@ export default function ProfesorPassesView() {
               className="w-full h-11 px-3 rounded-xl bg-[color:var(--color-bg-2)] hairline text-sm tabular"
             />
           </div>
-          <div>
-            <label className="text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-fg-subtle)] block mb-1">
-              {t('passes.passLabel')}
-            </label>
-            <Tabs
-              value={passType}
-              onChange={setPassType}
-              tabs={[
-                { key: 'start', label: t('passes.start'), icon: Sunrise },
-                { key: 'end', label: t('passes.end'), icon: Sunset },
-              ]}
-            />
-          </div>
+        </div>
+        <div className="mt-3 inline-flex items-center gap-2 px-3 h-8 rounded-lg text-[12px] font-medium bg-[color-mix(in_oklch,var(--color-accent)_14%,transparent)] text-[color:var(--color-accent)]">
+          <Sunset className="size-3.5" />
+          {t('passes.finalOnlyBadge')}
         </div>
       </Card>
 

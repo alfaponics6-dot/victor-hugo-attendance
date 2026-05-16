@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  Sunrise,
   Sunset,
   CheckCircle2,
   AlertTriangle,
@@ -62,11 +61,13 @@ export default function ProfesorComplianceView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // Profes only do the FINAL pass; Inicio is the leader's flow and
+  // doesn't go through profesor_attendance. So the summary tracks
+  // end-pass completion only — that's the supervisor's actual signal.
   const summary = useMemo(() => {
     const total = rows.length;
-    const startDone = rows.filter((r) => r.start_recorded_at).length;
     const endDone = rows.filter((r) => r.end_recorded_at).length;
-    return { total, startDone, endDone };
+    return { total, endDone, endPending: total - endDone };
   }, [rows]);
 
   const formatWhen = (iso) => {
@@ -122,16 +123,16 @@ export default function ProfesorComplianceView() {
           icon={null}
         />
         <SummaryTile
-          icon={Sunrise}
-          label={t('compliance.summary.startDone')}
-          value={`${summary.startDone} / ${summary.total}`}
-          tone={summary.total > 0 && summary.startDone === summary.total ? 'success' : 'warn'}
-        />
-        <SummaryTile
           icon={Sunset}
           label={t('compliance.summary.endDone')}
           value={`${summary.endDone} / ${summary.total}`}
-          tone={summary.total > 0 && summary.endDone === summary.total ? 'success' : 'danger'}
+          tone={summary.total > 0 && summary.endDone === summary.total ? 'success' : 'warn'}
+        />
+        <SummaryTile
+          icon={AlertTriangle}
+          label={t('compliance.summary.endPending')}
+          value={summary.endPending}
+          tone={summary.endPending === 0 ? 'success' : 'danger'}
         />
       </div>
 
@@ -205,29 +206,19 @@ function ProjectComplianceCard({ project, pname, formatWhen, t }) {
           </Badge>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <PassStatus
-            label={t('compliance.startPass')}
-            icon={Sunrise}
-            done={!!project.start_recorded_at}
-            who={project.start_profesor_name}
-            when={formatWhen(project.start_recorded_at)}
-            present={project.start_present_count}
-            total={project.start_rows_count}
-            t={t}
-          />
-          <PassStatus
-            label={t('compliance.endPass')}
-            icon={Sunset}
-            done={!!project.end_recorded_at}
-            who={project.end_profesor_name}
-            when={formatWhen(project.end_recorded_at)}
-            present={project.end_present_count}
-            total={project.end_rows_count}
-            t={t}
-            isEnd
-          />
-        </div>
+        {/* Only the end pass — profes don't do start; that's the
+            leader's flow and lives in a different table. */}
+        <PassStatus
+          label={t('compliance.endPass')}
+          icon={Sunset}
+          done={!!project.end_recorded_at}
+          who={project.end_profesor_name}
+          when={formatWhen(project.end_recorded_at)}
+          present={project.end_present_count}
+          total={project.end_rows_count}
+          t={t}
+          isEnd
+        />
       </Card>
     </motion.div>
   );
