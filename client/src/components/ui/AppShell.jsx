@@ -46,7 +46,7 @@ export const PageHeader = ({ title, subtitle, eyebrow, actions, className }) => 
 );
 
 export const SectionTitle = ({ children, className, action }) => (
-  <div className={cn('flex items-end justify-between gap-3 mb-3 mt-1', className)}>
+  <div className={cn('flex items-end justify-between gap-3 mb-3 mt-4 sm:mt-6', className)}>
     <h2 className="text-xs sm:text-[13px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-fg-subtle)]">
       {children}
     </h2>

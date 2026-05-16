@@ -31,8 +31,8 @@ const StatCard = ({
         className="absolute -top-24 -right-24 w-56 h-56 rounded-full opacity-30 blur-3xl pointer-events-none transition-opacity group-hover:opacity-50"
         style={{ background: `radial-gradient(circle, ${accent}, transparent 60%)` }}
       />
-      <div className="relative flex items-start justify-between">
-        <div className="space-y-1.5">
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="space-y-1.5 min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-fg-subtle)]">
             {Icon && <Icon className="size-3.5" />}
             {label}
@@ -57,8 +57,9 @@ const StatCard = ({
         </div>
         {trend && (
           <div
+            title={trend.value}
             className={cn(
-              'inline-flex items-center gap-1 rounded-md px-2 h-6 text-[11px] font-medium tabular',
+              'inline-flex items-center gap-1 rounded-md px-2 h-6 text-[10px] sm:text-[11px] font-medium tabular shrink-0 whitespace-nowrap max-w-[7.5rem] sm:max-w-none truncate',
               trend.dir === 'up' && 'bg-[color-mix(in_oklch,var(--color-success)_18%,transparent)] text-[color:var(--color-success)]',
               trend.dir === 'down' && 'bg-[color-mix(in_oklch,var(--color-danger)_18%,transparent)] text-[color:var(--color-danger)]',
               trend.dir === 'flat' && 'bg-[color-mix(in_oklch,var(--color-fg-muted)_15%,transparent)] text-[color:var(--color-fg-muted)]'
