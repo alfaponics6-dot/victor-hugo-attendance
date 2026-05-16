@@ -59,17 +59,20 @@ function AdminStudents() {
     return () => window.clearTimeout(id);
   }, [message]);
 
-  // Stable list of distinct projects for the filter dropdown. Keyed by name
-  // because the same project_id may not be on every row in older datasets.
+  // Stable list of distinct projects for the filter dropdown. Keyed by
+  // project_number so the option value stays stable across locales —
+  // we used to key by `${number}|${translatedName}`, which broke the
+  // filter when the rendered label differed from the DB's canonical
+  // Spanish project_name even by a single accent (e.g. "plantulas"
+  // in DB vs "plántulas" in the translation), and broke it entirely
+  // in non-Spanish locales.
   const projects = useMemo(() => {
     const seen = new Map();
     for (const s of students) {
-      // Translate the canonical Spanish project_name into the current locale,
-      // or fall back to a "Project #N" label for legacy rows with no name.
-      const name = pname(s) || `${t('common:labels.project')} ${s.project_number ?? ''}`;
-      const number = s.project_number ?? '';
-      const key = `${number}|${name}`;
-      if (!seen.has(key)) seen.set(key, { number, name });
+      const number = String(s.project_number ?? '');
+      if (!number || seen.has(number)) continue;
+      const name = pname(s) || `${t('common:labels.project')} ${number}`;
+      seen.set(number, { number, name });
     }
     return Array.from(seen.values()).sort((a, b) => {
       const an = Number(a.number) || 0;
@@ -82,8 +85,7 @@ function AdminStudents() {
     const q = search.trim().toLowerCase();
     return students.filter((s) => {
       if (project !== 'all') {
-        const projKey = `${s.project_number ?? ''}|${s.project_name || ''}`;
-        if (projKey !== project) return false;
+        if (String(s.project_number ?? '') !== project) return false;
       }
       if (!q) return true;
       return (
@@ -147,14 +149,11 @@ function AdminStudents() {
                 className="pl-9 w-full sm:w-56 h-11 sm:h-10"
               >
                 <option value="all">{t('students.filterAll')}</option>
-                {projects.map((p) => {
-                  const key = `${p.number}|${p.name}`;
-                  return (
-                    <option key={key} value={key}>
-                      {p.number ? `#${p.number} · ` : ''}{p.name}
-                    </option>
-                  );
-                })}
+                {projects.map((p) => (
+                  <option key={p.number} value={p.number}>
+                    {p.number ? `#${p.number} · ` : ''}{p.name}
+                  </option>
+                ))}
               </Select>
             </div>
             <Badge tone="accent" className="h-9 px-3 text-xs self-start sm:self-auto">
