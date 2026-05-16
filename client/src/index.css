@@ -106,20 +106,28 @@ button { cursor: pointer; }
 .tabular { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
 /* Restore text legibility when a translucent card sits on top of a busy
-   photo backdrop (login page). Applies a theme-aware drop-shadow plus a
-   small letter-spacing nudge to every text element inside the card.
-   Dark mode: shadow darkens behind light text. Light mode: shadow
-   brightens behind dark text. Buttons opt out via `[&_button]:[text-shadow:none]`
-   so their solid backgrounds stay clean. */
+   photo backdrop (login page). Two-part fix:
+   1. Darken/lighten the muted CSS vars locally so "subtle" gray text
+      becomes high-contrast inside the card. Without this the form
+      labels and subtitle read as faded gray over the bright photo.
+   2. Apply a theme-aware text-shadow as a contrast halo. */
+.card-readable-text {
+  --color-fg-muted: oklch(0.88 0.012 263);
+  --color-fg-subtle: oklch(0.82 0.012 263);
+}
+:root.light .card-readable-text {
+  --color-fg-muted: oklch(0.22 0.018 263);
+  --color-fg-subtle: oklch(0.28 0.018 263);
+}
 .card-readable-text :where(h1, h2, h3, h4, p, span, label, a) {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 1px rgba(0, 0, 0, 0.4);
 }
 :root.light .card-readable-text :where(h1, h2, h3, h4, p, span, label, a) {
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 1px rgba(255, 255, 255, 0.65);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 1px rgba(255, 255, 255, 0.7);
 }
-/* Buttons + form inputs have their own backgrounds, so the photo doesn't
-   bleed through — kill the text-shadow there so it doesn't blur the
-   button labels. */
+/* Buttons + form inputs have their own backgrounds, so the photo
+   doesn't bleed through — kill the text-shadow there so it doesn't
+   blur the button labels. */
 .card-readable-text :is(button, input, select) :where(h1, h2, h3, h4, p, span, label, a),
 .card-readable-text :is(button, input, select) {
   text-shadow: none;
