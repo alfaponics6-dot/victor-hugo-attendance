@@ -11,7 +11,7 @@
   },
   "fields": {
     "identity": "Identidade",
-    "selectLeader": "- Selecione um líder -",
+    "selectLeader": "- Selecione seu nome na lista -",
     "password": "Senha",
     "passwordPlaceholder": "Insira sua senha",
     "accessCode": "Código de acesso",
