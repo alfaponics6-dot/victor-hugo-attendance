@@ -514,7 +514,7 @@ function Login() {
                 while keeping form text readable against the bigger
                 backdrop-blur. */}
             <div
-              className="relative surface rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10"
+              className="relative surface rounded-2xl sm:rounded-3xl p-4 sm:p-7 lg:p-9"
               style={{ background: 'color-mix(in oklch, var(--color-surface) 62%, transparent)' }}
             >
               {/* Logo + heading */}
@@ -570,7 +570,7 @@ function Login() {
                           onClick={() => handlePickRole('leader')}
                           disabled={loading || loadingLeaders}
                           className={cn(
-                            'group h-24 sm:h-28 rounded-xl flex flex-col items-center justify-center gap-1.5 text-sm font-medium',
+                            'group h-20 sm:h-24 rounded-xl flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 text-sm font-medium',
                             'bg-[color:var(--color-bg-2)] border border-[color:var(--color-border)]',
                             'text-[color:var(--color-fg)]',
                             'transition-[border-color,box-shadow,background] duration-150 ease-out',
@@ -591,7 +591,7 @@ function Login() {
                           onClick={() => handlePickRole('profesor')}
                           disabled={loading || loadingLeaders}
                           className={cn(
-                            'group h-24 sm:h-28 rounded-xl flex flex-col items-center justify-center gap-1.5 text-sm font-medium',
+                            'group h-20 sm:h-24 rounded-xl flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 text-sm font-medium',
                             'bg-[color:var(--color-bg-2)] border border-[color:var(--color-border)]',
                             'text-[color:var(--color-fg)]',
                             'transition-[border-color,box-shadow,background] duration-150 ease-out',
