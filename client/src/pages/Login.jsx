@@ -346,27 +346,31 @@ function Login() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-hidden">
-      {/* Background image — only in dark mode. The photo is a moody sunset
-          shot that clashes with the light theme's bright/clean palette.
-          When isDark is false, we fall through to the html element's light
-          --color-bg painting (handled by the body-transparent useEffect). */}
-      {isDark && (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
-            style={{
-              backgroundImage: "url('/login-bg.jpg')",
-              filter: 'blur(3px) brightness(0.85) saturate(1.1)',
-              transform: 'scale(1.04)',
-            }}
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-black/15 via-black/20 to-black/30"
-          />
-        </>
-      )}
+      {/* Background photo — shown in both themes. Dark mode keeps the
+          moody sunset palette with a soft black gradient over it; light
+          mode lifts/desaturates the photo and lays a 30%-opaque white
+          wash on top so the image reads as a faint backdrop instead of
+          competing with the bright form card. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+        style={{
+          backgroundImage: "url('/login-bg.jpg')",
+          filter: isDark
+            ? 'blur(3px) brightness(0.85) saturate(1.1)'
+            : 'blur(4px) brightness(1.05) saturate(0.85)',
+          transform: 'scale(1.04)',
+        }}
+      />
+      <div
+        aria-hidden
+        className={cn(
+          'pointer-events-none fixed inset-0 -z-10',
+          isDark
+            ? 'bg-gradient-to-b from-black/15 via-black/20 to-black/30'
+            : 'bg-white/30',
+        )}
+      />
 
       {/* faint global grid pattern — still works on top of the photo,
           just with a quieter opacity since the bg already provides texture. */}
