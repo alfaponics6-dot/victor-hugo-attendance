@@ -390,11 +390,16 @@ function Login() {
         <LanguageSwitcher />
       </div>
 
-      {/* pt-20 on phones leaves room for the absolute LanguageSwitcher
-          (top-4 + ~44 px button = ~64 px reserved) so the login card top
-          never tucks under it. From sm: onward there's enough viewport
-          height that items-center keeps a natural gap. */}
-      <main className="relative flex-1 flex items-center justify-center px-4 pt-20 pb-8 sm:px-6 sm:py-12 lg:px-10">
+      {/* Top padding reserves space for the absolute ThemeToggle +
+          LanguageSwitcher (top-4/sm:top-6 + ~40px button = needs ~56-64px
+          clear). On wide desktops with items-center vertically centering
+          a relatively short login card, the card top was sliding UP into
+          the toggle area on viewports ~700-850px tall — the toggle then
+          rendered on top of the "Bienvenido de vuelta" header. The
+          `sm:pt-24` and `lg:pt-28` floor stops that, while pb stays
+          small so the card can still sit visually centered on tall
+          screens. */}
+      <main className="relative flex-1 flex items-center justify-center px-4 pt-20 pb-8 sm:px-6 sm:pt-24 sm:pb-12 lg:px-10 lg:pt-28">
         <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-16 items-center">
 
           {/* ===================== HERO COLUMN ===================== */}
