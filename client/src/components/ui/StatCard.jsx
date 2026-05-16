@@ -44,7 +44,7 @@ const StatCard = ({
             transition={{ duration: 0.35, ease: [0.25, 1, 0.5, 1] }}
             className="flex items-baseline gap-1.5"
           >
-            <span className="text-[2.25rem] leading-none font-semibold tabular tracking-tight">
+            <span className="text-[1.75rem] sm:text-[2rem] lg:text-[2.25rem] leading-none font-semibold tabular tracking-tight break-all">
               {value}
             </span>
             {unit && (

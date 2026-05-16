@@ -213,7 +213,7 @@ function AdminOverview() {
           {chartData.length === 0 ? (
             <EmptyChart message={t('overview.chart.empty')} />
           ) : (
-            <div className="h-48 sm:h-64 lg:h-72 -mx-2">
+            <div className="h-48 sm:h-64 lg:h-72 mx-0 sm:-mx-2 overflow-hidden">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
                   <defs>

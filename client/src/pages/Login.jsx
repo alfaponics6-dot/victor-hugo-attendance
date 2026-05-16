@@ -363,7 +363,7 @@ function Login() {
             <div className="relative z-10 space-y-6">
               <motion.h1
                 variants={fieldVariants}
-                className="text-5xl xl:text-6xl font-semibold leading-[1.05] tracking-tight text-balance"
+                className="text-4xl lg:text-5xl xl:text-6xl font-semibold leading-[1.05] tracking-tight text-balance"
               >
                 {t('hero.titleLead')}{' '}
                 <span className="gradient-text">{t('hero.titleAccent')}</span>

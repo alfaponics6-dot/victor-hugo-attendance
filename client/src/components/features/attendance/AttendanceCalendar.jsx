@@ -188,7 +188,7 @@ function AttendanceCalendar({ projectId }) {
         </div>
       </header>
 
-      <div className="px-3 sm:px-5 pb-4">
+      <div className="px-1.5 sm:px-5 pb-3 sm:pb-4">
         <div className="grid grid-cols-7 gap-1 mb-2">
           {weekDays.map((d) => (
             <div
@@ -292,7 +292,7 @@ function DayCell({ date, isValid, rate, today, data, onClick }) {
       whileTap={isValid ? { scale: 0.97 } : {}}
       disabled={!isValid}
       className={cn(
-        'relative aspect-square rounded-lg sm:rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-[12px] font-medium transition-colors',
+        'relative aspect-square rounded-md sm:rounded-xl flex flex-col items-center justify-center gap-0 sm:gap-0.5 text-[11px] sm:text-[12px] font-medium transition-colors min-w-0',
         isValid
           ? 'bg-[color:var(--color-bg-2)] hairline hover:border-[color:var(--color-border-strong)] cursor-pointer'
           : 'text-[color:var(--color-fg-subtle)] opacity-45',

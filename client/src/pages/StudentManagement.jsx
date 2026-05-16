@@ -333,7 +333,7 @@ function StudentManagement() {
               className="h-11 sm:h-10"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="studentId">{t('students.modal.studentId')}</Label>
               <Input

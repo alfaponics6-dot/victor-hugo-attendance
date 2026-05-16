@@ -293,7 +293,7 @@ export default function ProfesorPassesView() {
                         onClick={() => toggle(s.id)}
                         aria-label={isPresent ? t('passes.markAbsent') : t('passes.markPresent')}
                         className={cn(
-                          'shrink-0 h-10 px-3 sm:px-4 rounded-xl text-xs font-medium tracking-wide uppercase transition-colors flex items-center gap-1.5',
+                          'shrink-0 h-11 sm:h-10 px-3 sm:px-4 rounded-xl text-xs font-medium tracking-wide uppercase transition-colors flex items-center gap-1.5 min-w-[100px] sm:min-w-0 justify-center',
                           isPresent
                             ? 'bg-[color-mix(in_oklch,var(--color-success)_18%,transparent)] text-[color:var(--color-success)] hover:bg-[color-mix(in_oklch,var(--color-success)_28%,transparent)]'
                             : 'bg-[color-mix(in_oklch,var(--color-danger)_18%,transparent)] text-[color:var(--color-danger)] hover:bg-[color-mix(in_oklch,var(--color-danger)_28%,transparent)]'
@@ -309,8 +309,12 @@ export default function ProfesorPassesView() {
             </ul>
           </Card>
 
-          {/* Save bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sticky bottom-0 bg-[color-mix(in_oklch,var(--color-bg)_85%,transparent)] backdrop-blur-md p-3 -mx-3 sm:-mx-4 sm:px-4 sm:rounded-2xl">
+          {/* Save bar. `z-30` keeps it above the roster cards when they
+              scroll under it; trailing spacer (added in the wrapper
+              below) keeps the last row visible above the bar on short
+              viewports. */}
+          <div className="h-2 sm:h-0" aria-hidden />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sticky bottom-0 z-30 bg-[color-mix(in_oklch,var(--color-bg)_92%,transparent)] backdrop-blur-md p-3 -mx-3 sm:-mx-4 sm:px-4 sm:rounded-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="text-[11px] text-[color:var(--color-fg-subtle)] flex items-center gap-1.5">
               <Clock className="size-3.5" />
               {lastRecordedAt

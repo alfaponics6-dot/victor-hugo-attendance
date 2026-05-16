@@ -40,7 +40,7 @@ export const PageHeader = ({ title, subtitle, eyebrow, actions, className }) => 
       )}
     </div>
     {actions && (
-      <div className="flex flex-wrap items-center gap-2 lg:shrink-0">{actions}</div>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 lg:shrink-0">{actions}</div>
     )}
   </header>
 );

@@ -279,8 +279,8 @@ function AdminStudents() {
                       <td className="px-5 py-3.5 tabular text-[color:var(--color-fg-muted)]">
                         {s.student_id || '-'}
                       </td>
-                      <td className="px-5 py-3.5 text-[color:var(--color-fg-muted)] truncate max-w-[28ch]">
-                        {s.email || '-'}
+                      <td className="px-5 py-3.5 text-[color:var(--color-fg-muted)] max-w-0 lg:max-w-[28ch]">
+                        <div className="truncate">{s.email || '-'}</div>
                       </td>
                       <td className="px-5 py-3.5">
                         {s.project_name ? (

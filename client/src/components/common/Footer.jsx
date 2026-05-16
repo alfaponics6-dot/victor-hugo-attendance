@@ -52,7 +52,7 @@ function Footer() {
             className="flex items-center gap-1.5 text-[color:var(--color-fg-subtle)] hover:text-[color:var(--color-accent)] transition-colors"
           >
             <Mail className="size-3.5 shrink-0" aria-hidden="true" />
-            <span>cchery@earth.ac.cr</span>
+            <span className="whitespace-nowrap">cchery@earth.ac.cr</span>
           </a>
         </div>
       </div>
