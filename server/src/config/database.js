@@ -212,6 +212,32 @@ class Database {
       this.db.run(`ALTER TABLE leader_sync_state ADD COLUMN last_email_sent_at DATETIME`, () => {});
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_sync_state_needed ON leader_sync_state(sync_needed_at)`);
 
+      // Profesor-only attendance "passes": one START and one END pass
+      // per student per session day, captured by a profesor (not by the
+      // student's leader). Kept in its own table so it doesn't clash
+      // with the leader's UNIQUE(student_id, date) index on the main
+      // attendance table — same student can now have a leader row + a
+      // profe-start row + a profe-end row for the same date.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS profesor_attendance (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          profesor_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          student_id INTEGER NOT NULL,
+          date DATE NOT NULL,
+          pass_type TEXT NOT NULL CHECK(pass_type IN ('start', 'end')),
+          status TEXT NOT NULL CHECK(status IN ('present', 'absent')),
+          recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          observation TEXT,
+          FOREIGN KEY (profesor_id) REFERENCES leaders(id) ON DELETE SET NULL,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+        )
+      `);
+      this.db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profe_attendance_unique ON profesor_attendance(student_id, date, pass_type)`);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_profe_attendance_project_date ON profesor_attendance(project_id, date)`);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_profe_attendance_profesor ON profesor_attendance(profesor_id, date DESC)`);
+
       // Rotations table - track student rotation assignments
       this.db.run(`
         CREATE TABLE IF NOT EXISTS rotations (
@@ -1653,6 +1679,78 @@ class Database {
         else resolve(rows);
       });
     });
+  }
+
+  // ── Profesor attendance ───────────────────────────────────────────────
+  // Reads + writes for the profe-only "start" / "end" attendance passes.
+  // Kept fully separate from leader attendance so the existing UNIQUE
+  // index on (student_id, date) stays intact and the two data sources
+  // can be cross-referenced later (e.g. comparing the leader's count
+  // against the profe's start/end pass).
+
+  // Fetch every profe-pass row for a project on a given date. Returns
+  // both passes interleaved; callers pivot client-side.
+  getProfesorAttendanceForProjectDate(projectId, date) {
+    return new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT pa.id, pa.profesor_id, pa.project_id, pa.student_id,
+                pa.date, pa.pass_type, pa.status, pa.recorded_at, pa.observation,
+                s.name AS student_name, s.student_id AS student_code,
+                l.name AS profesor_name
+         FROM profesor_attendance pa
+         LEFT JOIN students s ON s.id = pa.student_id
+         LEFT JOIN leaders l  ON l.id = pa.profesor_id
+         WHERE pa.project_id = ? AND pa.date = ?
+         ORDER BY pa.pass_type, s.name`,
+        [projectId, date],
+        (err, rows) => (err ? reject(err) : resolve(rows || [])),
+      );
+    });
+  }
+
+  // Bulk upsert for one (project, date, pass_type). Each entry:
+  //   { student_id, status, observation? }
+  // We run the whole batch in a single transaction under writeMutex so
+  // a profe pressing "Guardar" with 30 students can't race the periodic
+  // sync writer on the same sqlite3 connection.
+  bulkUpsertProfesorAttendance({ profesorId, projectId, date, passType, entries }) {
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
+      this.db.serialize(() => {
+        this.db.run('BEGIN IMMEDIATE', (beginErr) => {
+          if (beginErr) return reject(beginErr);
+          const stmt = this.db.prepare(
+            `INSERT INTO profesor_attendance
+               (profesor_id, project_id, student_id, date, pass_type, status, observation, recorded_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(student_id, date, pass_type) DO UPDATE SET
+               status = excluded.status,
+               observation = excluded.observation,
+               profesor_id = excluded.profesor_id,
+               recorded_at = CURRENT_TIMESTAMP`
+          );
+          let errored = null;
+          for (const e of entries) {
+            stmt.run(
+              profesorId,
+              projectId,
+              e.student_id,
+              date,
+              passType,
+              e.status,
+              e.observation || null,
+              (err) => { if (err && !errored) errored = err; },
+            );
+          }
+          stmt.finalize((finalizeErr) => {
+            if (errored || finalizeErr) {
+              this.db.run('ROLLBACK', () => reject(errored || finalizeErr));
+            } else {
+              this.db.run('COMMIT', (commitErr) => commitErr ? reject(commitErr) : resolve({ updated: entries.length }));
+            }
+          });
+        });
+      });
+    }));
   }
 
   close() {

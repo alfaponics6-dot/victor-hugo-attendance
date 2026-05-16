@@ -5,6 +5,34 @@
     "print": "Print",
     "clearSearch": "Clear search"
   },
+  "mainViews": {
+    "absences": "Absences",
+    "passes": "Passes"
+  },
+  "passes": {
+    "projectLabel": "Project",
+    "pickProject": "Select a project",
+    "pickProjectHint": "Pick a project to start the pass.",
+    "dateLabel": "Date",
+    "passLabel": "Pass",
+    "start": "Start",
+    "end": "End",
+    "present": "Present",
+    "absent": "Absent",
+    "markPresent": "Mark present",
+    "markAbsent": "Mark absent",
+    "allPresent": "All present",
+    "allAbsent": "All absent",
+    "save": "Save",
+    "discard": "Discard changes",
+    "saveOk": "Pass saved successfully.",
+    "saveError": "Failed to save the pass.",
+    "projectsLoadError": "Failed to load projects.",
+    "rosterLoadError": "Failed to load the student list.",
+    "emptyRoster": "No students in this project's current rotation.",
+    "lastSavedAt": "Last saved at: {{when}}",
+    "notYetSaved": "This pass has not been saved yet for this date."
+  },
   "stats": {
     "totalAbsences": "Total absences",
     "totalAbsencesHintAll": "All dates selected",

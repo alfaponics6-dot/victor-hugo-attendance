@@ -5,6 +5,34 @@
     "print": "Imprimir",
     "clearSearch": "Limpiar búsqueda"
   },
+  "mainViews": {
+    "absences": "Ausencias",
+    "passes": "Pasadas"
+  },
+  "passes": {
+    "projectLabel": "Proyecto",
+    "pickProject": "Seleccione un proyecto",
+    "pickProjectHint": "Seleccione un proyecto para empezar la pasada.",
+    "dateLabel": "Fecha",
+    "passLabel": "Pasada",
+    "start": "Inicio",
+    "end": "Final",
+    "present": "Presente",
+    "absent": "Ausente",
+    "markPresent": "Marcar presente",
+    "markAbsent": "Marcar ausente",
+    "allPresent": "Todos presentes",
+    "allAbsent": "Todos ausentes",
+    "save": "Guardar",
+    "discard": "Descartar cambios",
+    "saveOk": "Pasada guardada correctamente.",
+    "saveError": "Error al guardar la pasada.",
+    "projectsLoadError": "Error al cargar los proyectos.",
+    "rosterLoadError": "Error al cargar la lista de estudiantes.",
+    "emptyRoster": "No hay estudiantes en la rotación actual de este proyecto.",
+    "lastSavedAt": "Última vez guardado: {{when}}",
+    "notYetSaved": "Aún no se ha guardado esta pasada para esta fecha."
+  },
   "stats": {
     "totalAbsences": "Total ausencias",
     "totalAbsencesHintAll": "Todas las fechas seleccionadas",

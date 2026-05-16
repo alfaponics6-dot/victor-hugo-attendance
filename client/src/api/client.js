@@ -339,6 +339,23 @@ export const getAttachmentUrl = (studentId, date) => {
   return `${API_BASE_URL}/attendance/attachment/${studentId}/${date}`;
 };
 
+// Profesor-only attendance "passes". Each session day can have a start
+// pass and an end pass per student, both marked by a profesor.
+export const getProfesorAttendance = async (projectId, date) => {
+  const response = await api.get(`/profesor-attendance/project/${projectId}/date/${date}`);
+  return response.data;
+};
+
+export const bulkSaveProfesorAttendance = async ({ projectId, date, passType, entries }) => {
+  const response = await api.post(`/profesor-attendance/bulk`, {
+    projectId,
+    date,
+    passType,
+    entries,
+  });
+  return response.data;
+};
+
 // Statistics APIs.
 // Pass either { date } for single-date stats, or { startDate, endDate } for
 // range stats (inclusive on both ends).

@@ -101,6 +101,7 @@ const attendanceRoutes = require('./routes/attendance');
 const statisticsRoutes = require('./routes/statistics');
 const adminRoutes = require('./routes/admin');
 const pushRoutes = require('./routes/push');
+const profesorAttendanceRoutes = require('./routes/profesorAttendance');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 app.use('/api/', generalLimiter);
@@ -110,6 +111,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/statistics', statisticsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/profesor-attendance', profesorAttendanceRoutes);
 
 // Liveness probe — cheap, no I/O. Use this for "is the process alive?" checks.
 app.get('/api/health', (req, res) => {

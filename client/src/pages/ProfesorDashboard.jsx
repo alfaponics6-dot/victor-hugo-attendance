@@ -32,6 +32,8 @@ import {
   ClipboardList,
   Activity,
   Folders,
+  ListChecks,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth.js';
 import {
@@ -56,6 +58,7 @@ import Skeleton from '../components/ui/Skeleton';
 import { Input, Select, Label } from '../components/ui/Input';
 import { cn } from '../lib/cn';
 import { getProjectLabel } from '../lib/projectI18n';
+import ProfesorPassesView from '../components/features/profesor/ProfesorPassesView';
 
 /* ────────────────────────────────────────────────────────────────────────────
    Small helpers used throughout the page. Kept inline so the file stays
@@ -116,6 +119,9 @@ function ProfesorDashboard() {
   const [summaryData, setSummaryData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grouped'
+  // Top-level view toggle: 'absences' (existing) vs 'passes' (new
+  // profe-only start/end attendance passes).
+  const [mainView, setMainView] = useState('absences');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentHistory, setStudentHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -451,6 +457,24 @@ function ProfesorDashboard() {
           </>
         }
       />
+
+      {/* Top-level switcher between the existing "Ausencias" oversight
+          view and the new profe-only attendance "Pasadas" workflow. */}
+      <div className="mb-5">
+        <Tabs
+          value={mainView}
+          onChange={setMainView}
+          tabs={[
+            { key: 'absences', label: t('mainViews.absences'), icon: ListChecks },
+            { key: 'passes', label: t('mainViews.passes'), icon: ClipboardCheck },
+          ]}
+        />
+      </div>
+
+      {mainView === 'passes' ? (
+        <ProfesorPassesView />
+      ) : (
+      <>
 
       {/* ─── Stat tiles ─────────────────────────────────────────────────── */}
       <motion.div
@@ -1099,6 +1123,9 @@ function ProfesorDashboard() {
           </div>
         )}
       </Modal>
+
+      </>
+      )}
     </AppShell>
   );
 }
