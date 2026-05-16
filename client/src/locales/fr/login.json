@@ -1,6 +1,14 @@
 {
   "welcomeBack": "Bon retour parmi nous",
   "subtitle": "Saisissez vos identifiants pour continuer",
+  "roleStep": {
+    "label": "Comment souhaitez-vous vous connecter ?",
+    "leader": "Chef",
+    "leaderHint": "Chef de projet",
+    "profesor": "Professeur",
+    "profesorHint": "Professeur / Administration",
+    "change": "Changer"
+  },
   "fields": {
     "identity": "Identité",
     "selectLeader": "- Sélectionnez un responsable -",

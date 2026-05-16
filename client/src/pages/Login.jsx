@@ -7,12 +7,15 @@ import {
   Lock,
   KeyRound,
   ArrowRight,
+  ArrowLeft,
   Loader2,
   AlertCircle,
   RefreshCw,
   Sparkles,
   ShieldCheck,
   Activity,
+  GraduationCap,
+  UserSquare,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth.js';
 import { getLeaders, login } from '../api/client';
@@ -97,6 +100,13 @@ function Login() {
   const [password, setPassword] = useState('');
   const [accessCode, setAccessCode] = useState('');
   const [credentialMode, setCredentialMode] = useState('none'); // 'none' | 'password' | 'accessCode'
+  // Step 0 of the form: pick whether you're logging in as a project
+  // leader (student) or as a profesor. The dropdown below filters to
+  // just that group so you don't have to scan through 20+ names mixing
+  // roles. `null` until the user picks; 'leader' or 'profesor' after.
+  // Admins ride along with 'profesor' since both use password-based
+  // login (vs. shared access code for leaders).
+  const [roleFilter, setRoleFilter] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingLeaders, setLoadingLeaders] = useState(true);
   const [error, setError] = useState('');
@@ -246,6 +256,36 @@ function Login() {
     () => leaders.find((l) => l.id === parseInt(selectedLeaderId)),
     [leaders, selectedLeaderId]
   );
+
+  // Dropdown options filtered by the role chosen in step 0. Admins are
+  // grouped with profesores since both authenticate by personal password.
+  const filteredLeaders = useMemo(() => {
+    if (!roleFilter) return [];
+    if (roleFilter === 'profesor') {
+      return leaders.filter((l) => l.role === 'profesor' || l.role === 'admin');
+    }
+    return leaders.filter((l) => !l.role || l.role === 'leader');
+  }, [leaders, roleFilter]);
+
+  // Switching back to step 0 wipes the half-typed creds + selection so
+  // there's no stale state if the user picks the wrong role first.
+  const handleChangeRole = () => {
+    setRoleFilter(null);
+    setSelectedLeaderId('');
+    setCredentialMode('none');
+    setPassword('');
+    setAccessCode('');
+    setError('');
+  };
+
+  const handlePickRole = (role) => {
+    setRoleFilter(role);
+    setSelectedLeaderId('');
+    setCredentialMode('none');
+    setPassword('');
+    setAccessCode('');
+    setError('');
+  };
 
   /* shared field motion config */
   const fieldVariants = {
@@ -457,13 +497,84 @@ function Login() {
               </motion.div>
 
               <form onSubmit={handleLogin} autoComplete="off" className="space-y-4 sm:space-y-5">
-                {/* ----------- Leader select ----------- */}
+                {/* ----------- Step 0: role picker -----------
+                    Shown until the user picks "Líder" or "Profesor".
+                    Hides the dropdown so users don't scan a 25-row mixed
+                    list — they pick their role first and the dropdown
+                    below only ever shows that subset. */}
+                {roleFilter === null && (
+                    <motion.div
+                      key="role-step"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <FieldLabel>{t('roleStep.label')}</FieldLabel>
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handlePickRole('leader')}
+                          disabled={loading || loadingLeaders}
+                          className={cn(
+                            'group h-24 sm:h-28 rounded-xl flex flex-col items-center justify-center gap-1.5 text-sm font-medium',
+                            'bg-[color:var(--color-bg-2)] border border-[color:var(--color-border)]',
+                            'text-[color:var(--color-fg)]',
+                            'transition-[border-color,box-shadow,background] duration-150 ease-out',
+                            'hover:border-[color:var(--color-accent)] hover:bg-[color-mix(in_oklch,var(--color-accent)_8%,var(--color-bg-2))]',
+                            'focus:outline-none focus:border-[color:var(--color-accent)]',
+                            'focus:shadow-[0_0_0_3px_color-mix(in_oklch,var(--color-accent)_18%,transparent)]',
+                            'disabled:opacity-60 disabled:cursor-not-allowed'
+                          )}
+                        >
+                          <UserSquare className="size-6 text-[color:var(--color-accent)]" />
+                          <span>{t('roleStep.leader')}</span>
+                          <span className="text-[11px] text-[color:var(--color-fg-subtle)] font-normal">
+                            {t('roleStep.leaderHint')}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePickRole('profesor')}
+                          disabled={loading || loadingLeaders}
+                          className={cn(
+                            'group h-24 sm:h-28 rounded-xl flex flex-col items-center justify-center gap-1.5 text-sm font-medium',
+                            'bg-[color:var(--color-bg-2)] border border-[color:var(--color-border)]',
+                            'text-[color:var(--color-fg)]',
+                            'transition-[border-color,box-shadow,background] duration-150 ease-out',
+                            'hover:border-[color:var(--color-accent)] hover:bg-[color-mix(in_oklch,var(--color-accent)_8%,var(--color-bg-2))]',
+                            'focus:outline-none focus:border-[color:var(--color-accent)]',
+                            'focus:shadow-[0_0_0_3px_color-mix(in_oklch,var(--color-accent)_18%,transparent)]',
+                            'disabled:opacity-60 disabled:cursor-not-allowed'
+                          )}
+                        >
+                          <GraduationCap className="size-6 text-[color:var(--color-accent)]" />
+                          <span>{t('roleStep.profesor')}</span>
+                          <span className="text-[11px] text-[color:var(--color-fg-subtle)] font-normal">
+                            {t('roleStep.profesorHint')}
+                          </span>
+                        </button>
+                      </div>
+                    </motion.div>
+                )}
+
+                {/* ----------- Leader select (gated on role) ----------- */}
+                {roleFilter !== null && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.45, delay: 0.18 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <FieldLabel htmlFor="leader-select">{t('fields.identity')}</FieldLabel>
+                  <div className="flex items-center justify-between gap-2">
+                    <FieldLabel htmlFor="leader-select">{t('fields.identity')}</FieldLabel>
+                    <button
+                      type="button"
+                      onClick={handleChangeRole}
+                      className="text-[11px] font-medium text-[color:var(--color-fg-subtle)] hover:text-[color:var(--color-accent)] inline-flex items-center gap-1 transition-colors -mt-1"
+                    >
+                      <ArrowLeft className="size-3" />
+                      {t('roleStep.change')}
+                    </button>
+                  </div>
                   <div className="relative group">
                     <select
                       id="leader-select"
@@ -486,7 +597,7 @@ function Login() {
                       ) : (
                         <>
                           <option value="">{t('fields.selectLeader')}</option>
-                          {leaders.map((leader) => (
+                          {filteredLeaders.map((leader) => (
                             <option key={leader.id} value={leader.id}>
                               {leader.name}
                               {' - '}
@@ -535,6 +646,7 @@ function Login() {
                     )}
                   </AnimatePresence>
                 </motion.div>
+                )}
 
                 {/* ----------- Credential field (animated swap) ----------- */}
                 <AnimatePresence mode="wait" initial={false}>

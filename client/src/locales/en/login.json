@@ -1,6 +1,14 @@
 {
   "welcomeBack": "Welcome back",
   "subtitle": "Enter your credentials to continue",
+  "roleStep": {
+    "label": "How would you like to sign in?",
+    "leader": "Leader",
+    "leaderHint": "Project leader",
+    "profesor": "Professor",
+    "profesorHint": "Professor / Admin",
+    "change": "Change"
+  },
   "fields": {
     "identity": "Identity",
     "selectLeader": "- Select a leader -",

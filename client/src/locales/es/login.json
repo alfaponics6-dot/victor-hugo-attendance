@@ -1,6 +1,14 @@
 {
   "welcomeBack": "Bienvenido de vuelta",
   "subtitle": "Ingrese sus credenciales para continuar",
+  "roleStep": {
+    "label": "¿Cómo desea ingresar?",
+    "leader": "Líder",
+    "leaderHint": "Líder de proyecto",
+    "profesor": "Profesor",
+    "profesorHint": "Profesor / Administración",
+    "change": "Cambiar"
+  },
   "fields": {
     "identity": "Identidad",
     "selectLeader": "- Seleccione un líder -",
