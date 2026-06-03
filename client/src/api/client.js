@@ -66,6 +66,16 @@ api.interceptors.request.use(async (config) => {
       config.headers['X-Queue-Size'] = String(n);
     }
   } catch { /* IDB might not be open yet — drop silently */ }
+  // Stamp the author of this write so a queued request replayed later under
+  // a DIFFERENT logged-in user (shared tablet) can't be mis-attributed. The
+  // server rejects the write if X-Queued-By doesn't match the JWT identity.
+  try {
+    const uid = JSON.parse(localStorage.getItem('auth_user') || 'null')?.id;
+    if (uid != null) {
+      config.headers = config.headers || {};
+      config.headers['X-Queued-By'] = String(uid);
+    }
+  } catch { /* malformed cache — ignore */ }
   return config;
 });
 
@@ -147,6 +157,12 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
       credential: password || accessCode,
       profile: response.data.leader,
     }).catch(() => {});
+    // A shared device must not serve the PREVIOUS user's cached API
+    // responses to this user. Purge the SW runtime cache (api-get) before
+    // warming it, so each session starts isolated even if the prior user
+    // force-quit without logging out. Awaited so the warm-up below can't
+    // race ahead of the purge.
+    await purgeServiceWorkerCaches().catch(() => {});
     // Warm the SW runtime cache with role-appropriate GETs so the user's
     // first offline session has data ready (rosters, projects, today's
     // attendance, etc.). Background — don't block navigation.

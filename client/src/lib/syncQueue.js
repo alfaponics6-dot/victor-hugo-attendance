@@ -194,6 +194,14 @@ async function doDrainQueue() {
 
       for (const item of items) {
         if (!navigator.onLine) break;
+        // Don't replay another leader's queued write under the current
+        // session — leave it for its author to sync when they log back in
+        // on this shared device. (Server also enforces this via X-Queued-By;
+        // skipping here avoids a wasted round-trip on the page path.)
+        if (item.userId != null && live?.leaderId != null
+            && Number(item.userId) !== Number(live.leaderId)) {
+          continue;
+        }
         const result = await replay(item);
         if (result === 'success') {
           await removeById(item.id);
@@ -215,6 +223,10 @@ async function doDrainQueue() {
         } else if (result === 'auth-fail') {
           hitAuthFail = true;
           break;
+        } else if (result === 'skipped') {
+          // Wrong author for this session — leave the item queued for its
+          // author. No retry-bump, no conflict, no progress flag.
+          continue;
         } else {
           // network / 5xx → keep the item, bump retries
           const retries = await bumpRetries(item.id);
@@ -387,12 +399,12 @@ async function replay(item) {
 
   if (response.ok) return 'success';
   if (response.status === 409) {
-    try {
-      const data = await response.clone().json();
-      item.lastError = data?.error || data?.message || `HTTP 409`;
-    } catch {
-      item.lastError = 'HTTP 409';
-    }
+    let data = null;
+    try { data = await response.clone().json(); } catch { /* ignore */ }
+    item.lastError = data?.error || data?.message || `HTTP 409`;
+    // Wrong author for the current session (X-Queued-By mismatch) — leave it
+    // queued for the real author rather than treating it as a conflict.
+    if (data?.error === 'WRONG_AUTHOR') return 'skipped';
     return 'conflict';
   }
   if (response.status === 401 || response.status === 403) {

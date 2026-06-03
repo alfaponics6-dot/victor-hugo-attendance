@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken, requireProfesor } = require('../middleware/auth');
+const { authenticateToken, requireProfesor, rejectStaleAuthor } = require('../middleware/auth');
 
 router.use(authenticateToken);
 
@@ -97,7 +97,7 @@ router.get('/project/:projectId/date/:date', async (req, res) => {
 // Upserts every entry in a single transaction. The same (student, date, pass)
 // can be re-saved freely — it overwrites the previous row's status and
 // stamps recorded_at to NOW.
-router.post('/bulk', express.json(), async (req, res) => {
+router.post('/bulk', express.json(), rejectStaleAuthor, async (req, res) => {
   try {
     const { projectId, date, passType, entries } = req.body || {};
     const pid = Number(projectId);

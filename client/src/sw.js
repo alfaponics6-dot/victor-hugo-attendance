@@ -74,7 +74,10 @@ registerRoute(
     networkTimeoutSeconds: 5,
     plugins: [
       new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 7 }),
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      // Only cache genuine 200s — never opaque/error (status 0) responses.
+      // For an authenticated API, caching a 0 could persist a failed or
+      // cross-origin response and serve it back offline.
+      new CacheableResponsePlugin({ statuses: [200] }),
     ],
   })
 );
@@ -325,12 +328,13 @@ async function replayItem(item) {
   if (response.status === 401 || response.status === 403) return 'auth-fail';
   if (response.status === 409) {
     item.lastStatus = 409;
-    try {
-      const data = await response.clone().json();
-      item.lastError = data?.error || data?.message || 'HTTP 409';
-    } catch {
-      item.lastError = 'HTTP 409';
-    }
+    let data = null;
+    try { data = await response.clone().json(); } catch { /* ignore */ }
+    item.lastError = data?.error || data?.message || 'HTTP 409';
+    // A different leader is logged in on this device right now; leave the
+    // item queued for its real author instead of mis-attributing it or
+    // burying it as a conflict the author can't recover.
+    if (data?.error === 'WRONG_AUTHOR') return 'skipped';
     return 'conflict';
   }
   if (response.status >= 400 && response.status < 500) {

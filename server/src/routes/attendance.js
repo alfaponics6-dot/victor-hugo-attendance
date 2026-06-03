@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, rejectStaleAuthor } = require('../middleware/auth');
 const {
   validateAttendance,
   validateProjectId,
@@ -135,7 +135,7 @@ const toPositiveInt = (v) => {
 // ----------------------------------------------------------------------------
 
 // Bulk mark attendance for multiple students (preferred method)
-router.post('/bulk', bulkLimiter, express.json(), async (req, res) => {
+router.post('/bulk', bulkLimiter, express.json(), rejectStaleAuthor, async (req, res) => {
   try {
     const { date, time, records } = req.body;
 
@@ -295,7 +295,7 @@ router.post('/bulk', bulkLimiter, express.json(), async (req, res) => {
 // "all mine" / "all theirs"), then POSTs the merged result here. We
 // REPLACE the existing rows for (projectId, date) atomically and write
 // an audit row so the resolution is reviewable later.
-router.post('/bulk/resolve', resolveLimiter, express.json(), async (req, res) => {
+router.post('/bulk/resolve', resolveLimiter, express.json(), rejectStaleAuthor, async (req, res) => {
   try {
     const { date, time, records, resolution } = req.body;
 
@@ -441,7 +441,7 @@ const trackUploadCleanup = (req, res, next) => {
 };
 
 // Mark attendance for a single student (multipart, supports attachment)
-router.post('/', uploadSingle, trackUploadCleanup, validateAttendance, async (req, res) => {
+router.post('/', rejectStaleAuthor, uploadSingle, trackUploadCleanup, validateAttendance, async (req, res) => {
   try {
     const studentId = toPositiveInt(req.body.studentId);
     const projectId = req.user.projectId;

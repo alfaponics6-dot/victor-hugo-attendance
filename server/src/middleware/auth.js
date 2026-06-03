@@ -168,6 +168,23 @@ const requireProfesor = (req, res, next) => {
   next();
 };
 
+// Reject a write whose X-Queued-By header (the leaderId that AUTHORED an
+// offline-queued request) doesn't match the authenticated identity. This
+// stops a queued write from being mis-attributed when it's replayed on a
+// shared tablet under a DIFFERENT leader's session — the server would
+// otherwise file it under the current cookie's project/leader. Absent header
+// = a normal online request (or a pre-feature queued item) → allowed.
+const rejectStaleAuthor = (req, res, next) => {
+  const claimed = req.headers['x-queued-by'];
+  if (claimed != null && claimed !== '' && req.user && Number(claimed) !== Number(req.user.id)) {
+    return res.status(409).json({
+      error: 'WRONG_AUTHOR',
+      message: 'Este registro pertenece a otra persona en este dispositivo y no puede sincronizarse con la sesión actual.'
+    });
+  }
+  next();
+};
+
 // Convert the JWT_EXPIRES_IN string ("8h", "30m", "60s") into milliseconds for
 // the cookie's Max-Age. Defaults to 8h if the format is unrecognized.
 const tokenLifetimeMs = () => {
@@ -211,6 +228,7 @@ module.exports = {
   requireAdmin,
   requireProfesor,
   requireCanDeleteStudents,
+  rejectStaleAuthor,
   setAuthCookie,
   clearAuthCookie,
   JWT_EXPIRES_IN
