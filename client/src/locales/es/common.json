@@ -1,4 +1,9 @@
 {
+  "update": {
+    "available": "Hay una nueva versión disponible.",
+    "reload": "Actualizar",
+    "later": "Después"
+  },
   "app": {
     "name": "Plataforma de Asistencia Digital",
     "tagline": "Escenario Forestal 2026",

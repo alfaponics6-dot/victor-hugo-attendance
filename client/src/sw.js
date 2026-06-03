@@ -39,6 +39,14 @@ import { openDB } from 'idb';
 // across whoever uses this browser, so we have to drop it explicitly to
 // avoid leaking one user's cached responses to the next.
 self.addEventListener('message', (event) => {
+  // The page (UpdatePrompt → vite-plugin-pwa updateServiceWorker) asks this
+  // waiting SW to take over NOW, in response to the user tapping the "new
+  // version" banner. We deliberately do NOT skipWaiting on install/activate
+  // (that caused a reload glitch — see main.jsx); only on this explicit,
+  // user-initiated request. No clients.claim either.
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
   if (event.data?.type === 'purge-caches') {
     event.waitUntil((async () => {
       try {

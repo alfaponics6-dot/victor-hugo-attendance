@@ -1,4 +1,9 @@
 {
+  "update": {
+    "available": "Há uma nova versão disponível.",
+    "reload": "Atualizar",
+    "later": "Depois"
+  },
   "app": {
     "name": "Plataforma de Presença Digital",
     "tagline": "Cenário Florestal 2026",

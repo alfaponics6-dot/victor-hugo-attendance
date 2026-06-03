@@ -1,4 +1,9 @@
 {
+  "update": {
+    "available": "Une nouvelle version est disponible.",
+    "reload": "Mettre à jour",
+    "later": "Plus tard"
+  },
   "app": {
     "name": "Plateforme de présence numérique",
     "tagline": "Scénario Forestier 2026",

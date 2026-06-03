@@ -16,8 +16,14 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.js',
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // 'prompt' (not 'autoUpdate'): a freshly installed SW does NOT take over
+      // automatically. UpdatePrompt surfaces a dismissable banner and the user
+      // taps to reload — this avoids the auto-reload-on-controllerchange glitch
+      // documented in main.jsx and never interrupts in-progress attendance
+      // marking. Registration is handled by useRegisterSW (virtual:pwa-
+      // register/react) in UpdatePrompt, so disable the auto-injected script.
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: [
         'Logo-Universidad-EARTH_academico-300x257.png',
         'login-bg.jpg',

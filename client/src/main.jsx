@@ -10,6 +10,7 @@ import { initSyncQueue } from './lib/syncQueue'
 import { ensurePushSubscription } from './lib/pushSubscribe'
 import App from './App.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary'
+import UpdatePrompt from './components/common/UpdatePrompt'
 
 // Register the online listener and drain any queued writes from a prior
 // offline session. Safe to call before React mounts; offline operations
@@ -44,6 +45,7 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
+      <UpdatePrompt />
     </ErrorBoundary>
   </StrictMode>,
 )

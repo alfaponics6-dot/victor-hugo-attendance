@@ -1,4 +1,9 @@
 {
+  "update": {
+    "available": "A new version is available.",
+    "reload": "Update",
+    "later": "Later"
+  },
   "app": {
     "name": "Digital Attendance Platform",
     "tagline": "Forest Scenario 2026",
