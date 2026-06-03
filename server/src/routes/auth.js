@@ -147,7 +147,9 @@ router.post('/login', credentialLimiter, validateLogin, async (req, res) => {
 
     const leader = await db.getLeaderByIdWithAuth(leaderId);
     if (!leader) {
-      return res.status(404).json({ error: 'Leader not found' });
+      // Uniform 401 (not 404 "Leader not found"): don't hand out a
+      // valid-vs-invalid-id oracle on the login endpoint.
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const role = leader.role || 'leader';

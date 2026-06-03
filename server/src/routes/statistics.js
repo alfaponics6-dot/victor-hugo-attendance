@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, requireAdmin, requireProfesor } = require('../middleware/auth');
 const { validateDateQuery, validateDays, validateLeaderId } = require('../middleware/validation');
 
 // Apply authentication to all routes in this file
@@ -56,11 +56,15 @@ router.get('/history', validateDays, async (req, res) => {
 });
 
 // Get statistics for a specific leader's project.
+// Staff-only (requireProfesor = profesor/admin): this returns ANY leader's
+// project numbers by path id, so without a role gate any leader could read
+// another leader's stats (IDOR). No client surface calls it; admin/profesor
+// dashboards use /overall and /by-project.
 // validateLeaderId rejects non-int paths (e.g. /leader/abc → 400) instead of
 // letting parseInt('abc')=NaN reach the SQL layer, and validateDateQuery
 // bounds `?date=` to YYYY-MM-DD so a crafted date can't break the BETWEEN
 // in getLeaderProjectStatistics.
-router.get('/leader/:leaderId', validateLeaderId, validateDateQuery, async (req, res) => {
+router.get('/leader/:leaderId', requireProfesor, validateLeaderId, validateDateQuery, async (req, res) => {
   try {
     const { leaderId } = req.params;
     const { date } = req.query;

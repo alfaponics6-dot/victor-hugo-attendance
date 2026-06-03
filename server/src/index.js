@@ -131,7 +131,10 @@ app.get('/api/health/ready', async (req, res) => {
     ]);
     res.json({ status: 'ready', db: result?.ok === 1 ? 'up' : 'unknown' });
   } catch (err) {
-    res.status(503).json({ status: 'not-ready', error: err.message });
+    // Log server-side; don't echo err.message to an unauthenticated probe —
+    // SQLite error strings can include file paths.
+    console.error('Readiness check failed:', err.message);
+    res.status(503).json({ status: 'not-ready' });
   }
 });
 
