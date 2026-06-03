@@ -47,23 +47,26 @@ export default function SecondListView() {
     setRosterLoading(true);
     setLocked(false);
     (async () => {
-      try {
-        const [rosterRes, passesRes] = await Promise.all([
-          getCurrentRotationStudents(projectId),
-          getProfesorAttendance(projectId, date),
-        ]);
-        if (cancelled) return;
-        setRoster(rosterRes?.students || []);
-        setServerRows(passesRes || []);
-      } catch {
-        if (!cancelled) {
-          setRoster([]);
-          setServerRows([]);
-          setMessage({ type: 'error', text: t('profesor:passes.rosterLoadError') });
-        }
-      } finally {
-        if (!cancelled) setRosterLoading(false);
+      // allSettled (not Promise.all): the roster is the critical data, the
+      // existing 'end' passes only pre-seed present/absent. Offline, the roster
+      // is served from the SW cache but the passes fetch may miss — coupling
+      // them in Promise.all meant a passes miss rejected the whole thing and
+      // BLANKED a perfectly good cached roster ("Error al cargar la lista de
+      // estudiantes" + empty list on the iPad offline test). Decoupled so a
+      // failed passes fetch can't wipe the roster.
+      const [rosterRes, passesRes] = await Promise.allSettled([
+        getCurrentRotationStudents(projectId),
+        getProfesorAttendance(projectId, date),
+      ]);
+      if (cancelled) return;
+      if (rosterRes.status === 'fulfilled') {
+        setRoster(rosterRes.value?.students || []);
+      } else {
+        setRoster([]);
+        setMessage({ type: 'error', text: t('profesor:passes.rosterLoadError') });
       }
+      setServerRows(passesRes.status === 'fulfilled' ? (passesRes.value || []) : []);
+      if (!cancelled) setRosterLoading(false);
     })();
     return () => { cancelled = true; };
   }, [projectId, date, t]);

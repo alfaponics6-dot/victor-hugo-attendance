@@ -35,6 +35,10 @@ function urlsFor({ role, projectId }) {
       `/api/projects/${projectId}/available-rotations`,
       `/api/projects/my/collaborators`,
       `/api/attendance/project/${projectId}/date/${today}`,
+      // Segunda lista (final pass): warm the existing 'end' passes so the
+      // leader's SecondListView seeds its draft offline. URL must match
+      // getProfesorAttendance() in api/client.js exactly.
+      `/api/profesor-attendance/project/${projectId}/date/${today}`,
     ];
   }
   if (role === 'profesor') {
