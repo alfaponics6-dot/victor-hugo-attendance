@@ -137,32 +137,50 @@ api.interceptors.response.use(
 
 // Authentication APIs
 
-// The leader roster is public, identical for everyone, and required to render
-// the login dropdown AND to reconstruct a profile during offline login. The SW
-// api-get cache is purged on every login (cross-user isolation), so it's not a
-// reliable offline source for the login page. Mirror it into localStorage —
-// which survives logout and isn't purged — and fall back to it when the network
-// is unreachable, so a cold/offline open of the login page still populates.
-const LEADERS_CACHE_KEY = 'cached_leaders_v1';
-export const getLeaders = async () => {
+// ── Durable offline snapshot ────────────────────────────────────────────────
+// The service worker's `api-get` cache is purged on every login (cross-user
+// isolation) and can simply miss, so it is NOT a reliable source for offline
+// reads. For the data a user needs offline (leader roster, project roster,
+// today's lists) we ALSO mirror each successful response into localStorage —
+// which survives logout and SW purges — and serve that snapshot when the
+// network is unreachable. This is what lets students render offline regardless
+// of SW cache state. (Offline WRITES are handled separately by the IndexedDB
+// queue, which replays to the server on reconnect.)
+const todayLocalISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const readThroughCache = async (key, fetcher, isCacheable) => {
   try {
-    const response = await api.get('/auth/leaders');
-    const data = response.data;
-    if (Array.isArray(data) && data.length) {
-      try { localStorage.setItem(LEADERS_CACHE_KEY, JSON.stringify(data)); } catch { /* quota/disabled — non-fatal */ }
+    const data = await fetcher();
+    if (!isCacheable || isCacheable(data)) {
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* quota/disabled — non-fatal */ }
     }
     return data;
   } catch (err) {
-    try {
-      const cached = localStorage.getItem(LEADERS_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length) return parsed;
-      }
-    } catch { /* ignore parse/storage errors, fall through to the real error */ }
+    // Fall back to the snapshot ONLY on a genuine network failure (offline /
+    // unreachable). A real server response (4xx/5xx — e.g. a legit 404 "no
+    // active rotation") is respected, never masked with stale data.
+    if (!err?.response) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw != null) return JSON.parse(raw);
+      } catch { /* ignore parse/storage errors, fall through to the real error */ }
+    }
     throw err;
   }
 };
+
+// The leader roster is public, identical for everyone, and required to render
+// the login dropdown AND to reconstruct a profile during offline login.
+const LEADERS_CACHE_KEY = 'cached_leaders_v1';
+export const getLeaders = async () =>
+  readThroughCache(
+    LEADERS_CACHE_KEY,
+    async () => (await api.get('/auth/leaders')).data,
+    (d) => Array.isArray(d) && d.length > 0,
+  );
 
 export const login = async (leaderId, { password, accessCode } = {}) => {
   const payload = { leaderId };
@@ -190,6 +208,9 @@ export const login = async (leaderId, { password, accessCode } = {}) => {
     // first offline session has data ready (rosters, projects, today's
     // attendance, etc.). Background — don't block navigation.
     primeOfflineCache(response.data.leader).catch(() => {});
+    // Also download the working set into the DURABLE snapshot (localStorage),
+    // so offline reads survive the SW cache being purged or cold.
+    refreshOfflineSnapshot(response.data.leader).catch(() => {});
     // If notifications are already granted (e.g. from a previous session),
     // make sure the push subscription is current with the server. The
     // request-permission step happens elsewhere — needs a user gesture.
@@ -279,10 +300,12 @@ export const getStudentsByRotation = async (projectId, rotationNumber) => {
   return response.data;
 };
 
-export const getCurrentRotationStudents = async (projectId) => {
-  const response = await api.get(`/projects/${projectId}/current-rotation-students`);
-  return response.data;
-};
+export const getCurrentRotationStudents = async (projectId) =>
+  readThroughCache(
+    `off:roster:${projectId}`,
+    async () => (await api.get(`/projects/${projectId}/current-rotation-students`)).data,
+    (d) => d && Array.isArray(d.students),
+  );
 
 export const getAvailableRotations = async (projectId) => {
   const response = await api.get(`/projects/${projectId}/available-rotations`);
@@ -364,9 +387,32 @@ export const resolveAttendanceBulk = async ({ date, time, records, resolution })
   return response.data;
 };
 
-export const getAttendanceByProjectAndDate = async (projectId, date) => {
-  const response = await api.get(`/attendance/project/${projectId}/date/${date}`);
-  return response.data;
+export const getAttendanceByProjectAndDate = async (projectId, date) =>
+  readThroughCache(
+    `off:attn:${projectId}:${date}`,
+    async () => (await api.get(`/attendance/project/${projectId}/date/${date}`)).data,
+    (d) => Array.isArray(d),
+  );
+
+// Proactively download the leader's offline working set into the durable
+// snapshot (roster + today's primera/segunda lists + the public leader list),
+// so everything renders offline even if the SW cache is cold. Called on login
+// AND on every online app open (AuthContext) — the latter covers a persistent
+// session that never re-logs in. Best-effort; the network may be slow/down.
+export const refreshOfflineSnapshot = async (profile) => {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+  if (!profile) return;
+  const today = todayLocalISO();
+  const tasks = [getLeaders().catch(() => {})];
+  const pid = profile.projectId;
+  if (pid) {
+    tasks.push(
+      getCurrentRotationStudents(pid).catch(() => {}),
+      getProfesorAttendance(pid, today).catch(() => {}),
+      getAttendanceByProjectAndDate(pid, today).catch(() => {}),
+    );
+  }
+  await Promise.allSettled(tasks);
 };
 
 export const getAttendanceByStudent = async (studentId) => {
@@ -380,10 +426,12 @@ export const getAttachmentUrl = (studentId, date) => {
 
 // Profesor-only attendance "passes". Each session day can have a start
 // pass and an end pass per student, both marked by a profesor.
-export const getProfesorAttendance = async (projectId, date) => {
-  const response = await api.get(`/profesor-attendance/project/${projectId}/date/${date}`);
-  return response.data;
-};
+export const getProfesorAttendance = async (projectId, date) =>
+  readThroughCache(
+    `off:passes:${projectId}:${date}`,
+    async () => (await api.get(`/profesor-attendance/project/${projectId}/date/${date}`)).data,
+    (d) => Array.isArray(d),
+  );
 
 export const bulkSaveProfesorAttendance = async ({ projectId, date, passType, entries }) => {
   const response = await api.post(`/profesor-attendance/bulk`, {

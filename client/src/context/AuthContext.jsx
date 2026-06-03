@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api, { logout as logoutApi, clearStoredUser, getUser, setStoredUser } from '../api/client';
+import api, { logout as logoutApi, clearStoredUser, getUser, setStoredUser, refreshOfflineSnapshot } from '../api/client';
 import { AuthContext } from './useAuth.js';
 
 // Reads any persisted user. Migrates the legacy "leader" key to "auth_user"
@@ -41,6 +41,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const bootId = leader?.id;
     if (!bootId) return;
+    // Online app open: refresh the DURABLE offline snapshot (project roster +
+    // today's primera/segunda lists) so they're ready if the network drops
+    // later — even when the user keeps a persistent session and never re-logs
+    // in, or never opens the page while online. Best-effort.
+    if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+      refreshOfflineSnapshot(leader).catch(() => {});
+    }
     let cancelled = false;
     api.get('/auth/verify')
       .then((r) => {
