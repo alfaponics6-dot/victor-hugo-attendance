@@ -20,6 +20,15 @@
       "emptySubtitle": "The chart will appear as soon as the first session is marked."
     }
   },
+  "secondList": {
+    "tab": "2nd list",
+    "sectionTitle": "Second roll call",
+    "heading": "Take the second (final) roll call",
+    "subtitle": "Mark your project's second roll call. The time is recorded automatically.",
+    "noProject": "Your account has no project assigned.",
+    "locked": "Session closed.",
+    "lockedHint": "This date's session has been closed; it can no longer be changed."
+  },
   "attendance": {
     "sectionTitle": "Mark attendance",
     "heading": "Today's session",

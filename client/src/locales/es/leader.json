@@ -20,6 +20,15 @@
       "emptySubtitle": "La gráfica aparecerá en cuanto se marque la primera sesión."
     }
   },
+  "secondList": {
+    "tab": "2ª lista",
+    "sectionTitle": "Segunda lista",
+    "heading": "Pasar segunda lista (final)",
+    "subtitle": "Marque la asistencia de la segunda lista de su proyecto. La hora se registra automáticamente.",
+    "noProject": "Su cuenta no tiene un proyecto asignado.",
+    "locked": "Jornada cerrada.",
+    "lockedHint": "La jornada de esta fecha ya fue cerrada; no se puede modificar."
+  },
   "attendance": {
     "sectionTitle": "Marcar asistencia",
     "heading": "Sesión del día",

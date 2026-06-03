@@ -59,8 +59,7 @@ import Skeleton from '../components/ui/Skeleton';
 import { Input, Select, Label } from '../components/ui/Input';
 import { cn } from '../lib/cn';
 import { getProjectLabel } from '../lib/projectI18n';
-import ProfesorPassesView from '../components/features/profesor/ProfesorPassesView';
-import ProfesorComplianceView from '../components/features/profesor/ProfesorComplianceView';
+import JornadaView from '../components/features/profesor/JornadaView';
 
 /* ────────────────────────────────────────────────────────────────────────────
    Small helpers used throughout the page. Kept inline so the file stays
@@ -460,28 +459,23 @@ function ProfesorDashboard() {
         }
       />
 
-      {/* Top-level switcher between the existing "Ausencias" oversight
-          view and the new profe-only attendance "Pasadas" workflow.
-          The "Supervisión" tab is coordinator-only — gated by
-          leader.isCoordinator so non-coordinators don't even see it. */}
+      {/* Top-level switcher: the existing "Ausencias" oversight view and the
+          "Jornada" sign-off (per-project primera/segunda status + Cerrar día;
+          the coordinator also gets Cerrar jornada inside it). Leaders now own
+          marking the lists, so there's no profe "Pasadas" marking tab. */}
       <div className="mb-5">
         <Tabs
           value={mainView}
           onChange={setMainView}
           tabs={[
             { key: 'absences', label: t('mainViews.absences'), icon: ListChecks },
-            { key: 'passes', label: t('mainViews.passes'), icon: ClipboardCheck },
-            ...(leader?.isCoordinator
-              ? [{ key: 'compliance', label: t('mainViews.compliance'), icon: ShieldCheck }]
-              : []),
+            { key: 'jornada', label: t('mainViews.jornada'), icon: ShieldCheck },
           ]}
         />
       </div>
 
-      {mainView === 'passes' ? (
-        <ProfesorPassesView />
-      ) : mainView === 'compliance' && leader?.isCoordinator ? (
-        <ProfesorComplianceView />
+      {mainView === 'jornada' ? (
+        <JornadaView />
       ) : (
       <>
 

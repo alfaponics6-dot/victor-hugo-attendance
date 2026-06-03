@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, useEffect, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { LayoutDashboard, ClipboardCheck, Users, BarChart3, LogOut, TrendingUp, Mail } from 'lucide-react';
+import { LayoutDashboard, ClipboardCheck, Users, BarChart3, LogOut, TrendingUp, Mail, Sunset } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/useAuth.js';
@@ -14,6 +14,7 @@ const StudentManagement = lazy(() => import('./StudentManagement'));
 const Attendance = lazy(() => import('./Attendance'));
 const Statistics = lazy(() => import('./Statistics'));
 const MailRotation = lazy(() => import('../components/features/leader/MailRotation'));
+const SecondListView = lazy(() => import('../components/features/leader/SecondListView'));
 import QuickStatsWidget from '../components/features/admin/QuickStatsWidget';
 import AttendanceCalendar from '../components/features/attendance/AttendanceCalendar';
 import AppShell, { PageHeader, SectionTitle } from '../components/ui/AppShell';
@@ -38,6 +39,7 @@ function Dashboard() {
     () => [
       { key: 'home', label: t('dashboard.tabs.home'), icon: LayoutDashboard },
       { key: 'attendance', label: t('dashboard.tabs.attendance'), icon: ClipboardCheck },
+      { key: 'secondList', label: t('secondList.tab'), icon: Sunset },
       { key: 'students', label: t('dashboard.tabs.students'), icon: Users },
       { key: 'mail', label: t('dashboard.tabs.mail'), icon: Mail },
       { key: 'statistics', label: t('dashboard.tabs.statistics'), icon: BarChart3 },
@@ -120,6 +122,7 @@ function Dashboard() {
           <Suspense fallback={<Loading />}>
             {activeTab === 'home' && <HomeTab leader={leader} />}
             {activeTab === 'attendance' && <Attendance />}
+            {activeTab === 'secondList' && <SecondListView />}
             {activeTab === 'students' && <StudentManagement />}
             {activeTab === 'mail' && <MailRotation />}
             {activeTab === 'statistics' && <Statistics />}

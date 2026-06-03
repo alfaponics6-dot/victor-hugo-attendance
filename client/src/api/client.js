@@ -362,6 +362,24 @@ export const getProfesorAttendanceCompliance = async (date) => {
   return response.data;
 };
 
+// Jornada sign-off. getJornada → per-project primera/segunda status + close
+// state for a date (profesor review surface). closeDay = profe checkmark per
+// project; closeSession = coordinator lock for the whole date.
+export const getJornada = async (date) => {
+  const response = await api.get(`/profesor-attendance/jornada/${date}`);
+  return response.data;
+};
+
+export const closeDay = async (projectId, date) => {
+  const response = await api.post(`/profesor-attendance/close-day`, { projectId, date });
+  return response.data;
+};
+
+export const closeSession = async (date) => {
+  const response = await api.post(`/profesor-attendance/close-session`, { date });
+  return response.data;
+};
+
 // Statistics APIs.
 // Pass either { date } for single-date stats, or { startDate, endDate } for
 // range stats (inclusive on both ends).

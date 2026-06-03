@@ -8,7 +8,25 @@ const db = require('../config/database');
 const { authenticateToken, requireProfesor } = require('../middleware/auth');
 
 router.use(authenticateToken);
-router.use(requireProfesor);
+
+// The project's own leader (or an admin) may read/write that project's passes.
+// The "segunda lista" (final pass) is now owned by leaders; profesores are
+// review-only and use the jornada/compliance endpoints below.
+function leaderOwnsOrAdmin(req, projectId) {
+  const u = req.user;
+  if (!u) return false;
+  if (u.role === 'admin') return true;
+  if (u.role === 'leader') return Number(u.projectId) === Number(projectId);
+  return false;
+}
+
+// Coordinator (is_coordinator flag) or admin. Re-reads the live row so a flag
+// flip takes effect immediately without waiting for token refresh.
+async function isCoordinatorOrAdmin(req) {
+  if (req.user && req.user.role === 'admin') return true;
+  const me = await db.getLeaderById(req.user.id);
+  return !!me && Number(me.is_coordinator) === 1;
+}
 
 const VALID_PASSES = new Set(['start', 'end']);
 const VALID_STATUSES = new Set(['present', 'absent']);
@@ -61,6 +79,11 @@ router.get('/project/:projectId/date/:date', async (req, res) => {
     if (!isValidIsoDate(date)) {
       return res.status(400).json({ error: 'Invalid date (expected YYYY-MM-DD)' });
     }
+    // Readable by the project's leader, any profesor (review), or admin.
+    const u = req.user;
+    const canRead = u.role === 'admin' || u.role === 'profesor'
+      || (u.role === 'leader' && Number(u.projectId) === projectId);
+    if (!canRead) return res.status(403).json({ error: 'Forbidden' });
     const rows = await db.getProfesorAttendanceForProjectDate(projectId, date);
     res.json(rows);
   } catch (err) {
@@ -91,6 +114,17 @@ router.post('/bulk', express.json(), async (req, res) => {
     // overwrite a perfectly fine current row.
     const dateErr = dateOutOfWriteRange(date);
     if (dateErr) return res.status(400).json({ error: dateErr });
+    // Only the project's own leader (or admin) marks this list now.
+    if (!leaderOwnsOrAdmin(req, pid)) {
+      return res.status(403).json({ error: 'Only the project leader or an admin can mark this list' });
+    }
+    // Block writes once the coordinator has locked this date's jornada.
+    if (await db.isDateLocked(pid, date)) {
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.',
+      });
+    }
     if (!VALID_PASSES.has(passType)) {
       return res.status(400).json({ error: 'Invalid passType (expected "start" or "end")' });
     }
@@ -180,6 +214,75 @@ router.get('/compliance/:date', async (req, res) => {
   } catch (err) {
     console.error('GET /profesor-attendance/compliance failed:', err);
     res.status(500).json({ error: 'Failed to load compliance' });
+  }
+});
+
+// GET /profesor-attendance/jornada/:date
+// Review surface for profesores (and coordinator/admin): per-project status of
+// the primera lista (leader attendance) + segunda lista (end pass) + sign-off.
+router.get('/jornada/:date', requireProfesor, async (req, res) => {
+  try {
+    const { date } = req.params;
+    if (!isValidIsoDate(date)) {
+      return res.status(400).json({ error: 'Invalid date (expected YYYY-MM-DD)' });
+    }
+    const projects = await db.getJornadaStatus(date);
+    res.json({ date, projects });
+  } catch (err) {
+    console.error('GET /profesor-attendance/jornada failed:', err);
+    res.status(500).json({ error: 'Failed to load jornada status' });
+  }
+});
+
+// POST /profesor-attendance/close-day  { projectId, date }
+// A profesor closes a project's day (review checkmark; requires both lists).
+router.post('/close-day', requireProfesor, express.json(), async (req, res) => {
+  try {
+    const { projectId, date } = req.body || {};
+    const pid = Number(projectId);
+    if (!Number.isInteger(pid) || pid < 1) return res.status(400).json({ error: 'Invalid projectId' });
+    if (!isValidIsoDate(date)) return res.status(400).json({ error: 'Invalid date (expected YYYY-MM-DD)' });
+    await db.closeDayForProject(pid, date, req.user.id);
+    const projects = await db.getJornadaStatus(date);
+    res.json({ success: true, date, projects });
+  } catch (err) {
+    if (err && err.code === 'LISTS_INCOMPLETE') {
+      return res.status(409).json({ error: 'Lists incomplete', message: 'Faltan la primera o la segunda lista de este proyecto.' });
+    }
+    if (err && err.code === 'DATE_LOCKED') {
+      return res.status(409).json({ error: 'Date locked', message: 'La jornada de esta fecha ya fue cerrada.' });
+    }
+    console.error('POST /profesor-attendance/close-day failed:', err);
+    res.status(500).json({ error: 'Failed to close day' });
+  }
+});
+
+// POST /profesor-attendance/close-session  { date }
+// The coordinator (or admin) locks the whole jornada for a date. Requires
+// every project with students to be day-closed first.
+router.post('/close-session', express.json(), async (req, res) => {
+  try {
+    if (!(await isCoordinatorOrAdmin(req))) {
+      return res.status(403).json({ error: 'Coordinator access required' });
+    }
+    const { date } = req.body || {};
+    if (!isValidIsoDate(date)) return res.status(400).json({ error: 'Invalid date (expected YYYY-MM-DD)' });
+    const result = await db.closeSessionForDate(date, req.user.id);
+    const projects = await db.getJornadaStatus(date);
+    res.json({ success: true, date, locked: result.projects, projects });
+  } catch (err) {
+    if (err && err.code === 'DAYS_INCOMPLETE') {
+      return res.status(409).json({
+        error: 'Days incomplete',
+        message: 'Todos los proyectos deben tener el día cerrado antes de cerrar la jornada.',
+        pending: err.pending || [],
+      });
+    }
+    if (err && err.code === 'NO_PROJECTS') {
+      return res.status(400).json({ error: 'No projects scheduled' });
+    }
+    console.error('POST /profesor-attendance/close-session failed:', err);
+    res.status(500).json({ error: 'Failed to close session' });
   }
 });
 

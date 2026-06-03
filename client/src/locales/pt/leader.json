@@ -20,6 +20,15 @@
       "emptySubtitle": "O gráfico aparecerá assim que a primeira sessão for marcada."
     }
   },
+  "secondList": {
+    "tab": "2ª chamada",
+    "sectionTitle": "Segunda chamada",
+    "heading": "Fazer a segunda chamada (final)",
+    "subtitle": "Marque a segunda chamada do seu projeto. A hora é registrada automaticamente.",
+    "noProject": "Sua conta não tem um projeto atribuído.",
+    "locked": "Jornada fechada.",
+    "lockedHint": "A jornada desta data foi fechada; não pode mais ser alterada."
+  },
   "attendance": {
     "sectionTitle": "Marcar presença",
     "heading": "Sessão do dia",

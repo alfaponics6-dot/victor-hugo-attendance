@@ -20,6 +20,15 @@
       "emptySubtitle": "Le graphique apparaîtra dès la première séance enregistrée."
     }
   },
+  "secondList": {
+    "tab": "2e liste",
+    "sectionTitle": "Deuxième appel",
+    "heading": "Faire le deuxième appel (final)",
+    "subtitle": "Marquez le deuxième appel de votre projet. L'heure est enregistrée automatiquement.",
+    "noProject": "Aucun projet n'est assigné à votre compte.",
+    "locked": "Journée clôturée.",
+    "lockedHint": "La journée de cette date a été clôturée ; elle ne peut plus être modifiée."
+  },
   "attendance": {
     "sectionTitle": "Marquer la présence",
     "heading": "Séance du jour",

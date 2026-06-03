@@ -243,6 +243,31 @@ class Database {
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_profe_attendance_project_date ON profesor_attendance(project_id, date)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_profe_attendance_profesor ON profesor_attendance(profesor_id, date DESC)`);
 
+      // Daily sign-off (jornada). One row per (project, date): a profesor
+      // "cierra el día" once both the leader's primera lista (the `attendance`
+      // table) and segunda lista (the 'end' pass in profesor_attendance) are
+      // in; the coordinador then "cierra la jornada" for the whole date,
+      // setting locked=1. Only `locked` blocks further pass writes — a
+      // profe's day-close is a review checkmark, not a lock.
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS daily_signoff (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          date DATE NOT NULL,
+          closed_day_by INTEGER,
+          closed_day_at DATETIME,
+          closed_session_by INTEGER,
+          closed_session_at DATETIME,
+          locked INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+          FOREIGN KEY (closed_day_by) REFERENCES leaders(id) ON DELETE SET NULL,
+          FOREIGN KEY (closed_session_by) REFERENCES leaders(id) ON DELETE SET NULL,
+          UNIQUE(project_id, date)
+        )
+      `);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_signoff_date ON daily_signoff(date)`);
+
       // Rotations table - track student rotation assignments
       this.db.run(`
         CREATE TABLE IF NOT EXISTS rotations (
@@ -1840,6 +1865,156 @@ class Database {
         LEFT JOIN latest_row      e_lr ON e_lr.project_id = pr.project_id AND e_lr.pass_type = 'end'
         ORDER BY pr.project_number, pr.project_name`;
       this.db.all(sql, [date, date, date], (err, rows) => (err ? reject(err) : resolve(rows || [])));
+    });
+  }
+
+  // ── Jornada / daily sign-off ───────────────────────────────────────────
+
+  // Per-project status for a date: primera lista (from the leader `attendance`
+  // table), segunda lista (the 'end' pass, reusing the compliance query), and
+  // the sign-off/lock state. Drives the profe/coordinador review surface.
+  getJornadaStatus(date) {
+    const allAsync = (sql, p) =>
+      new Promise((res, rej) => this.db.all(sql, p, (e, r) => (e ? rej(e) : res(r || []))));
+    return Promise.all([
+      this.getProfesorAttendanceCompliance(date), // per project: roster + end_* (segunda)
+      allAsync(
+        `SELECT a.project_id,
+                MIN(a.time) AS first_time,
+                COUNT(*) AS rows_count,
+                SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) AS present_count
+         FROM attendance a WHERE a.date = ? GROUP BY a.project_id`,
+        [date],
+      ),
+      allAsync(
+        `SELECT ds.*,
+                (SELECT name FROM leaders WHERE id = ds.closed_day_by) AS closed_day_name,
+                (SELECT name FROM leaders WHERE id = ds.closed_session_by) AS closed_session_name
+         FROM daily_signoff ds WHERE ds.date = ?`,
+        [date],
+      ),
+    ]).then(([compliance, att, signoffs]) => {
+      const attByP = {};
+      for (const a of att) attByP[a.project_id] = a;
+      const soByP = {};
+      for (const s of signoffs) soByP[s.project_id] = s;
+      return compliance.map((c) => {
+        const a = attByP[c.project_id];
+        const so = soByP[c.project_id] || {};
+        return {
+          project_id: c.project_id,
+          project_number: c.project_number,
+          project_name: c.project_name,
+          roster_size: c.roster_size,
+          primera: {
+            passed: !!a,
+            time: a ? a.first_time : null,
+            present: a ? a.present_count : 0,
+            rows: a ? a.rows_count : 0,
+          },
+          segunda: {
+            passed: !!c.end_recorded_at,
+            recorded_at: c.end_recorded_at || null,
+            by: c.end_profesor_name || null,
+            present: c.end_present_count || 0,
+            rows: c.end_rows_count || 0,
+          },
+          closedDay: { by: so.closed_day_name || null, at: so.closed_day_at || null },
+          closedSession: { by: so.closed_session_name || null, at: so.closed_session_at || null },
+          locked: !!so.locked,
+        };
+      });
+    });
+  }
+
+  // Profe closes a project's day. Requires BOTH lists present (primera in
+  // `attendance`, segunda = 'end' pass) and the date not already locked.
+  // Review checkmark only — does not lock.
+  closeDayForProject(projectId, date, userId) {
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
+      this.db.get(
+        `SELECT
+           (SELECT COUNT(*) FROM attendance WHERE project_id = ? AND date = ?) AS primera,
+           (SELECT COUNT(*) FROM profesor_attendance WHERE project_id = ? AND date = ? AND pass_type = 'end') AS segunda,
+           (SELECT locked FROM daily_signoff WHERE project_id = ? AND date = ?) AS locked`,
+        [projectId, date, projectId, date, projectId, date],
+        (err, row) => {
+          if (err) return reject(err);
+          if (row && row.locked) { const e = new Error('Date locked'); e.code = 'DATE_LOCKED'; return reject(e); }
+          if (!row || !row.primera || !row.segunda) {
+            const e = new Error('Lists incomplete'); e.code = 'LISTS_INCOMPLETE'; return reject(e);
+          }
+          this.db.run(
+            `INSERT INTO daily_signoff (project_id, date, closed_day_by, closed_day_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(project_id, date) DO UPDATE SET
+               closed_day_by = excluded.closed_day_by, closed_day_at = CURRENT_TIMESTAMP`,
+            [projectId, date, userId],
+            (uErr) => (uErr ? reject(uErr) : resolve({ projectId, date })),
+          );
+        },
+      );
+    }));
+  }
+
+  // Coordinator closes the whole jornada for a date: every project with
+  // students must be day-closed first, then all are locked (locked=1).
+  closeSessionForDate(date, userId) {
+    return this.writeMutex.run(() => new Promise((resolve, reject) => {
+      this.db.all(
+        `SELECT DISTINCT p.id, p.project_number, p.project_name
+         FROM projects p WHERE EXISTS (SELECT 1 FROM students s WHERE s.project_id = p.id)
+         ORDER BY p.project_number`,
+        [],
+        (err, projects) => {
+          if (err) return reject(err);
+          if (!projects.length) { const e = new Error('No projects'); e.code = 'NO_PROJECTS'; return reject(e); }
+          this.db.all(
+            `SELECT project_id FROM daily_signoff WHERE date = ? AND closed_day_by IS NOT NULL`,
+            [date],
+            (e2, closedRows) => {
+              if (e2) return reject(e2);
+              const closed = new Set(closedRows.map((r) => r.project_id));
+              const pending = projects.filter((p) => !closed.has(p.id));
+              if (pending.length) {
+                const e = new Error('Days incomplete'); e.code = 'DAYS_INCOMPLETE';
+                e.pending = pending.map((p) => ({ project_id: p.id, project_number: p.project_number, project_name: p.project_name }));
+                return reject(e);
+              }
+              this.db.serialize(() => {
+                this.db.run('BEGIN IMMEDIATE', (bErr) => {
+                  if (bErr) return reject(bErr);
+                  const stmt = this.db.prepare(
+                    `INSERT INTO daily_signoff (project_id, date, closed_session_by, closed_session_at, locked)
+                     VALUES (?, ?, ?, CURRENT_TIMESTAMP, 1)
+                     ON CONFLICT(project_id, date) DO UPDATE SET
+                       closed_session_by = excluded.closed_session_by,
+                       closed_session_at = CURRENT_TIMESTAMP, locked = 1`,
+                  );
+                  let errored = null;
+                  for (const p of projects) stmt.run(p.id, date, userId, (er) => { if (er && !errored) errored = er; });
+                  stmt.finalize((fErr) => {
+                    const e = errored || fErr;
+                    if (e) { this.db.run('ROLLBACK', () => reject(e)); return; }
+                    this.db.run('COMMIT', (cErr) => (cErr ? reject(cErr) : resolve({ date, projects: projects.length })));
+                  });
+                });
+              });
+            },
+          );
+        },
+      );
+    }));
+  }
+
+  // True if the (project, date) jornada has been locked by the coordinator.
+  isDateLocked(projectId, date) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        `SELECT locked FROM daily_signoff WHERE project_id = ? AND date = ?`,
+        [projectId, date],
+        (err, row) => (err ? reject(err) : resolve(!!(row && row.locked))),
+      );
     });
   }
 
