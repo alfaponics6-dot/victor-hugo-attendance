@@ -633,7 +633,7 @@ class Database {
       this.db.get(
         `SELECT DISTINCT rotation_number
          FROM rotations
-         WHERE date('now') BETWEEN start_date AND end_date
+         WHERE date('now', '-6 hours') BETWEEN start_date AND end_date
          LIMIT 1`,
         [],
         (err, rotationRow) => {
@@ -687,7 +687,7 @@ class Database {
       this.db.get(
         `SELECT DISTINCT rotation_number
          FROM rotations
-         WHERE date('now') BETWEEN start_date AND end_date
+         WHERE date('now', '-6 hours') BETWEEN start_date AND end_date
          LIMIT 1`,
         [],
         (err, rotationRow) => {
@@ -1195,11 +1195,18 @@ class Database {
   }
 
   getCurrentRotation() {
+    // SQLite `date('now')` is always UTC. The program runs in Costa Rica
+    // (UTC-6, no DST), and rotation start/end dates are stored as CR-local
+    // civil dates. Without the `-6 hours` shift, from 18:00–24:00 CR the UTC
+    // date is already "tomorrow", so the active rotation drops out of the
+    // BETWEEN window and roster loads / stats return empty for that 6h. The
+    // same shift is applied to the rotation-window checks in
+    // getStudentsWithLowAttendance / getStudentsWithConsecutiveAbsences.
     return new Promise((resolve, reject) => {
       this.db.get(
         `SELECT DISTINCT rotation_number
          FROM rotations
-         WHERE date('now') BETWEEN start_date AND end_date
+         WHERE date('now', '-6 hours') BETWEEN start_date AND end_date
          LIMIT 1`,
         [],
         (err, row) => {

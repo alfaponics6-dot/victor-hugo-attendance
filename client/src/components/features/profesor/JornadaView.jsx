@@ -162,7 +162,7 @@ export default function JornadaView() {
                       <div className="text-sm font-medium tracking-tight truncate">{pname(p)}</div>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                         <ListChip label={t('jornada.primera')} passed={p.primera?.passed} time={p.primera?.time} t={t} />
-                        <ListChip label={t('jornada.segunda')} passed={p.segunda?.passed} time={p.segunda?.recorded_at} t={t} isDateTime />
+                        <ListChip label={t('jornada.segunda')} passed={p.segunda?.passed} time={p.segunda?.recorded_at} t={t} isDateTime lang={lang} />
                       </div>
                     </div>
                   </div>
@@ -226,13 +226,21 @@ export default function JornadaView() {
   );
 }
 
-function ListChip({ label, passed, time, t, isDateTime }) {
-  // primera lista stores a clock time ("08:00"); segunda stores a datetime
-  // (recorded_at) — show just the time portion for a compact chip.
+function ListChip({ label, passed, time, t, isDateTime, lang }) {
+  // primera lista stores a local clock time ("08:00"); segunda stores
+  // recorded_at as a UTC datetime ("YYYY-MM-DD HH:MM:SS", no tz suffix) from
+  // SQLite CURRENT_TIMESTAMP. Parse it as UTC and render in the viewer's local
+  // time — otherwise it shows 6h ahead in Costa Rica (and disagrees with the
+  // primera chip in the same row). Mirrors SecondListView's lastRecordedAt.
   let shown = time;
   if (passed && time && isDateTime) {
-    const m = String(time).match(/(\d{2}:\d{2})/);
-    shown = m ? m[1] : time;
+    const raw = String(time);
+    const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(raw);
+    const iso = hasTz ? raw : (raw.includes('T') ? raw + 'Z' : raw.replace(' ', 'T') + 'Z');
+    const d = new Date(iso);
+    shown = isNaN(d.getTime())
+      ? (raw.match(/(\d{2}:\d{2})/)?.[1] ?? raw)
+      : d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
   }
   return (
     <span className={cn(
