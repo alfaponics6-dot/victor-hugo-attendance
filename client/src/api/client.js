@@ -136,9 +136,32 @@ api.interceptors.response.use(
 );
 
 // Authentication APIs
+
+// The leader roster is public, identical for everyone, and required to render
+// the login dropdown AND to reconstruct a profile during offline login. The SW
+// api-get cache is purged on every login (cross-user isolation), so it's not a
+// reliable offline source for the login page. Mirror it into localStorage —
+// which survives logout and isn't purged — and fall back to it when the network
+// is unreachable, so a cold/offline open of the login page still populates.
+const LEADERS_CACHE_KEY = 'cached_leaders_v1';
 export const getLeaders = async () => {
-  const response = await api.get('/auth/leaders');
-  return response.data;
+  try {
+    const response = await api.get('/auth/leaders');
+    const data = response.data;
+    if (Array.isArray(data) && data.length) {
+      try { localStorage.setItem(LEADERS_CACHE_KEY, JSON.stringify(data)); } catch { /* quota/disabled — non-fatal */ }
+    }
+    return data;
+  } catch (err) {
+    try {
+      const cached = localStorage.getItem(LEADERS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch { /* ignore parse/storage errors, fall through to the real error */ }
+    throw err;
+  }
 };
 
 export const login = async (leaderId, { password, accessCode } = {}) => {
