@@ -163,10 +163,17 @@ router.post('/bulk', express.json(), rejectStaleAuthor, async (req, res) => {
     // and the row would be silently filed under project 1, corrupting
     // both projects' compliance views. Live integration test caught
     // this on Simon's account; fixing here.
-    const wrong = await db.findStudentsNotInProject(
-      cleanEntries.map((e) => e.student_id),
-      pid,
-    );
+    // Validate every student belongs to the project — by base assignment OR a
+    // rotation row covering `date`. A base-project-only check (the old
+    // findStudentsNotInProject) wrongly rejected students rotated INTO this
+    // project for the current rotation, which is exactly who the leader's
+    // segunda-lista roster contains (getCurrentRotationStudents). Mirrors the
+    // leader /attendance/bulk check so both lists accept the same roster.
+    const wrong = [];
+    for (const e of cleanEntries) {
+      const ok = await db.validateStudentBelongsToProject(e.student_id, pid, date);
+      if (!ok) wrong.push(e.student_id);
+    }
     if (wrong.length > 0) {
       return res.status(400).json({
         error: 'Some students do not belong to the given project',
