@@ -40,25 +40,6 @@
     "closeSessionError": "Não foi possível fechar a jornada.",
     "loadError": "Não foi possível carregar o estado da jornada."
   },
-  "compliance": {
-    "dateLabel": "Data",
-    "refresh": "Atualizar",
-    "loadError": "Falha ao carregar o painel de supervisão.",
-    "empty": "Nenhum projeto com estudantes para exibir.",
-    "startPass": "Início",
-    "endPass": "Final",
-    "markedBy": "Marcado por {{who}}",
-    "unknownProfe": "professor desconhecido",
-    "notYet": "Ainda não marcado",
-    "present": "presentes",
-    "rosterSize_one": "{{count}} estudante",
-    "rosterSize_other": "{{count}} estudantes",
-    "summary": {
-      "projects": "Projetos",
-      "endDone": "Final salvo",
-      "endPending": "Final pendente"
-    }
-  },
   "passes": {
     "projectLabel": "Projeto",
     "pickProject": "Selecione um projeto",

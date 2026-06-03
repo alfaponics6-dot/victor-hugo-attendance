@@ -395,12 +395,6 @@ export const bulkSaveProfesorAttendance = async ({ projectId, date, passType, en
   return response.data;
 };
 
-// Coordinator-only oversight: per-project start/end pass status for a date.
-export const getProfesorAttendanceCompliance = async (date) => {
-  const response = await api.get(`/profesor-attendance/compliance/${date}`);
-  return response.data;
-};
-
 // Jornada sign-off. getJornada → per-project primera/segunda status + close
 // state for a date (profesor review surface). closeDay = profe checkmark per
 // project; closeSession = coordinator lock for the whole date.

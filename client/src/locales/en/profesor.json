@@ -40,25 +40,6 @@
     "closeSessionError": "Could not close the session.",
     "loadError": "Could not load the session status."
   },
-  "compliance": {
-    "dateLabel": "Date",
-    "refresh": "Refresh",
-    "loadError": "Failed to load oversight panel.",
-    "empty": "No projects with students to display.",
-    "startPass": "Start",
-    "endPass": "End",
-    "markedBy": "Marked by {{who}}",
-    "unknownProfe": "unknown profesor",
-    "notYet": "Not marked yet",
-    "present": "present",
-    "rosterSize_one": "{{count}} student",
-    "rosterSize_other": "{{count}} students",
-    "summary": {
-      "projects": "Projects",
-      "endDone": "End saved",
-      "endPending": "End pending"
-    }
-  },
   "passes": {
     "projectLabel": "Project",
     "pickProject": "Select a project",
