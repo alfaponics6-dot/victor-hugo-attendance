@@ -56,6 +56,7 @@ import Skeleton from '../components/ui/Skeleton';
 import { Input, Select, Label } from '../components/ui/Input';
 import { cn } from '../lib/cn';
 import { getProjectLabel } from '../lib/projectI18n';
+import JornadaPanel from '../components/features/profesor/JornadaPanel';
 
 /* ────────────────────────────────────────────────────────────────────────────
    Small helpers used throughout the page. Kept inline so the file stays
@@ -365,7 +366,7 @@ function ProfesorDashboard() {
 
   const handlePrint = () => window.print();
 
-  if (!leader || (leader.role !== 'profesor' && leader.role !== 'admin')) {
+  if (!leader || !['profesor', 'admin', 'coordinador'].includes(leader.role)) {
     return <Navigate to="/" replace />;
   }
 
@@ -451,6 +452,9 @@ function ProfesorDashboard() {
           </>
         }
       />
+
+      {/* ─── Daily sign-off (jornada) ───────────────────────────────────── */}
+      <JornadaPanel />
 
       {/* ─── Stat tiles ─────────────────────────────────────────────────── */}
       <motion.div

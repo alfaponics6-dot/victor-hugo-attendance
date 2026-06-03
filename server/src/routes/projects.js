@@ -16,10 +16,10 @@ const {
 router.use(authenticateToken);
 
 // Helper: check that the authenticated user can view/modify the given project's data.
-// Admin/profesor can access any project; leader is restricted to their own project.
+// Admin/profesor/coordinador can access any project; leader is restricted to their own.
 const userCanModifyProject = (user, projectId) => {
   if (!user) return false;
-  if (user.role === 'admin' || user.role === 'profesor') return true;
+  if (user.role === 'admin' || user.role === 'profesor' || user.role === 'coordinador') return true;
   return Number(user.projectId) === Number(projectId);
 };
 

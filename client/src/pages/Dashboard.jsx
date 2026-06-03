@@ -179,8 +179,11 @@ function TrendCard({ projectId }) {
         if (cancelled) return;
 
         const series = results.map(({ date, rows }) => {
-          const present = rows.filter((r) => r.status === 'present').length;
-          const total = rows.length;
+          // Canonical attendance = primera lista (list_number 1); the second
+          // roll call would otherwise double the per-day counts.
+          const firstList = rows.filter((r) => r.list_number === 1);
+          const present = firstList.filter((r) => r.status === 'present').length;
+          const total = firstList.length;
           const rate = total > 0 ? +((present / total) * 100).toFixed(1) : null;
           return {
             date,

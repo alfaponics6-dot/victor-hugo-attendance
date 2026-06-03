@@ -179,13 +179,15 @@ export const markAttendance = async (attendanceData) => {
   }
 };
 
-// Bulk mark attendance for multiple students
-export const markBulkAttendance = async (projectId, leaderId, date, time, records) => {
+// Bulk mark attendance for multiple students.
+// listNumber: 1 = primera lista, 2 = segunda lista (defaults to 1).
+export const markBulkAttendance = async (projectId, leaderId, date, time, records, listNumber = 1) => {
   // projectId and leaderId are accepted for backwards compatibility but the
   // server overrides them from the JWT.
   const response = await api.post('/attendance/bulk', {
     date,
     time,
+    listNumber,
     records
   });
   return response.data;
@@ -268,6 +270,27 @@ export const getAttendanceSummaryAdmin = async (startDate = null, endDate = null
   if (projectId) params.projectId = projectId;
 
   const response = await api.get('/admin/attendance-summary', { params });
+  return response.data;
+};
+
+// ── Jornada / daily sign-off (profesor + coordinador) ──────────────────────
+
+// Per-project status for a date: which lists passed (+time+leader) and the
+// close/lock state. Returns { date, projects: [...] }.
+export const getDailyStatus = async (date) => {
+  const response = await api.get('/admin/daily-status', { params: date ? { date } : {} });
+  return response.data;
+};
+
+// Profesor closes a project's day (review checkmark). Returns updated status.
+export const closeDay = async (projectId, date) => {
+  const response = await api.post('/admin/close-day', { projectId, date });
+  return response.data;
+};
+
+// Coordinador closes (locks) the whole jornada for a date.
+export const closeSession = async (date) => {
+  const response = await api.post('/admin/close-session', { date });
   return response.data;
 };
 

@@ -17,7 +17,7 @@ router.use(authenticateToken);
 
 // Helpers --------------------------------------------------------------------
 
-const isPrivileged = (user) => user && (user.role === 'admin' || user.role === 'profesor');
+const isPrivileged = (user) => user && (user.role === 'admin' || user.role === 'profesor' || user.role === 'coordinador');
 
 const userOwnsProject = (user, projectId) => {
   if (!user) return false;
@@ -40,6 +40,7 @@ const safeUnlink = async (filePath) => {
 router.post('/bulk', express.json(), async (req, res) => {
   try {
     const { date, time, records } = req.body;
+    const listNumber = Number(req.body.listNumber) || 1;
 
     // projectId/leaderId are pulled from the authenticated user, not the body,
     // so a leader cannot submit attendance against another project or under
@@ -63,6 +64,18 @@ router.post('/bulk', express.json(), async (req, res) => {
     // few dozen students; anything higher is either malformed or abusive.
     if (records.length > 200) {
       return res.status(413).json({ error: 'Too many records in a single submission (max 200)' });
+    }
+
+    if (![1, 2].includes(listNumber)) {
+      return res.status(400).json({ error: 'listNumber must be 1 or 2' });
+    }
+
+    // Block writes once the coordinator has locked this date's jornada.
+    if (await db.isDateLocked(projectId, date)) {
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.'
+      });
     }
 
     // NOTE: the project+date duplicate check now runs INSIDE the transaction
@@ -95,6 +108,7 @@ router.post('/bulk', express.json(), async (req, res) => {
       leaderId: Number(leaderId),
       date,
       time,
+      listNumber,
       status: record.status,
       justification: record.status === 'absent' ? (record.justification || 'injustificada') : null,
       observation: record.observation || null,
@@ -136,6 +150,7 @@ router.post('/', uploadSingle, validateAttendance, async (req, res) => {
     const projectId = req.user.projectId;
     const leaderId = req.user.id;
     const { date, time, status, justification, observation } = req.body;
+    const listNumber = Number(req.body.listNumber) || 1;
 
     if (!projectId || !leaderId) {
       await safeUnlink(filePath);
@@ -145,6 +160,15 @@ router.post('/', uploadSingle, validateAttendance, async (req, res) => {
     if (!studentId || !date || !status) {
       await safeUnlink(filePath);
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Block writes once the coordinator has locked this date's jornada.
+    if (await db.isDateLocked(projectId, date)) {
+      await safeUnlink(filePath);
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.'
+      });
     }
 
     let attachmentFilePath = null;
@@ -161,13 +185,14 @@ router.post('/', uploadSingle, validateAttendance, async (req, res) => {
       attachmentFileName = req.file.originalname;
     }
 
-    // Check if attendance has already been submitted for THIS STUDENT on this date
-    const studentAttendanceExists = await db.checkAttendanceExists(studentId, date);
+    // Check if attendance has already been submitted for THIS STUDENT on this
+    // date AND list (each roll call is independent).
+    const studentAttendanceExists = await db.checkAttendanceExists(studentId, date, listNumber);
     if (studentAttendanceExists) {
       await safeUnlink(filePath);
       return res.status(409).json({
         error: 'Attendance already submitted',
-        message: 'La asistencia ya fue guardada para este estudiante en esta fecha. No se puede modificar.'
+        message: 'La asistencia ya fue guardada para este estudiante en esta lista y fecha. No se puede modificar.'
       });
     }
 
@@ -201,7 +226,8 @@ router.post('/', uploadSingle, validateAttendance, async (req, res) => {
       finalJustification,
       observation || null,
       attachmentFilePath,
-      attachmentFileName
+      attachmentFileName,
+      listNumber
     );
 
     res.json({
@@ -238,7 +264,7 @@ router.get('/student/:studentId', validateStudentId, async (req, res) => {
   try {
     const { studentId } = req.params;
     const student = await db.getStudentById(studentId);
-    const isLeader = req.user && req.user.role !== 'admin' && req.user.role !== 'profesor';
+    const isLeader = req.user && !['admin', 'profesor', 'coordinador'].includes(req.user.role);
     if (isLeader && (!student || !userOwnsProject(req.user, student.project_id))) {
       return res.status(403).json({ error: 'Forbidden: cannot view this student' });
     }
@@ -259,7 +285,7 @@ router.get('/attachment/:studentId/:date', async (req, res) => {
     const { studentId, date } = req.params;
 
     const student = await db.getStudentById(studentId);
-    const isLeader = req.user && req.user.role !== 'admin' && req.user.role !== 'profesor';
+    const isLeader = req.user && !['admin', 'profesor', 'coordinador'].includes(req.user.role);
     if (isLeader && (!student || !userOwnsProject(req.user, student.project_id))) {
       return res.status(403).json({ error: 'Forbidden: cannot view this student' });
     }

@@ -21,6 +21,12 @@
     }
   },
   "attendance": {
+    "lists": {
+      "first": "Primera lista",
+      "second": "Segunda lista",
+      "passedAt": "Lista pasada a las {{time}}",
+      "activeHint": "Pasando {{list}}"
+    },
     "sectionTitle": "Marcar asistencia",
     "heading": "Sesión del día",
     "rotation": "Rotación {{number}}",

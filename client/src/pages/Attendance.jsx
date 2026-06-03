@@ -14,6 +14,7 @@ import {
   Search,
   Info,
   Lock,
+  Clock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/useAuth.js';
@@ -47,9 +48,31 @@ function Attendance() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [attachments, setAttachments] = useState({});
-  const [attendanceAlreadySaved, setAttendanceAlreadySaved] = useState(false);
+  // Two roll calls per day. `dayRows` holds every saved attendance row for the
+  // date (both lists); `activeList` is the one the leader is currently viewing
+  // / editing (1 = primera lista, 2 = segunda lista).
+  const [dayRows, setDayRows] = useState([]);
+  const [activeList, setActiveList] = useState(1);
   const [search, setSearch] = useState('');
   const fileInputRefs = useRef({});
+
+  // Which lists already exist for the date, and the time each was passed.
+  const listSaved = useMemo(
+    () => ({
+      1: dayRows.some((r) => r.list_number === 1),
+      2: dayRows.some((r) => r.list_number === 2),
+    }),
+    [dayRows],
+  );
+  const listTime = useMemo(
+    () => ({
+      1: dayRows.find((r) => r.list_number === 1)?.time || null,
+      2: dayRows.find((r) => r.list_number === 2)?.time || null,
+    }),
+    [dayRows],
+  );
+  // The active list is locked once it has been saved.
+  const attendanceAlreadySaved = listSaved[activeList];
 
   useEffect(() => {
     if (leader) {
@@ -80,11 +103,12 @@ function Attendance() {
     }
   };
 
-  const fetchAttendance = async () => {
-    try {
-      const data = await getAttendanceByProjectAndDate(leader.projectId, selectedDate);
-      const map = {};
-      data.forEach((r) => {
+  // Build the editable attendance map for one list from the saved day rows.
+  const buildListMap = (rows, listNum) => {
+    const map = {};
+    rows
+      .filter((r) => r.list_number === listNum)
+      .forEach((r) => {
         map[r.student_id] = {
           status: r.status,
           justification: r.justification || null,
@@ -93,12 +117,36 @@ function Attendance() {
           attachmentFilePath: r.attachment_file_path,
         };
       });
-      setAttendance(map);
-      setAttendanceAlreadySaved(data.length > 0);
+    return map;
+  };
+
+  const fetchAttendance = async ({ keepList = false } = {}) => {
+    try {
+      const data = await getAttendanceByProjectAndDate(leader.projectId, selectedDate);
+      const saved1 = data.some((r) => r.list_number === 1);
+      const saved2 = data.some((r) => r.list_number === 2);
+      // On a fresh load, jump to the next un-passed list; after a save we stay
+      // on the list the leader just submitted (so they see the confirmation).
+      const nextList = keepList ? activeList : (!saved1 ? 1 : !saved2 ? 2 : 1);
+      setDayRows(data);
+      setActiveList(nextList);
+      setAttendance(buildListMap(data, nextList));
+      setAttachments({});
     } catch (err) {
       console.error('Error fetching attendance:', err);
       showMessage('error', t('attendance.messages.loadPrevError'));
     }
+  };
+
+  const handleSwitchList = (n) => {
+    if (n === activeList) return;
+    setActiveList(n);
+    setAttendance(buildListMap(dayRows, n));
+    setAttachments({});
+    setSearch('');
+    Object.keys(fileInputRefs.current).forEach((k) => {
+      if (fileInputRefs.current[k]) fileInputRefs.current[k].value = '';
+    });
   };
 
   const showMessage = (type, text) => setMessage({ type, text });
@@ -185,7 +233,7 @@ function Attendance() {
           observation: data.observation,
         }));
 
-        await markBulkAttendance(leader.projectId, leader.id, selectedDate, currentTime, records);
+        await markBulkAttendance(leader.projectId, leader.id, selectedDate, currentTime, records, activeList);
         showMessage('success', t('attendance.messages.savedSuccess', { date: selectedDate }));
       } else {
         const noAttachmentRecords = Object.entries(attendance)
@@ -204,6 +252,7 @@ function Attendance() {
             selectedDate,
             currentTime,
             noAttachmentRecords,
+            activeList,
           );
         }
 
@@ -219,6 +268,7 @@ function Attendance() {
               studentId: parseInt(studentId),
               date: selectedDate,
               time: currentTime,
+              listNumber: activeList,
               status: data.status,
               justification: data.justification,
               observation: data.observation,
@@ -250,11 +300,11 @@ function Attendance() {
       Object.keys(fileInputRefs.current).forEach((k) => {
         if (fileInputRefs.current[k]) fileInputRefs.current[k].value = '';
       });
-      await fetchAttendance();
+      await fetchAttendance({ keepList: true });
     } catch (err) {
       if (err.response?.status === 409) {
         showMessage('error', t('attendance.messages.alreadySaved'));
-        setAttendanceAlreadySaved(true);
+        await fetchAttendance({ keepList: true });
       } else {
         showMessage('error', err.response?.data?.error || t('attendance.messages.saveError'));
       }
@@ -395,6 +445,58 @@ function Attendance() {
           </Button>
         </div>
       </header>
+
+      {/* Roll-call selector: primera / segunda lista. Each shows ✓ + the time
+          it was passed once saved. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="inline-flex items-center gap-1 surface rounded-2xl p-1">
+          {[1, 2].map((n) => {
+            const active = activeList === n;
+            const saved = listSaved[n];
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => handleSwitchList(n)}
+                aria-pressed={active}
+                className={cn(
+                  'inline-flex items-center gap-2 h-10 px-3.5 rounded-xl text-sm font-medium tracking-tight transition-colors',
+                  active
+                    ? 'bg-[color:var(--color-accent)] text-[oklch(0.18_0.02_260)]'
+                    : 'text-[color:var(--color-fg-muted)] hover:text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-hover)]',
+                )}
+              >
+                {saved ? (
+                  <CheckCircle2 className="size-4" />
+                ) : (
+                  <span
+                    className={cn(
+                      'size-4 grid place-items-center text-[11px] tabular rounded-full',
+                      active ? 'bg-[oklch(0.18_0.02_260)]/20' : 'bg-[color:var(--color-bg-3)]',
+                    )}
+                  >
+                    {n}
+                  </span>
+                )}
+                <span>{n === 1 ? t('attendance.lists.first') : t('attendance.lists.second')}</span>
+                {saved && listTime[n] && (
+                  <span className={cn('text-[11px] tabular', active ? 'opacity-80' : 'text-[color:var(--color-fg-subtle)]')}>
+                    {listTime[n]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <span className="text-[11px] text-[color:var(--color-fg-subtle)] inline-flex items-center gap-1.5">
+          <Clock className="size-3.5 shrink-0" />
+          {attendanceAlreadySaved
+            ? t('attendance.lists.passedAt', { time: listTime[activeList] || '' })
+            : t('attendance.lists.activeHint', {
+                list: activeList === 1 ? t('attendance.lists.first') : t('attendance.lists.second'),
+              })}
+        </span>
+      </div>
 
       <Message
         type={message.type}

@@ -99,7 +99,8 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware para verificar rol profesor (o admin)
+// Middleware para verificar rol profesor (incluye coordinador y admin, que
+// están por encima del profesor y deben ver lo mismo o más).
 const requireProfesor = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -108,10 +109,30 @@ const requireProfesor = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== 'profesor' && req.user.role !== 'admin') {
+  if (!['profesor', 'coordinador', 'admin'].includes(req.user.role)) {
     return res.status(403).json({
       error: 'Forbidden',
       message: 'Professor privileges required'
+    });
+  }
+
+  next();
+};
+
+// Middleware para verificar rol coordinador. El admin (superusuario) también
+// pasa, de modo que pueda cerrar la jornada si hace falta.
+const requireCoordinador = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      error: 'Not authenticated',
+      message: 'Authentication required'
+    });
+  }
+
+  if (req.user.role !== 'coordinador' && req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'Coordinator privileges required'
     });
   }
 
@@ -155,6 +176,7 @@ module.exports = {
   authenticateToken,
   requireAdmin,
   requireProfesor,
+  requireCoordinador,
   setAuthCookie,
   clearAuthCookie,
   JWT_EXPIRES_IN

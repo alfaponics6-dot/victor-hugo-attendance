@@ -12,7 +12,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const ProfesorDashboard = lazy(() => import('./pages/ProfesorDashboard'));
 
 function PrivateRoute({ children }) {
-  const { leader, loading, isAdmin, isProfesor } = useAuth();
+  const { leader, loading, isAdmin, isProfesor, isCoordinador } = useAuth();
   const { pathname } = useLocation();
 
   if (loading) {
@@ -23,16 +23,20 @@ function PrivateRoute({ children }) {
     return <Navigate to="/" replace />;
   }
 
+  // Coordinador shares the profesor dashboard (with extra powers), so it routes
+  // exactly like a profesor here.
+  const profOrCoord = isProfesor() || isCoordinador();
+
   if (isAdmin() && pathname === '/dashboard') {
     return <Navigate to="/admin" replace />;
   }
-  if (isProfesor() && pathname === '/dashboard') {
+  if (profOrCoord && pathname === '/dashboard') {
     return <Navigate to="/profesor" replace />;
   }
   if (!isAdmin() && pathname === '/admin') {
     return <Navigate to="/dashboard" replace />;
   }
-  if (!isProfesor() && !isAdmin() && pathname === '/profesor') {
+  if (!profOrCoord && !isAdmin() && pathname === '/profesor') {
     return <Navigate to="/dashboard" replace />;
   }
 

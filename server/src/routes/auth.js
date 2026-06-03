@@ -115,7 +115,7 @@ router.post('/login', credentialLimiter, validateLogin, async (req, res) => {
 
     const role = leader.role || 'leader';
 
-    if (role === 'admin' || role === 'profesor') {
+    if (role === 'admin' || role === 'profesor' || role === 'coordinador') {
       if (!password) {
         return res.status(400).json({ error: 'Password required', requiresPassword: true });
       }
@@ -208,8 +208,8 @@ router.post('/change-password', credentialLimiter, authenticateToken, async (req
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    if (req.user.role !== 'admin' && req.user.role !== 'profesor') {
-      return res.status(403).json({ error: 'Only admins and profesores can change password' });
+    if (!['admin', 'profesor', 'coordinador'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Only admins, profesores and coordinador can change password' });
     }
 
     if (!currentPassword || !newPassword || !confirmPassword) {

@@ -104,6 +104,31 @@ const validateAttendance = [
     .optional({ nullable: true })
     .isLength({ max: 500 }).withMessage('Observation must be less than 500 characters')
     .trim(),
+  // list_number: 1 = primera lista, 2 = segunda lista. Optional; the route
+  // defaults it to 1 when absent.
+  body('listNumber')
+    .optional({ nullable: true })
+    .isInt({ min: 1, max: 2 }).withMessage('listNumber must be 1 or 2'),
+  handleValidationErrors
+];
+
+// Daily sign-off (jornada) validators.
+const validateCloseDay = [
+  body('projectId')
+    .notEmpty().withMessage('projectId is required')
+    .isInt({ min: 1 }).withMessage('projectId must be a positive integer'),
+  body('date')
+    .notEmpty().withMessage('date is required')
+    .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('date must be YYYY-MM-DD')
+    .isISO8601().withMessage('date must be a valid date'),
+  handleValidationErrors
+];
+
+const validateCloseSession = [
+  body('date')
+    .notEmpty().withMessage('date is required')
+    .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('date must be YYYY-MM-DD')
+    .isISO8601().withMessage('date must be a valid date'),
   handleValidationErrors
 ];
 
@@ -188,5 +213,7 @@ module.exports = {
   validateThreshold,
   validateDays,
   validateDateQuery,
+  validateCloseDay,
+  validateCloseSession,
   handleValidationErrors
 };

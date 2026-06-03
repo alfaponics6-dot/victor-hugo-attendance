@@ -64,10 +64,12 @@ function AttendanceCalendar({ projectId, onDateSelect }) {
       const results = await Promise.all(promises);
       const dataMap = {};
       results.forEach(({ date, data }) => {
+        // Canonical attendance = primera lista (list_number 1).
+        const first = data.filter((a) => a.list_number === 1);
         dataMap[date] = {
-          present: data.filter((a) => a.status === 'present').length,
-          absent: data.filter((a) => a.status === 'absent').length,
-          total: data.length,
+          present: first.filter((a) => a.status === 'present').length,
+          absent: first.filter((a) => a.status === 'absent').length,
+          total: first.length,
         };
       });
       setAttendanceData(dataMap);
@@ -124,7 +126,8 @@ function AttendanceCalendar({ projectId, onDateSelect }) {
     setModalLoading(true);
     try {
       const data = await getAttendanceByProjectAndDate(projectId, dateStr);
-      setSelectedDateData(data);
+      // Show one row per student (primera lista) in this quick-glance modal.
+      setSelectedDateData(data.filter((r) => r.list_number === 1));
     } catch {
       setSelectedDateData([]);
     } finally {

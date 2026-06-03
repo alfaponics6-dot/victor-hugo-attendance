@@ -35,8 +35,10 @@ function QuickStatsWidget({ projectId }) {
       ]);
 
       const totalStudents = studentsData.students?.length || 0;
-      const present = attendanceData.filter((a) => a.status === 'present').length;
-      const absent = attendanceData.filter((a) => a.status === 'absent').length;
+      // Canonical attendance = primera lista (list_number 1).
+      const firstList = attendanceData.filter((a) => a.list_number === 1);
+      const present = firstList.filter((a) => a.status === 'present').length;
+      const absent = firstList.filter((a) => a.status === 'absent').length;
       const rate = totalStudents > 0 ? +((present / totalStudents) * 100).toFixed(1) : 0;
 
       setStats({ totalStudents, todayPresent: present, todayAbsent: absent, attendanceRate: rate });

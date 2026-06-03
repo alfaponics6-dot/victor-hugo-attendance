@@ -13,3 +13,18 @@ export const JUSTIFICATION = Object.freeze({
   JUSTIFIED: 'justificada',
   UNJUSTIFIED: 'injustificada',
 });
+
+// Account roles, matching `leaders.role` on the server. `coordinador` sits
+// above `profesor`: they review each profe's day-close and lock the jornada.
+export const ROLES = Object.freeze({
+  ADMIN: 'admin',
+  COORDINADOR: 'coordinador',
+  PROFESOR: 'profesor',
+  LEADER: 'leader',
+});
+
+// list_number values for the two daily roll calls.
+export const LIST = Object.freeze({
+  FIRST: 1,
+  SECOND: 2,
+});

@@ -147,7 +147,7 @@ function Login() {
 
     if (leaderId) {
       const leader = leaders.find((l) => l.id === parseInt(leaderId));
-      if (leader?.role === 'admin' || leader?.role === 'profesor') {
+      if (['admin', 'profesor', 'coordinador'].includes(leader?.role)) {
         setCredentialMode('password');
       } else {
         setCredentialMode('accessCode');
@@ -186,7 +186,7 @@ function Login() {
 
       if (response.leader.role === 'admin') {
         navigate('/admin');
-      } else if (response.leader.role === 'profesor') {
+      } else if (response.leader.role === 'profesor' || response.leader.role === 'coordinador') {
         navigate('/profesor');
       } else {
         navigate('/dashboard');

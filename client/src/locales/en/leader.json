@@ -21,6 +21,12 @@
     }
   },
   "attendance": {
+    "lists": {
+      "first": "First roll call",
+      "second": "Second roll call",
+      "passedAt": "Roll call taken at {{time}}",
+      "activeHint": "Taking {{list}}"
+    },
     "sectionTitle": "Mark attendance",
     "heading": "Today's session",
     "rotation": "Rotation {{number}}",

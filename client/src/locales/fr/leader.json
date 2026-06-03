@@ -21,6 +21,12 @@
     }
   },
   "attendance": {
+    "lists": {
+      "first": "Premier appel",
+      "second": "Deuxième appel",
+      "passedAt": "Appel effectué à {{time}}",
+      "activeHint": "Saisie : {{list}}"
+    },
     "sectionTitle": "Marquer la présence",
     "heading": "Séance du jour",
     "rotation": "Rotation {{number}}",
