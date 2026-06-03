@@ -177,6 +177,16 @@ router.post('/bulk', bulkLimiter, express.json(), async (req, res) => {
     const dateErr = sanityCheckAttendanceDate(date);
     if (dateErr) return res.status(400).json({ error: dateErr });
 
+    // Block writes once the coordinator has locked this date's jornada. Also
+    // protects offline writes replayed after the lock — they surface a clear
+    // 'Jornada cerrada' 409 instead of silently landing in a closed day.
+    if (await db.isDateLocked(projectId, date)) {
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.'
+      });
+    }
+
     // NOTE: the project+date duplicate check now runs INSIDE the transaction
     // in insertBulkAttendance so the check+insert pair is atomic. We don't
     // pre-check here anymore — that race let two near-simultaneous submitters
@@ -309,6 +319,15 @@ router.post('/bulk/resolve', resolveLimiter, express.json(), async (req, res) =>
     }
     const dateErr = sanityCheckAttendanceDate(date);
     if (dateErr) return res.status(400).json({ error: dateErr });
+    // A locked jornada is the coordinator's final word — it can't be
+    // resolved/overwritten either (this is the path a queued offline write
+    // takes after a 409, so it must respect the lock too).
+    if (await db.isDateLocked(projectId, date)) {
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.'
+      });
+    }
     if (resolution !== 'overwrite' && resolution !== 'merge') {
       return res.status(400).json({ error: 'resolution must be "overwrite" or "merge"' });
     }
@@ -452,6 +471,14 @@ router.post('/', uploadSingle, trackUploadCleanup, validateAttendance, async (re
     // Same date sanity bounds as the bulk endpoints.
     const dateErr = sanityCheckAttendanceDate(date);
     if (dateErr) return res.status(400).json({ error: dateErr });
+
+    // Block writes once the coordinator has locked this date's jornada.
+    if (await db.isDateLocked(projectId, date)) {
+      return res.status(409).json({
+        error: 'Jornada cerrada',
+        message: 'La jornada de esta fecha ya fue cerrada. No se puede modificar.'
+      });
+    }
 
     if (status !== 'present' && status !== 'absent') {
       return res.status(400).json({ error: 'Status must be either "present" or "absent"' });

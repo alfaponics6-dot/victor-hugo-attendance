@@ -1568,6 +1568,11 @@ class Database {
     if (!leaderId) return Promise.resolve();
     const sizeNum = Number.isFinite(queueSize) ? queueSize : 0;
     const needed = sizeNum > 0 ? 'CURRENT_TIMESTAMP' : 'NULL';
+    // On UPDATE, PRESERVE an already-set sync_needed_at while still pending,
+    // so the staleness window keeps accruing. Resetting it to NOW on every
+    // authenticated request (the old behavior) meant an active device never
+    // crossed the email-escalation threshold. Only clear it when queue hits 0.
+    const neededUpdate = sizeNum > 0 ? 'COALESCE(sync_needed_at, CURRENT_TIMESTAMP)' : 'NULL';
     // When queue clears (sizeNum===0), also reset last_email_sent_at so
     // a future pending session can trigger a fresh email after the
     // staleness threshold — the 24h debounce was meant to prevent
@@ -1585,7 +1590,7 @@ class Database {
          VALUES (?, ?, ${needed}, CURRENT_TIMESTAMP)
          ON CONFLICT(leader_id) DO UPDATE SET
            last_known_queue_size = excluded.last_known_queue_size,
-           sync_needed_at = ${needed},
+           sync_needed_at = ${neededUpdate},
            last_seen_at = CURRENT_TIMESTAMP${emailReset}`,
         [leaderId, sizeNum],
         function (err) {
