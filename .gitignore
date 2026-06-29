@@ -15,6 +15,8 @@ server/uploads/
 
 # Build
 client/dist/
+# Automation Studio (root Vite app) build output
+/dist/
 
 # Environment
 .env
